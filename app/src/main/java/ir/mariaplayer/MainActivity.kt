@@ -1,9 +1,13 @@
 package ir.mariaplayer
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -30,7 +35,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaController
 import ir.mariaplayer.data.LibraryScanner
+import ir.mariaplayer.data.PlaybackPrefs
 import ir.mariaplayer.data.Track
+import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.PermissionScreen
@@ -40,51 +47,66 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            MariaPlayerTheme { AppRoot() }
-        }
+        setContent { MariaPlayerTheme { AppRoot() } }
     }
 }
 
 @Composable
 private fun AppRoot() {
     val context = LocalContext.current
-    var hasPermission by remember { mutableStateOf(LibraryScanner.hasAudioPermission(context)) }
 
-    if (!hasPermission) {
-        PermissionScreen(onGranted = { hasPermission = true })
+    // Ask for POST_NOTIFICATIONS once on API 33+
+    if (Build.VERSION.SDK_INT >= 33) {
+        val launcher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { /* result ignored; notification will appear if granted */ }
+        LaunchedEffect(Unit) { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+    }
+
+    var hasAudio by remember { mutableStateOf(LibraryScanner.hasAudioPermission(context)) }
+    if (!hasAudio) {
+        PermissionScreen(onGranted = { hasAudio = true })
         return
     }
 
-    val tracks by produceState<List<Track>?>(initialValue = null, hasPermission) {
+    val tracks by produceState<List<Track>?>(initialValue = null, hasAudio) {
         value = LibraryScanner.scan(context)
     }
-
     val controller = rememberPlayerController()
+
+    // Resume last track once both tracks + controller exist
+    LaunchedEffect(controller, tracks) {
+        val c = controller ?: return@LaunchedEffect
+        val list = tracks ?: return@LaunchedEffect
+        if (c.currentMediaItem != null) return@LaunchedEffect  // already playing
+        if (list.isEmpty()) return@LaunchedEffect
+        val saved = PlaybackPrefs.read(context)
+        val savedTrack = saved.trackId?.let { id -> list.firstOrNull { it.id == id } }
+            ?: return@LaunchedEffect
+        play(c, savedTrack, startPositionMs = saved.positionMs, autoPlay = false)
+    }
 
     LibraryScreen(
         tracks = tracks,
         scanning = tracks == null,
-        onTrackClick = { track -> play(controller, track) },
+        controller = controller,
+        onTrackClick = { t -> play(controller, t, startPositionMs = 0L, autoPlay = true) },
     )
 }
 
-private fun play(controller: MediaController?, track: Track) {
-    if (controller == null) return
+private fun play(c: MediaController?, t: Track, startPositionMs: Long, autoPlay: Boolean) {
+    if (c == null) return
     val item = MediaItem.Builder()
-        .setMediaId(track.id.toString())
-        .setUri(track.contentUri)
+        .setMediaId(t.id.toString())
+        .setUri(t.contentUri)
         .setMediaMetadata(
             MediaMetadata.Builder()
-                .setTitle(track.title)
-                .setArtist(track.artist)
-                .setAlbumTitle(track.album)
-                .build()
+                .setTitle(t.title).setArtist(t.artist).setAlbumTitle(t.album).build()
         )
         .build()
-    controller.setMediaItem(item)
-    controller.prepare()
-    controller.play()
+    c.setMediaItem(item, startPositionMs)
+    c.prepare()
+    if (autoPlay) c.play()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,9 +114,13 @@ private fun play(controller: MediaController?, track: Track) {
 private fun LibraryScreen(
     tracks: List<Track>?,
     scanning: Boolean,
+    controller: MediaController?,
     onTrackClick: (Track) -> Unit,
 ) {
-    Scaffold(topBar = { TopAppBar(title = { Text("MariaPlayer") }) }) { inner ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("MariaPlayer") }) },
+        bottomBar = { NowPlayingBar(controller) },
+    ) { inner ->
         Box(Modifier.fillMaxSize().padding(inner)) {
             when {
                 scanning -> CenterText("Scanning library...")
@@ -107,9 +133,8 @@ private fun LibraryScreen(
                             headlineContent = { Text(t.title) },
                             supportingContent = {
                                 Text(
-                                    listOfNotNull(
-                                        t.artist, t.album, formatDuration(t.durationMs)
-                                    ).joinToString(" - ")
+                                    listOfNotNull(t.artist, t.album, formatDuration(t.durationMs))
+                                        .joinToString(" - ")
                                 )
                             },
                             modifier = Modifier.clickable { onTrackClick(t) },
