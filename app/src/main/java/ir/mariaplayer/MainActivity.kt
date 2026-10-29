@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,8 +26,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.session.MediaController
 import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.Track
+import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.PermissionScreen
 import java.util.Locale
@@ -55,12 +60,40 @@ private fun AppRoot() {
         value = LibraryScanner.scan(context)
     }
 
-    LibraryScreen(tracks = tracks, scanning = tracks == null)
+    val controller = rememberPlayerController()
+
+    LibraryScreen(
+        tracks = tracks,
+        scanning = tracks == null,
+        onTrackClick = { track -> play(controller, track) },
+    )
+}
+
+private fun play(controller: MediaController?, track: Track) {
+    if (controller == null) return
+    val item = MediaItem.Builder()
+        .setMediaId(track.id.toString())
+        .setUri(track.contentUri)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(track.title)
+                .setArtist(track.artist)
+                .setAlbumTitle(track.album)
+                .build()
+        )
+        .build()
+    controller.setMediaItem(item)
+    controller.prepare()
+    controller.play()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LibraryScreen(tracks: List<Track>?, scanning: Boolean) {
+private fun LibraryScreen(
+    tracks: List<Track>?,
+    scanning: Boolean,
+    onTrackClick: (Track) -> Unit,
+) {
     Scaffold(topBar = { TopAppBar(title = { Text("MariaPlayer") }) }) { inner ->
         Box(Modifier.fillMaxSize().padding(inner)) {
             when {
@@ -79,6 +112,7 @@ private fun LibraryScreen(tracks: List<Track>?, scanning: Boolean) {
                                     ).joinToString(" - ")
                                 )
                             },
+                            modifier = Modifier.clickable { onTrackClick(t) },
                         )
                         HorizontalDivider()
                     }
