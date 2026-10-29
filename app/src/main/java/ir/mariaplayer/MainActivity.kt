@@ -10,14 +10,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,16 +33,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
+import ir.mariaplayer.data.LibraryPrefs
 import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.PlaybackPrefs
+import ir.mariaplayer.data.SortMode
 import ir.mariaplayer.data.Track
 import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
@@ -77,7 +86,16 @@ private fun AppRoot() {
     val controller = rememberPlayerController()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
 
-    // Resume last queue+position on cold start
+    var sortMode by remember { mutableStateOf(SortMode.TITLE) }
+    var prefsLoaded by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        sortMode = LibraryPrefs.readSort(context)
+        prefsLoaded = true
+    }
+    LaunchedEffect(sortMode, prefsLoaded) {
+        if (prefsLoaded) LibraryPrefs.saveSort(context, sortMode)
+    }
+
     LaunchedEffect(controller, tracks) {
         val c = controller ?: return@LaunchedEffect
         val list = tracks ?: return@LaunchedEffect
@@ -90,7 +108,6 @@ private fun AppRoot() {
         shuffleOn = c.shuffleModeEnabled
     }
 
-    // Save position every 3 s while playing (P1-3 fix: nothing saved before)
     LaunchedEffect(controller) {
         val c = controller ?: return@LaunchedEffect
         while (true) {
@@ -106,6 +123,8 @@ private fun AppRoot() {
         scanning = tracks == null,
         controller = controller,
         shuffleOn = shuffleOn,
+        sortMode = sortMode,
+        onSortChange = { sortMode = it },
         onShuffleClick = {
             val c = controller ?: return@LibraryScreen
             val list = tracks ?: return@LibraryScreen
@@ -158,14 +177,49 @@ private fun LibraryScreen(
     scanning: Boolean,
     controller: MediaController?,
     shuffleOn: Boolean,
+    sortMode: SortMode,
+    onSortChange: (SortMode) -> Unit,
     onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
 ) {
+    var query by rememberSaveable { mutableStateOf("") }
+    var sortMenuOpen by remember { mutableStateOf(false) }
+
+    val visible: List<Track>? = remember(tracks, query, sortMode) {
+        val base = tracks ?: return@remember null
+        val q = query.trim().lowercase()
+        base.asSequence()
+            .filter { t ->
+                q.isEmpty() ||
+                t.title.lowercase().contains(q) ||
+                t.artist?.lowercase()?.contains(q) == true ||
+                t.album?.lowercase()?.contains(q) == true
+            }
+            .sortedWith(comparatorFor(sortMode))
+            .toList()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
+                    Box {
+                        TextButton(onClick = { sortMenuOpen = true }) {
+                            Text("Sort: ${sortMode.label}")
+                        }
+                        DropdownMenu(
+                            expanded = sortMenuOpen,
+                            onDismissRequest = { sortMenuOpen = false },
+                        ) {
+                            SortMode.entries.forEach { m ->
+                                DropdownMenuItem(
+                                    text = { Text(m.label) },
+                                    onClick = { onSortChange(m); sortMenuOpen = false },
+                                )
+                            }
+                        }
+                    }
                     TextButton(onClick = onShuffleClick) {
                         Text(if (shuffleOn) "Shuffle ON" else "Shuffle")
                     }
@@ -174,30 +228,61 @@ private fun LibraryScreen(
         },
         bottomBar = { NowPlayingBar(controller) },
     ) { inner ->
-        Box(Modifier.fillMaxSize().padding(inner)) {
-            when {
-                scanning -> CenterText("Scanning library...")
-                tracks.isNullOrEmpty() -> CenterText(
-                    "No audio files found.\nAdd music to /sdcard/Music, then reopen the app."
-                )
-                else -> LazyColumn(Modifier.fillMaxSize()) {
-                    items(tracks, key = { it.id }) { t ->
-                        ListItem(
-                            headlineContent = { Text(t.title) },
-                            supportingContent = {
-                                Text(
-                                    listOfNotNull(t.artist, t.album, formatDuration(t.durationMs))
-                                        .joinToString(" - ")
-                                )
-                            },
-                            modifier = Modifier.clickable { onTrackClick(t) },
-                        )
-                        HorizontalDivider()
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                placeholder = { Text("Search title, artist, album") },
+                trailingIcon = {
+                    if (query.isNotEmpty()) {
+                        TextButton(onClick = { query = "" }) { Text("Clear") }
+                    }
+                },
+            )
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                when {
+                    scanning -> CenterText("Scanning library...")
+                    visible.isNullOrEmpty() -> {
+                        if (query.isNotBlank() && !tracks.isNullOrEmpty())
+                            CenterText("No results for \"$query\"")
+                        else
+                            CenterText("No audio files found.\nAdd music to /sdcard/Music, then reopen the app.")
+                    }
+                    else -> LazyColumn(Modifier.fillMaxSize()) {
+                        items(visible, key = { it.id }) { t ->
+                            ListItem(
+                                headlineContent = { Text(t.title) },
+                                supportingContent = {
+                                    Text(
+                                        listOfNotNull(t.artist, t.album, formatDuration(t.durationMs))
+                                            .joinToString(" - ")
+                                    )
+                                },
+                                modifier = Modifier.clickable { onTrackClick(t) },
+                            )
+                            HorizontalDivider()
+                        }
                     }
                 }
             }
         }
     }
+}
+
+private fun comparatorFor(mode: SortMode): Comparator<Track> = when (mode) {
+    SortMode.TITLE -> Comparator { a, b -> a.title.compareTo(b.title, ignoreCase = true) }
+    SortMode.ARTIST -> Comparator { a, b ->
+        val c = (a.artist ?: "\uFFFF").compareTo(b.artist ?: "\uFFFF", ignoreCase = true)
+        if (c != 0) c else a.title.compareTo(b.title, ignoreCase = true)
+    }
+    SortMode.ALBUM -> Comparator { a, b ->
+        val c = (a.album ?: "\uFFFF").compareTo(b.album ?: "\uFFFF", ignoreCase = true)
+        if (c != 0) c else a.title.compareTo(b.title, ignoreCase = true)
+    }
+    SortMode.RECENT -> Comparator { a, b -> b.id.compareTo(a.id) }
+    SortMode.DURATION -> Comparator { a, b -> b.durationMs.compareTo(a.durationMs) }
 }
 
 @Composable

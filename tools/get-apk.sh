@@ -7,7 +7,7 @@ REPO="$OWNER/mariaplayer"
 LOCAL_SHA=$(git rev-parse --short HEAD)
 echo "repo: $REPO  head: $LOCAL_SHA"
 
-# ── [1] wait for a completed run matching local HEAD ─────────────────
+# ── [1/3] wait for CI run matching local HEAD ────────────────────────
 echo
 echo "[1/3] waiting for CI run for $LOCAL_SHA ..."
 FINAL_RUN=""
@@ -30,80 +30,51 @@ for r in runs:
     set -- $ROW
     RID=$1; RSTAT=$2; RCON=$3
     if [ "$RSTAT" = "completed" ]; then
-      if [ "$RCON" = "success" ]; then
-        FINAL_RUN=$RID
-        echo "      run $RID: success"
-        break
-      else
-        echo "      run $RID: FAILED ($RCON) — last 30 lines:"
-        gh run view "$RID" --repo "$REPO" --log-failed 2>&1 | tail -30
-        exit 1
+      if [ "$RCON" = "success" ]; then FINAL_RUN=$RID; echo "      run $RID: success"; break
+      else echo "      run $RID FAILED — tail:"; gh run view "$RID" --repo "$REPO" --log-failed 2>&1 | tail -30; exit 1
       fi
-    else
-      echo "      run $RID: $RSTAT ... (${i}/60)"
+    else echo "      run $RID: $RSTAT ... (${i}/60)"
     fi
-  else
-    echo "      no matching run yet (${i}/60)"
+  else echo "      no matching run yet (${i}/60)"
   fi
   sleep 10
 done
+[ -n "$FINAL_RUN" ] || { echo "FATAL: no successful run"; exit 1; }
 
-if [ -z "$FINAL_RUN" ]; then
-  echo "FATAL: no successful run found after 10 min"
-  gh run list --workflow=build.yml --repo "$REPO" --limit 5
-  exit 1
-fi
-
-# ── [2] wait for the release asset to exist ──────────────────────────
+# ── [2/3] find release tag + asset name ──────────────────────────────
 echo
-echo "[2/3] waiting for release asset ..."
-APK_URL=""; APK_NAME=""
-for i in $(seq 1 30); do
-  JSON=$(gh api "repos/$REPO/releases?per_page=5" 2>/dev/null || echo '[]')
-  PICK=$(echo "$JSON" | python3 -c "
+echo "[2/3] locating latest release ..."
+PICK=$(gh api "repos/$REPO/releases?per_page=5" 2>/dev/null | python3 -c "
 import json, sys
-try:
-    rels = json.load(sys.stdin)
-except Exception:
-    sys.exit(0)
+try: rels = json.load(sys.stdin)
+except Exception: sys.exit(0)
 for r in rels:
     for a in r.get('assets', []):
         if a['name'].endswith('.apk'):
-            print(a['name'], a['browser_download_url'], a['size'])
+            print(r['tag_name'], a['name'], a['size'])
             sys.exit(0)
 ")
-  if [ -n "$PICK" ]; then
-    set -- $PICK
-    APK_NAME=$1
-    APK_URL=$2
-    APK_SIZE=$3
-    echo "      found: $APK_NAME ($APK_SIZE bytes)"
-    break
-  fi
-  echo "      no apk yet (${i}/30)"
-  sleep 10
-done
+[ -n "$PICK" ] || { echo "FATAL: no apk in releases"; exit 1; }
+set -- $PICK
+TAG=$1; APK_NAME=$2; APK_SIZE=$3
+echo "      tag:   $TAG"
+echo "      apk:   $APK_NAME ($APK_SIZE bytes)"
+echo "      page:  https://github.com/$REPO/releases/tag/$TAG"
 
-if [ -z "$APK_URL" ]; then
-  echo "FATAL: no apk found in recent releases"
-  exit 1
-fi
-
-# ── [3] download via curl (direct URL, no gh wrapper) ────────────────
+# ── [3/3] download via authenticated gh, then open ───────────────────
 echo
-echo "[3/3] downloading $APK_NAME"
-DEST="$HOME/storage/downloads/$APK_NAME"
-curl -fL --retry 3 --retry-delay 2 -m 120 -o "$DEST" "$APK_URL"
+echo "[3/3] downloading with gh (private repo, authenticated) ..."
+DEST_DIR="$HOME/storage/downloads"
+rm -f "$DEST_DIR/$APK_NAME"
+gh release download "$TAG" --repo "$REPO" --pattern "$APK_NAME" --dir "$DEST_DIR" --clobber
 
-SZ=$(stat -c%s "$DEST")
-if [ "$SZ" -lt 100000 ]; then
-  echo "FATAL: downloaded file too small ($SZ bytes) — not a real apk"
-  head -c 200 "$DEST"
-  rm -f "$DEST"
-  exit 1
-fi
-ls -lh "$DEST"
+SZ=$(stat -c%s "$DEST_DIR/$APK_NAME")
+[ "$SZ" -gt 100000 ] || { echo "FATAL: downloaded file too small ($SZ bytes)"; exit 1; }
+ls -lh "$DEST_DIR/$APK_NAME"
 
 echo
-echo "opening installer ..."
-termux-open "$DEST"
+echo "opening release page in browser (tap Install from there too if you want) ..."
+termux-open-url "https://github.com/$REPO/releases/tag/$TAG"
+
+echo "opening apk installer ..."
+termux-open "$DEST_DIR/$APK_NAME"
