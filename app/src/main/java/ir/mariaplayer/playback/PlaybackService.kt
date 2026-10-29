@@ -6,6 +6,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSessionService
 import ir.mariaplayer.MainActivity
 
@@ -15,6 +16,11 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        setMediaNotificationProvider(
+            DefaultMediaNotificationProvider(this).apply {
+                setSmallIcon(ir.mariaplayer.R.drawable.ic_notification)
+            }
+        )
 
         val attrs = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
