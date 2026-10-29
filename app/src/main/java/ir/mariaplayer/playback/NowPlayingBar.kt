@@ -4,15 +4,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 
@@ -31,10 +29,10 @@ fun NowPlayingBar(controller: MediaController?) {
     var title by remember { mutableStateOf(controller.mediaMetadata.title?.toString() ?: "") }
     var artist by remember { mutableStateOf(controller.mediaMetadata.artist?.toString().orEmpty()) }
 
-    androidx.compose.runtime.DisposableEffect(controller) {
+    DisposableEffect(controller) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) { playing = isPlaying }
-            override fun onMediaMetadataChanged(mediaMetadata: androidx.media3.common.MediaMetadata) {
+            override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
                 title = mediaMetadata.title?.toString() ?: ""
                 artist = mediaMetadata.artist?.toString().orEmpty()
             }
@@ -58,11 +56,8 @@ fun NowPlayingBar(controller: MediaController?) {
                         style = MaterialTheme.typography.bodySmall)
                 }
             }
-            IconButton(onClick = { if (playing) controller.pause() else controller.play() }) {
-                Icon(
-                    imageVector = if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (playing) "Pause" else "Play",
-                )
+            TextButton(onClick = { if (playing) controller.pause() else controller.play() }) {
+                Text(if (playing) "Pause" else "Play")
             }
         }
     }
