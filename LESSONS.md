@@ -51,3 +51,15 @@
 - learned: never build APK on Termux. Use Termux only for edit +
   git push + `pm install`. Compile on GitHub Actions (ubuntu-latest).
 - fixed-by: .github/workflows/build.yml with temurin 21 + setup-android
+## 2026-10-29 CI — setup-android v3 fails on removed 'tools' package
+- tried: android-actions/setup-android@v3 with default packages
+- why-failed: action defaults to `tools platform-tools`; Google removed
+  the legacy `tools` package from the SDK repo on 2026-09-17, so
+  sdkmanager exits 1 with "Failed to find package 'tools'" before any
+  Gradle step runs.
+- learned: never rely on setup-android's default `packages`. Pass
+  `packages: ''` to skip the removed `tools`, then install
+  platform-tools / platforms;android-36 / build-tools explicitly.
+  (v4.0.2+ also fixes this upstream, but v3 + packages:'' is the
+  minimal-change fix and is what multiple OSS repos use.)
+- fixed-by: workflow patch in this commit
