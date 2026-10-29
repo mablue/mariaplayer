@@ -4,16 +4,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Equilateral triangle (side 40, right vertex 71.32),
-         corner radius 6, tangent dist = r*sqrt(3) = 10.39
-         Horizontal bbox centered at x=54: left edge 36.68, right vertex 71.32 -->
     <path
-        android:fillColor="#FDF5F2"
-        android:pathData="M45.7,39.2
-            L62.3,48.8
-            A6,6 0 0 1 62.3,59.2
-            L45.7,68.8
-            A6,6 0 0 1 36.7,63.6
-            L36.7,44.4
-            A6,6 0 0 1 45.7,39.2 Z" />
+        android:fillColor="#E0E6E8"
+        android:pathData="M48.66,26.26 L80.69,44.76 A10.68,10.68 0 0 1 80.69,63.24 L48.66,81.74 A10.68,10.68 0 0 1 32.65,72.45 L32.65,35.55 A10.68,10.68 0 0 1 48.66,26.26 Z" />
 </vector>
