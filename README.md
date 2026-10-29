@@ -47,6 +47,9 @@ Every other player pretends this is fine. MariaPlayer is built for it.
 
 ## Build
 
+Signing details: SIGNING.md
+
+
 CI builds every push to `main` on GitHub Actions → Ubuntu + JDK 21 + SDK 36.
 Successful builds publish a tagged **Release** with the APK attached, and the
 block at the top of this README is auto-updated by CI.

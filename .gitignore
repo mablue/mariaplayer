@@ -4,3 +4,7 @@ local.properties
 *.log
 *.apk
 mariaplayer-*.apk
+keystore/
+*.jks
+*.keystore
+keystore.properties

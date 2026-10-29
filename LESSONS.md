@@ -76,3 +76,16 @@
   workflows, so no infinite loop.
 - fixed-by: softprops/action-gh-release@v2 in `apk` job +
   `update-readme` job that rewrites README between markers
+
+## 2026-10-29 tooling — SIGPIPE exit 141 from tr </dev/urandom | head
+- tried: STOREPASS=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)
+- why-failed: /dev/urandom never EOFs, tr keeps reading, head -c 24
+  closes the pipe after 24 bytes, tr receives SIGPIPE. Under
+  `set -euo pipefail`, the pipeline exits 141 and aborts the script.
+- learned: same class of bug as `grep | head -1` in CI. Never terminate
+  an infinite producer with head/cut on the reading side. Either produce
+  finite output (python3 -c secrets.choice, openssl rand) or use a
+  reader that consumes to EOF (tr -d, cut -c). In workflow, prefer
+  `grep -m1` over `grep | head -1`.
+- fixed-by: gen_pass() using python3 -c secrets.choice; workflow uses
+  grep -m1 (max-1 match) instead of grep | head -1

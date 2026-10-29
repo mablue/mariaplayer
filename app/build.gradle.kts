@@ -4,14 +4,32 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 android {
+    signingConfigs {
+        create("release") {
+            val ksPath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/keystore/mariaplayer.jks"
+            val ksFile = file(ksPath)
+            if (ksFile.exists()) {
+                storeFile = ksFile
+                storePassword = System.getenv("KEYSTORE_PASS")
+                keyAlias = System.getenv("KEY_ALIAS") ?: "mariaplayer"
+                keyPassword = System.getenv("KEY_PASS") ?: System.getenv("KEYSTORE_PASS")
+            }
+        }
+    }
     namespace = "ir.mariaplayer"
     compileSdk = 36
     defaultConfig {
         applicationId = "ir.mariaplayer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = "0.1.0"
+    }
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
