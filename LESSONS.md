@@ -89,3 +89,13 @@
   `grep -m1` over `grep | head -1`.
 - fixed-by: gen_pass() using python3 -c secrets.choice; workflow uses
   grep -m1 (max-1 match) instead of grep | head -1
+
+## 2026-10-29 compose — Icons.Filled.Pause not in material-icons-core
+- tried: import Icons.Filled.Pause in NowPlayingBar
+- why-failed: material-icons-core ships a small subset (PlayArrow, Menu,
+  Search, etc). Pause / SkipNext / SkipPrevious / Shuffle are only in
+  material-icons-extended (~50 MB). Unresolved reference: 'Pause'.
+- learned: for P1 prefer TextButton("Play"/"Pause") instead of pulling in
+  material-icons-extended. If a future UI genuinely needs the extended set,
+  add it once and keep it — never mix.
+- fixed-by: NowPlayingBar uses TextButton with "Play"/"Pause" labels
