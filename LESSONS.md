@@ -63,3 +63,16 @@
   (v4.0.2+ also fixes this upstream, but v3 + packages:'' is the
   minimal-change fix and is what multiple OSS repos use.)
 - fixed-by: workflow patch in this commit
+## 2026-10-29 CI — no Release, no README auto-update
+- tried: workflow only uploaded APK as Actions artifact
+- why-failed: artifacts are CI-debug surface, not user-facing.
+  Users expect tap-to-install from a Releases page. README did not
+  exist and had no auto-maintained "latest build" block.
+- learned: for a sideloaded app, Releases is THE download surface.
+  Actions artifacts are for CI debugging. Every successful `main`
+  push must (a) create a tagged Release with the APK attached,
+  (b) update README's `<!-- LATEST-BUILD -->` block to point at
+  `releases/latest`. GITHUB_TOKEN pushes do not re-trigger
+  workflows, so no infinite loop.
+- fixed-by: softprops/action-gh-release@v2 in `apk` job +
+  `update-readme` job that rewrites README between markers
