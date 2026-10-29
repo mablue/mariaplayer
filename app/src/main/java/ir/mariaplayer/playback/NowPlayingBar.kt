@@ -28,6 +28,8 @@ fun NowPlayingBar(controller: MediaController?) {
     var playing by remember { mutableStateOf(controller.isPlaying) }
     var title by remember { mutableStateOf(controller.mediaMetadata.title?.toString() ?: "") }
     var artist by remember { mutableStateOf(controller.mediaMetadata.artist?.toString().orEmpty()) }
+    var hasPrev by remember { mutableStateOf(controller.hasPreviousMediaItem()) }
+    var hasNext by remember { mutableStateOf(controller.hasNextMediaItem()) }
 
     DisposableEffect(controller) {
         val listener = object : Player.Listener {
@@ -35,6 +37,14 @@ fun NowPlayingBar(controller: MediaController?) {
             override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
                 title = mediaMetadata.title?.toString() ?: ""
                 artist = mediaMetadata.artist?.toString().orEmpty()
+            }
+            override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                hasPrev = controller.hasPreviousMediaItem()
+                hasNext = controller.hasNextMediaItem()
+            }
+            override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
+                hasPrev = controller.hasPreviousMediaItem()
+                hasNext = controller.hasNextMediaItem()
             }
         }
         controller.addListener(listener)
@@ -45,19 +55,30 @@ fun NowPlayingBar(controller: MediaController?) {
 
     Surface(tonalElevation = 3.dp) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
+            TextButton(
+                onClick = { controller.seekToPreviousMediaItem() },
+                enabled = hasPrev,
+            ) { Text("Prev") }
+
+            TextButton(onClick = { if (playing) controller.pause() else controller.play() }) {
+                Text(if (playing) "Pause" else "Play")
+            }
+
+            TextButton(
+                onClick = { controller.seekToNextMediaItem() },
+                enabled = hasNext,
+            ) { Text("Next") }
+
+            Column(Modifier.weight(1f).padding(start = 8.dp)) {
                 Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleSmall)
                 if (artist.isNotEmpty()) {
                     Text(artist, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodySmall)
                 }
-            }
-            TextButton(onClick = { if (playing) controller.pause() else controller.play() }) {
-                Text(if (playing) "Pause" else "Play")
             }
         }
     }

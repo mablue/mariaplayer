@@ -20,6 +20,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.PlaybackPrefs
@@ -41,6 +43,7 @@ import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.PermissionScreen
+import kotlinx.coroutines.delay
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -55,11 +58,10 @@ class MainActivity : ComponentActivity() {
 private fun AppRoot() {
     val context = LocalContext.current
 
-    // Ask for POST_NOTIFICATIONS once on API 33+
     if (Build.VERSION.SDK_INT >= 33) {
         val launcher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
-        ) { /* result ignored; notification will appear if granted */ }
+        ) { }
         LaunchedEffect(Unit) { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) }
     }
 
@@ -73,38 +75,78 @@ private fun AppRoot() {
         value = LibraryScanner.scan(context)
     }
     val controller = rememberPlayerController()
+    var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
 
-    // Resume last track once both tracks + controller exist
+    // Resume last queue+position on cold start
     LaunchedEffect(controller, tracks) {
         val c = controller ?: return@LaunchedEffect
         val list = tracks ?: return@LaunchedEffect
-        if (c.currentMediaItem != null) return@LaunchedEffect  // already playing
+        if (c.mediaItemCount > 0) return@LaunchedEffect
         if (list.isEmpty()) return@LaunchedEffect
         val saved = PlaybackPrefs.read(context)
-        val savedTrack = saved.trackId?.let { id -> list.firstOrNull { it.id == id } }
-            ?: return@LaunchedEffect
-        play(c, savedTrack, startPositionMs = saved.positionMs, autoPlay = false)
+        val idx = saved.trackId?.let { id -> list.indexOfFirst { it.id == id } } ?: -1
+        if (idx < 0) return@LaunchedEffect
+        playQueue(c, list, idx, saved.positionMs, autoPlay = false)
+        shuffleOn = c.shuffleModeEnabled
+    }
+
+    // Save position every 3 s while playing (P1-3 fix: nothing saved before)
+    LaunchedEffect(controller) {
+        val c = controller ?: return@LaunchedEffect
+        while (true) {
+            delay(3000)
+            val mi = c.currentMediaItem ?: continue
+            val tid = mi.mediaId.toLongOrNull() ?: continue
+            PlaybackPrefs.save(context, tid, c.currentPosition)
+        }
     }
 
     LibraryScreen(
         tracks = tracks,
         scanning = tracks == null,
         controller = controller,
-        onTrackClick = { t -> play(controller, t, startPositionMs = 0L, autoPlay = true) },
+        shuffleOn = shuffleOn,
+        onShuffleClick = {
+            val c = controller ?: return@LibraryScreen
+            val list = tracks ?: return@LibraryScreen
+            if (c.mediaItemCount == 0 && list.isNotEmpty()) {
+                playQueue(c, list, 0, 0L, autoPlay = true)
+                c.shuffleModeEnabled = true
+            } else {
+                c.shuffleModeEnabled = !c.shuffleModeEnabled
+            }
+            shuffleOn = c.shuffleModeEnabled
+        },
+        onTrackClick = { t ->
+            val c = controller ?: return@LibraryScreen
+            val list = tracks ?: return@LibraryScreen
+            val idx = list.indexOfFirst { it.id == t.id }
+            if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
+        },
     )
 }
 
-private fun play(c: MediaController?, t: Track, startPositionMs: Long, autoPlay: Boolean) {
-    if (c == null) return
-    val item = MediaItem.Builder()
-        .setMediaId(t.id.toString())
-        .setUri(t.contentUri)
-        .setMediaMetadata(
-            MediaMetadata.Builder()
-                .setTitle(t.title).setArtist(t.artist).setAlbumTitle(t.album).build()
-        )
-        .build()
-    c.setMediaItem(item, startPositionMs)
+private fun playQueue(
+    c: MediaController?,
+    tracks: List<Track>,
+    startIndex: Int,
+    startPositionMs: Long,
+    autoPlay: Boolean,
+) {
+    if (c == null || tracks.isEmpty()) return
+    if (startIndex !in tracks.indices) return
+    val items = tracks.map { t ->
+        MediaItem.Builder()
+            .setMediaId(t.id.toString())
+            .setUri(t.contentUri)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(t.title).setArtist(t.artist).setAlbumTitle(t.album).build()
+            )
+            .build()
+    }
+    c.setMediaItems(items, startIndex, startPositionMs)
+    c.repeatMode = Player.REPEAT_MODE_ALL
     c.prepare()
     if (autoPlay) c.play()
 }
@@ -115,10 +157,21 @@ private fun LibraryScreen(
     tracks: List<Track>?,
     scanning: Boolean,
     controller: MediaController?,
+    shuffleOn: Boolean,
+    onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("MariaPlayer") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("MariaPlayer") },
+                actions = {
+                    TextButton(onClick = onShuffleClick) {
+                        Text(if (shuffleOn) "Shuffle ON" else "Shuffle")
+                    }
+                },
+            )
+        },
         bottomBar = { NowPlayingBar(controller) },
     ) { inner ->
         Box(Modifier.fillMaxSize().padding(inner)) {
