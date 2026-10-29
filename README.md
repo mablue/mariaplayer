@@ -9,7 +9,14 @@ Built on: Kotlin · Jetpack Compose · Material 3 · Media3 (ExoPlayer + Session
 Grab the latest APK from [**Releases**](https://github.com/mablue/mariaplayer/releases/latest).
 
 <!-- LATEST-BUILD:start -->
-_No build published yet._
+| Field | Value |
+|---|---|
+| Release | [v0.1.0-build.3-e1c3664](https://github.com/mablue/mariaplayer/releases/tag/v0.1.0-build.3-e1c3664) |
+| Version | 0.1.0 |
+| Commit | `e1c3664` |
+| APK | [mariaplayer-0.1.0-e1c3664.apk](https://github.com/mablue/mariaplayer/releases/latest/download/mariaplayer-0.1.0-e1c3664.apk) |
+| Size | 8690539 bytes |
+| SHA-256 | `7217d2c2a556f3b451a09114d519b24848a7bcdb4fd8579cb37e6a8b227a194a` |
 <!-- LATEST-BUILD:end -->
 
 ## Install
