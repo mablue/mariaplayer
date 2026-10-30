@@ -103,9 +103,9 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
         val isFav = id != null && id in favorites
         val fav = CommandButton.Builder()
             .setSessionCommand(SessionCommand(CMD_FAVORITE, Bundle.EMPTY))
-            .setIconResId(
-                if (isFav) android.R.drawable.btn_star_big_on
-                else android.R.drawable.btn_star_big_off
+            .setCustomIconResId(
+                if (isFav) ir.mariaplayer.R.drawable.ic_favorite_filled
+                else ir.mariaplayer.R.drawable.ic_favorite_border
             )
             .setDisplayName(if (isFav) "Unfavorite" else "Favorite")
             .build()

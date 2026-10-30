@@ -22,6 +22,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -56,7 +60,6 @@ import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.PermissionScreen
-import ir.mariaplayer.ui.SettingsScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -94,7 +97,6 @@ private fun AppRoot() {
     val scope = rememberCoroutineScope()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
 
-    var showSettings by remember { mutableStateOf(false) }
     var sortMode by remember { mutableStateOf(SortMode.TITLE) }
     var prefsLoaded by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -152,13 +154,6 @@ private fun AppRoot() {
         }
     }
 
-    if (showSettings) {
-        SettingsScreen(
-            tracks = tracks.orEmpty(),
-            onBack = { showSettings = false },
-        )
-        return
-    }
 
     LibraryScreen(
         allTracks = tracks,
@@ -178,7 +173,6 @@ private fun AppRoot() {
         onToggleFavorite = { id ->
             scope.launch { FavoritesPrefs.toggle(context, id) }
         },
-        onSettingsClick = { showSettings = true },
         onShuffleClick = {
             val c = controller ?: return@LibraryScreen
             val list = visible ?: return@LibraryScreen
@@ -242,7 +236,6 @@ private fun LibraryScreen(
     onFavOnlyChange: (Boolean) -> Unit,
     favorites: Set<Long>,
     onToggleFavorite: (Long) -> Unit,
-    onSettingsClick: () -> Unit,
     onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
 ) {
@@ -258,7 +251,6 @@ private fun LibraryScreen(
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
-                    TextButton(onClick = onSettingsClick) { Text("Settings") }
                     Box {
                         TextButton(onClick = { sortMenuOpen = true }) {
                             Text("Sort: ${sortMode.label}", maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -295,7 +287,15 @@ private fun LibraryScreen(
             )
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
                 TextButton(onClick = { onFavOnlyChange(!favOnly) }) {
-                    Text(if (favOnly) "♥ Favorites" else "♡ Favorites")
+                    Icon(
+                        painter = androidx.compose.ui.res.painterResource(
+                            if (favOnly) R.drawable.ic_favorite_filled
+                            else R.drawable.ic_favorite_border
+                        ),
+                        contentDescription = null,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(if (favOnly) "Favorites ON" else "Favorites")
                 }
                 Box {
                     TextButton(onClick = { folderMenuOpen = true }) {
@@ -347,11 +347,25 @@ private fun LibraryScreen(
                                     )
                                 },
                                 trailingContent = {
-                                    TextButton(onClick = { onToggleFavorite(t.id) }) {
-                                        Text(
-                                            if (t.id in favorites) "♥" else "♡",
-                                            style = MaterialTheme.typography.titleMedium,
-                                        )
+                                    Row {
+                                        IconButton(onClick = { onToggleFavorite(t.id) }) {
+                                            Icon(
+                                                painter = androidx.compose.ui.res.painterResource(
+                                                    if (t.id in favorites) R.drawable.ic_favorite_filled
+                                                    else R.drawable.ic_favorite_border
+                                                ),
+                                                contentDescription = if (t.id in favorites) "Unfavorite" else "Favorite",
+                                                tint = if (t.id in favorites) MaterialTheme.colorScheme.primary
+                                                       else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                        IconButton(onClick = { onDeleteRequest(t) }) {
+                                            Icon(
+                                                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_delete),
+                                                contentDescription = "Delete",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
                                     }
                                 },
                                 modifier = Modifier.clickable { onTrackClick(t) },
