@@ -56,6 +56,7 @@ import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.PermissionScreen
+import ir.mariaplayer.ui.SettingsScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -93,6 +94,7 @@ private fun AppRoot() {
     val scope = rememberCoroutineScope()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
 
+    var showSettings by remember { mutableStateOf(false) }
     var sortMode by remember { mutableStateOf(SortMode.TITLE) }
     var prefsLoaded by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -150,6 +152,14 @@ private fun AppRoot() {
         }
     }
 
+    if (showSettings) {
+        SettingsScreen(
+            tracks = tracks.orEmpty(),
+            onBack = { showSettings = false },
+        )
+        return
+    }
+
     LibraryScreen(
         allTracks = tracks,
         visible = visible,
@@ -168,6 +178,7 @@ private fun AppRoot() {
         onToggleFavorite = { id ->
             scope.launch { FavoritesPrefs.toggle(context, id) }
         },
+        onSettingsClick = { showSettings = true },
         onShuffleClick = {
             val c = controller ?: return@LibraryScreen
             val list = visible ?: return@LibraryScreen
@@ -231,6 +242,7 @@ private fun LibraryScreen(
     onFavOnlyChange: (Boolean) -> Unit,
     favorites: Set<Long>,
     onToggleFavorite: (Long) -> Unit,
+    onSettingsClick: () -> Unit,
     onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
 ) {
@@ -246,6 +258,7 @@ private fun LibraryScreen(
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
+                    TextButton(onClick = onSettingsClick) { Text("Settings") }
                     Box {
                         TextButton(onClick = { sortMenuOpen = true }) {
                             Text("Sort: ${sortMode.label}", maxLines = 1, overflow = TextOverflow.Ellipsis)
