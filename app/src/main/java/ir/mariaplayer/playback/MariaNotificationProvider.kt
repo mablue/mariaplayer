@@ -61,8 +61,10 @@ class MariaNotificationProvider(
             .setDisplayName(if (isFav) "Unfavorite" else "Favorite")
             .build()
 
-        val del = CommandButton.Builder(CommandButton.ICON_DELETE)
+        // Media3 has no ICON_DELETE constant — use the project vector.
+        val del = CommandButton.Builder()
             .setSessionCommand(SessionCommand(PlaybackService.CMD_DELETE, Bundle.EMPTY))
+            .setCustomIconResId(R.drawable.ic_delete)
             .setDisplayName("Delete")
             .build()
 
