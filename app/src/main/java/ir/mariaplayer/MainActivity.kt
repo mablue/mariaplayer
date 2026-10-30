@@ -317,7 +317,9 @@ private fun playQueue(
             .setUri(t.contentUri)
             .setMediaMetadata(
                 MediaMetadata.Builder()
-                    .setTitle(t.title).setArtist(t.artist).setAlbumTitle(t.album).build()
+                    .setTitle(t.title).setArtist(t.artist).setAlbumTitle(t.album)
+                    .setExtras(Bundle().apply { putString("filename", t.filename) })
+                    .build()
             )
             .build()
     }

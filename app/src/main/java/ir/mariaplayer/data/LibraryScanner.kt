@@ -37,6 +37,7 @@ object LibraryScanner {
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.DISPLAY_NAME,
         )
         val pathCol = if (Build.VERSION.SDK_INT >= 29)
             MediaStore.Audio.Media.RELATIVE_PATH
@@ -55,6 +56,7 @@ object LibraryScanner {
             val artistCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
             val albumCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val durCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+            val nameCol = c.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
             val pCol = c.getColumnIndex(pathCol)
             while (c.moveToNext()) {
                 val id = c.getLong(idCol)
@@ -68,6 +70,7 @@ object LibraryScanner {
                     durationMs = c.getLong(durCol),
                     contentUri = uri.toString(),
                     folder = folderName(raw),
+                    filename = if (nameCol >= 0) (c.getString(nameCol) ?: "") else "",
                 )
             }
         }

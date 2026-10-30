@@ -8,4 +8,5 @@ data class Track(
     val durationMs: Long,
     val contentUri: String,
     val folder: String = "",
+    val filename: String = "",
 )
