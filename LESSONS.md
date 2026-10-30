@@ -155,3 +155,9 @@
 - why-failed: the tint attribute shared a line with `>`, so sed deleted the closing `>` of <vector>. XML became <vector ... attrs <path> with no close.
 - learned: (1) NEVER sed-delete lines from XML; rewrite the file with cat >. (2) always validate XML with `python3 -c "import xml.etree.ElementTree as ET; ET.parse('file.xml')"` BEFORE commit.
 - fixed-by: rewrote 5 vectors without tint, validated with ElementTree.
+
+## 2026-10-30 combinedClickable needs ExperimentalFoundationApi opt-in
+- tried: Modifier.combinedClickable in LibraryScreen
+- why-failed: foundation API is @RequiresOptIn(level=ERROR). Without @OptIn the compiler treats it as error.
+- learned: any use of combinedClickable / detectDragGesturesAfterLongPress etc. requires @OptIn(ExperimentalFoundationApi::class) on the enclosing composable.
+- fixed-by: added to LibraryScreen @OptIn alongside ExperimentalMaterial3Api.
