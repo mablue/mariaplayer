@@ -28,7 +28,7 @@ import androidx.media3.session.MediaController
 import ir.mariaplayer.R
 
 @Composable
-fun NowPlayingBar(controller: MediaController?) {
+fun NowPlayingBar(controller: MediaController?, onLyricsClick: () -> Unit = {}) {
     if (controller == null) return
     var playing by remember { mutableStateOf(controller.isPlaying) }
     var title by remember { mutableStateOf(controller.mediaMetadata.title?.toString() ?: "") }
@@ -99,6 +99,13 @@ fun NowPlayingBar(controller: MediaController?) {
                     Text(artist, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodySmall)
                 }
+            }
+
+            IconButton(onClick = onLyricsClick) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_lyrics),
+                    contentDescription = "Lyrics",
+                )
             }
         }
     }

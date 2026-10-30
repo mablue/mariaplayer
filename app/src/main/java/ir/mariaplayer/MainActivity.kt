@@ -64,6 +64,7 @@ import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.PlaybackPrefs
 import ir.mariaplayer.data.SortMode
 import ir.mariaplayer.data.Track
+import ir.mariaplayer.lyrics.LyricsPanel
 import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
@@ -149,6 +150,7 @@ private fun AppRoot() {
     // tracks populated by LaunchedEffect above; deleted items removed in receiver
     val controller = rememberPlayerController()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
+    var lyricsSheetOpen by remember { mutableStateOf(false) }
 
     var sortMode by remember { mutableStateOf(SortMode.TITLE) }
     var prefsLoaded by remember { mutableStateOf(false) }
@@ -260,6 +262,7 @@ private fun AppRoot() {
             val idx = list.indexOfFirst { it.id == t.id }
             if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
         },
+        onLyricsClick = { lyricsSheetOpen = true },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
             if (Build.VERSION.SDK_INT >= 29) {
@@ -300,6 +303,10 @@ private fun AppRoot() {
             }
         },
     )
+
+    if (lyricsSheetOpen) {
+        LyricsPanel(controller) { lyricsSheetOpen = false }
+    }
 }
 
 private fun playQueue(
@@ -350,6 +357,7 @@ private fun LibraryScreen(
     onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
     onDeleteRequest: (Track) -> Unit,
+    onLyricsClick: () -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
@@ -396,7 +404,7 @@ private fun LibraryScreen(
                 },
             )
         },
-        bottomBar = { NowPlayingBar(controller) },
+        bottomBar = { NowPlayingBar(controller, onLyricsClick) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
             OutlinedTextField(
