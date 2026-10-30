@@ -78,15 +78,23 @@ object TagFavorites {
             }
         }
 
-    private fun copyToTemp(context: Context, uri: Uri): File? = try {
-        val ext = context.contentResolver.getType(uri)?.substringAfterLast('/') ?: "mp3"
-        val f = File.createTempFile("tag_", ".$ext", context.cacheDir)
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            f.outputStream().use { input.copyTo(it) }
-        } ?: return null
-        f
-    } catch (e: Exception) {
-        Log.w(TAG, "copyToTemp failed for $uri: ${e.message}")
-        null
+    private fun copyToTemp(context: Context, uri: Uri): File? {
+        return try {
+            val ext = context.contentResolver.getType(uri)?.substringAfterLast('/') ?: "mp3"
+            val f = File.createTempFile("tag_", ".$ext", context.cacheDir)
+            val stream = context.contentResolver.openInputStream(uri)
+            if (stream == null) {
+                f.delete()
+                null
+            } else {
+                stream.use { input ->
+                    f.outputStream().use { input.copyTo(it) }
+                }
+                f
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "copyToTemp failed for $uri: ${e.message}")
+            null
+        }
     }
 }
