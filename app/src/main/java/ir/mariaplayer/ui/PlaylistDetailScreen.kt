@@ -15,12 +15,15 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -57,6 +60,8 @@ fun PlaylistDetailScreen(
         playlist?.trackIds?.mapNotNull { byId[it] } ?: emptyList()
     }
 
+    var editMode by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -67,6 +72,13 @@ fun PlaylistDetailScreen(
                             painter = painterResource(R.drawable.ic_close),
                             contentDescription = "Back",
                         )
+                    }
+                },
+                actions = {
+                    if (tracks.size > 1) {
+                        TextButton(onClick = { editMode = !editMode }) {
+                            Text(if (editMode) "Done" else "Edit")
+                        }
                     }
                 },
             )
@@ -90,6 +102,10 @@ fun PlaylistDetailScreen(
 
             else -> LazyColumn(Modifier.fillMaxSize().padding(inner)) {
                 items(tracks, key = { it.id }) { t ->
+                    val idx = tracks.indexOfFirst { it.id == t.id }
+                    val canUp = editMode && idx > 0
+                    val canDown = editMode && idx >= 0 && idx < tracks.lastIndex
+
                     ListItem(
                         headlineContent = { Text(t.title) },
                         supportingContent = {
@@ -99,20 +115,62 @@ fun PlaylistDetailScreen(
                             )
                         },
                         trailingContent = {
-                            IconButton(onClick = {
-                                scope.launch {
-                                    PlaylistPrefs.removeTrack(context, playlistId, t.id)
+                            if (editMode) {
+                                Column {
+                                    IconButton(
+                                        enabled = canUp,
+                                        onClick = {
+                                            if (canUp) {
+                                                scope.launch {
+                                                    PlaylistPrefs.reorder(
+                                                        context, playlistId, idx - 1, t.id,
+                                                    )
+                                                }
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_arrow_up),
+                                            contentDescription = "Move up",
+                                            tint = if (canUp) MaterialTheme.colorScheme.primary
+                                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    IconButton(
+                                        enabled = canDown,
+                                        onClick = {
+                                            if (canDown) {
+                                                scope.launch {
+                                                    PlaylistPrefs.reorder(
+                                                        context, playlistId, idx + 1, t.id,
+                                                    )
+                                                }
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_arrow_down),
+                                            contentDescription = "Move down",
+                                            tint = if (canDown) MaterialTheme.colorScheme.primary
+                                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 }
-                            }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_delete),
-                                    contentDescription = "Remove from playlist",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                            } else {
+                                IconButton(onClick = {
+                                    scope.launch {
+                                        PlaylistPrefs.removeTrack(context, playlistId, t.id)
+                                    }
+                                }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_delete),
+                                        contentDescription = "Remove from playlist",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         },
-                        modifier = Modifier.clickable {
-                            val idx = tracks.indexOfFirst { it.id == t.id }
+                        modifier = Modifier.clickable(enabled = !editMode) {
                             if (idx >= 0) onPlayTrack(tracks, idx)
                         },
                     )
