@@ -149,3 +149,9 @@
 - existing vectors (ic_sort, ic_shuffle, etc.) have no tint attribute — they rely on Compose Icon()'s tint param / LocalContentColor.
 - learned: NEVER add android:tint to vector XML in this project. Compose Icon() handles tint. If a raw ImageView needs tint, use android:tint="@android:color/white" or set at runtime.
 - fixed-by: sed removed tint from ic_add, ic_arrow_up, ic_arrow_down, ic_lyrics, ic_playlist.
+
+## 2026-10-30 sed on XML attribute destroys tag close
+- tried: sed -i '/android:tint=/d' to remove tint from vectors
+- why-failed: the tint attribute shared a line with `>`, so sed deleted the closing `>` of <vector>. XML became <vector ... attrs <path> with no close.
+- learned: (1) NEVER sed-delete lines from XML; rewrite the file with cat >. (2) always validate XML with `python3 -c "import xml.etree.ElementTree as ET; ET.parse('file.xml')"` BEFORE commit.
+- fixed-by: rewrote 5 vectors without tint, validated with ElementTree.
