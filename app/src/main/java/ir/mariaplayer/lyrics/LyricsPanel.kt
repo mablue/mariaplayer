@@ -1,5 +1,7 @@
 package ir.mariaplayer.lyrics
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -40,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.session.MediaController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 
 private sealed interface LyricsState {
     data object Empty : LyricsState
@@ -49,6 +53,7 @@ private sealed interface LyricsState {
     data object NotFound : LyricsState
     data class NetworkError(val msg: String) : LyricsState
     data object Timeout : LyricsState
+    data object PasteSheet : LyricsState
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -179,12 +184,22 @@ fun LyricsPanel(
 
                 LyricsState.NotFound -> {
                     MessageBlock(
-                        "No lyrics found on LRCLIB.",
-                        "Try a different track, or fix the title in your library.",
+                        "No lyrics found.",
+                        "Try searching Google, or paste lyrics you find.",
                     )
                     Spacer(Modifier.height(8.dp))
-                    Row {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Button(onClick = { trigger += 1 }) { Text("Retry") }
+                        TextButton(onClick = {
+                            val q = URLEncoder.encode("$title $artist lyrics", "UTF-8")
+                            context.startActivity(Intent(Intent.ACTION_VIEW,
+                                Uri.parse("https://www.google.com/search?q=$q")))
+                        }) { Text("Google") }
+                        TextButton(onClick = { state = LyricsState.PasteSheet }) {
+                            Text("Paste")
+                        }
                     }
                 }
 
@@ -206,6 +221,40 @@ fun LyricsPanel(
                         Button(onClick = { trigger += 1 }) { Text("Retry") }
                     }
                 }
+                LyricsState.PasteSheet -> {
+                    var pasteText by remember { mutableStateOf("") }
+                    Column(Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = pasteText,
+                            onValueChange = { pasteText = it },
+                            label = { Text("Paste lyrics here") },
+                            minLines = 6,
+                            maxLines = 12,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            TextButton(onClick = { state = LyricsState.NotFound }) {
+                                Text("Cancel")
+                            }
+                            Button(
+                                enabled = pasteText.isNotBlank(),
+                                onClick = {
+                                    trackId?.let { id ->
+                                        scope.launch {
+                                            LyricsCache.writeLyrics(context, id, null, pasteText)
+                                            state = LyricsState.Plain(pasteText)
+                                        }
+                                    }
+                                },
+                            ) { Text("Save") }
+                        }
+                    }
+                }
+
             }
             Spacer(Modifier.height(16.dp))
         }

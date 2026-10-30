@@ -52,6 +52,14 @@ class LyricsFetcher(
                 lastError = e
             }
         }
+
+        // Second layer: Genius with strict filter (helps Persian)
+        for (q in candidates) {
+            try {
+                val r = GeniusProvider.fetch(q.title, q.artist)
+                if (r is LyricsFetchResult.Found) return@withContext r
+            } catch (_: Exception) {}
+        }
         if (lastError is SocketTimeoutException) LyricsFetchResult.Timeout
         else if (lastError != null) LyricsFetchResult.NetworkError(lastError!!.message ?: "IO")
         else LyricsFetchResult.NotFound

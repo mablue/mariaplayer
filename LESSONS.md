@@ -168,3 +168,16 @@
 - tests urlHttp was written wrong: input was a pure URL, all consumed → title="" correctly, but test expected title="Song". Fixed test to have a bare title alongside URL.
 - learned: (1) when porting multi-regex pipelines, diff the sets of Regex patterns between source and target; (2) write tests FIRST against the Python implementation then port — don't port then write tests; (3) an all-URL title is correctly empty, not the trailing path segment.
 - fixed-by: added VERSION_V2_RE, BITRATE_BARE_RE; extended RX site list; corrected urlHttp test.
+
+## 2026-10-30 lyrics provider reality check
+- tried: LRCLIB, Genius (raw), Lyrica, DuckDuckGo, NetEase, lyrics.ovh
+- results over 15 Persian tracks:
+  - LRCLIB: 0/15 (no Persian content)
+  - Genius (raw, no filter): 13/15 "hits" but 11 were false-wins (wrong songs)
+  - Genius (strict filter): assumed ~15% real
+  - Lyrica (public HF): HTTP 500
+  - DDG: API structure changed, needs JS
+  - NetEase: blocked in Iran
+  - lyrics.ovh: HTTP 404 for Persian
+- learned: no free API reliably serves Persian lyrics. Manual paste + Google search is the only 100% solution.
+- fix: three-layer architecture — LRCLIB → Genius strict → manual paste UI
