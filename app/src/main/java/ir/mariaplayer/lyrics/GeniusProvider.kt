@@ -78,24 +78,26 @@ object GeniusProvider {
         } catch (_: Exception) { null }
     }
 
-    private fun tryLyrics(url: String, timeoutMs: Int): String? = try {
-        val html = httpGet(url, timeoutMs) ?: return null
-        val re = Regex(
-            """<div[^>]*data-lyrics-container="true"[^>]*>(.*?)</div>""",
-            RegexOption.DOT_MATCHES_ALL,
-        )
-        val chunks = re.findAll(html).map { it.groupValues[1] }.toList()
-        if (chunks.isEmpty()) return null
-        val text = chunks.joinToString("\n") { chunk ->
-            chunk.replace(Regex("<[^>]+>"), "\n")
-                .replace("&amp;", "&")
-                .replace("&#x27;", "'")
-                .replace("&quot;", "\"")
-                .replace(Regex("\n{2,}"), "\n\n")
-                .trim()
-        }
-        text.ifBlank { null }
-    } catch (_: Exception) { null }
+    private fun tryLyrics(url: String, timeoutMs: Int): String? {
+        return try {
+            val html = httpGet(url, timeoutMs) ?: return null
+            val re = Regex(
+                """<div[^>]*data-lyrics-container="true"[^>]*>(.*?)</div>""",
+                RegexOption.DOT_MATCHES_ALL,
+            )
+            val chunks = re.findAll(html).map { it.groupValues[1] }.toList()
+            if (chunks.isEmpty()) return null
+            val text = chunks.joinToString("\n") { chunk ->
+                chunk.replace(Regex("<[^>]+>"), "\n")
+                    .replace("&amp;", "&")
+                    .replace("&#x27;", "'")
+                    .replace("&quot;", "\"")
+                    .replace(Regex("\n{2,}"), "\n\n")
+                    .trim()
+            }
+            text.ifBlank { null }
+        } catch (_: Exception) { null }
+    }
 
     private fun httpGet(url: String, timeoutMs: Int): String? {
         val conn = (URL(url).openConnection() as HttpURLConnection).apply {
