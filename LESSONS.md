@@ -99,3 +99,20 @@
   material-icons-extended. If a future UI genuinely needs the extended set,
   add it once and keep it — never mix.
 - fixed-by: NowPlayingBar uses TextButton with "Play"/"Pause" labels
+
+## 2026-10-30 ux — delete flow had 3 stacked confirmations
+- tried: DeleteActivity AlertDialog + MediaStore.createDeleteRequest + notification fallback
+- why-failed: from library: 2 dialogs. from notification: 4 user actions
+  (tap delete in media notif -> heads-up notif -> pull down -> tap Delete ->
+   activity dialog -> system dialog -> Allow). Unusable.
+  Also list stayed stale after delete (produceState(tracks) never re-ran)
+  and player queue kept the deleted MediaItem.
+- learned: system createDeleteRequest dialog IS already a confirmation.
+  Any custom AlertDialog before it is redundant and hostile.
+  Fix: kill DeleteActivity's UI (Theme.Translucent.NoTitleBar), go straight
+  to launcher. From MainActivity use launcher directly (no DeleteActivity hop).
+  For rescan: broadcast ACTION_TRACK_DELETED from delete success; MainActivity
+  receiver bumps reloadKey -> produceState(tracks) re-runs.
+  For queue: removeMediaItem on matching URIs; ExoPlayer auto-advances on
+  current-item removal. Never leave dangling MediaItems pointing at deleted URIs.
+- fixed-by: this commit

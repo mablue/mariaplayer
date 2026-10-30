@@ -1,6 +1,12 @@
 package ir.mariaplayer
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
+import android.net.Uri
+import android.provider.MediaStore
+import android.widget.Toast
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -8,6 +14,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -31,7 +38,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -90,7 +99,45 @@ private fun AppRoot() {
         return
     }
 
-    val tracks by produceState<List<Track>?>(initialValue = null, hasAudio) {
+    var reloadKey by remember { mutableIntStateOf(0) }
+    var pendingDeleteUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingDeleteTitle by remember { mutableStateOf("") }
+
+    val deleteLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        val uri = pendingDeleteUri
+        val title = pendingDeleteTitle
+        pendingDeleteUri = null
+        if (result.resultCode == android.app.Activity.RESULT_OK && uri != null) {
+            Toast.makeText(context, "Deleted: $title", Toast.LENGTH_SHORT).show()
+            context.sendBroadcast(
+                Intent(ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED)
+                    .setPackage(context.packageName)
+                    .putExtra(ir.mariaplayer.playback.PlaybackService.EXTRA_DELETED_URI, uri.toString())
+            )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context?, i: Intent?) {
+                if (i?.action == ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED) {
+                    reloadKey++
+                }
+            }
+        }
+        val filter = IntentFilter(ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED)
+        if (Build.VERSION.SDK_INT >= 33) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            context.registerReceiver(receiver, filter)
+        }
+        onDispose { try { context.unregisterReceiver(receiver) } catch (_: Exception) {} }
+    }
+
+    val tracks by produceState<List<Track>?>(initialValue = null, hasAudio, reloadKey) {
         value = LibraryScanner.scan(context)
     }
     val controller = rememberPlayerController()
@@ -186,12 +233,43 @@ private fun AppRoot() {
             if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
         },
         onDeleteRequest = { t ->
-            context.startActivity(
-                Intent(context, DeleteActivity::class.java).apply {
-                    putExtra(DeleteActivity.EXTRA_URI, t.contentUri)
-                    putExtra(DeleteActivity.EXTRA_TITLE, t.title)
+            val uri = Uri.parse(t.contentUri)
+            if (Build.VERSION.SDK_INT >= 29) {
+                try {
+                    val pi = MediaStore.createDeleteRequest(context.contentResolver, listOf(uri))
+                    pendingDeleteUri = uri
+                    pendingDeleteTitle = t.title
+                    deleteLauncher.launch(IntentSenderRequest.Builder(pi.intentSender).build())
+                } catch (_: Exception) {
+                    try {
+                        val rows = context.contentResolver.delete(uri, null, null)
+                        if (rows > 0) {
+                            Toast.makeText(context, "Deleted: " + t.title, Toast.LENGTH_SHORT).show()
+                            context.sendBroadcast(
+                                Intent(ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED)
+                                    .setPackage(context.packageName)
+                                    .putExtra(ir.mariaplayer.playback.PlaybackService.EXTRA_DELETED_URI, t.contentUri)
+                            )
+                        }
+                    } catch (e2: Exception) {
+                        Toast.makeText(context, "Delete failed: " + e2.message, Toast.LENGTH_LONG).show()
+                    }
                 }
-            )
+            } else {
+                try {
+                    val rows = context.contentResolver.delete(uri, null, null)
+                    if (rows > 0) {
+                        Toast.makeText(context, "Deleted: " + t.title, Toast.LENGTH_SHORT).show()
+                        context.sendBroadcast(
+                            Intent(ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED)
+                                .setPackage(context.packageName)
+                                .putExtra(ir.mariaplayer.playback.PlaybackService.EXTRA_DELETED_URI, t.contentUri)
+                        )
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Delete failed: " + e.message, Toast.LENGTH_LONG).show()
+                }
+            }
         },
     )
 }

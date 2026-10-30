@@ -45,9 +45,14 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
         override fun onReceive(context: Context?, intent: Intent?) {
             val deletedUri = intent?.getStringExtra(EXTRA_DELETED_URI) ?: return
             val player = mediaSession?.player ?: return
-            val current = player.currentMediaItem ?: return
-            if (current.localConfiguration?.uri.toString() == deletedUri) {
-                player.seekToNextMediaItem()
+            val toRemove = ArrayList<Int>()
+            for (i in 0 until player.mediaItemCount) {
+                if (player.getMediaItemAt(i).localConfiguration?.uri?.toString() == deletedUri) {
+                    toRemove.add(i)
+                }
+            }
+            for (i in toRemove.sortedDescending()) {
+                try { player.removeMediaItem(i) } catch (_: Exception) {}
             }
         }
     }
@@ -169,9 +174,16 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
      * notification-initiated PendingIntent is granted BAL.
      */
     private fun requestDelete(uri: Uri, title: String) {
-        // A MediaSessionService cannot reliably start an Activity on Android 10+.
-        // Post a heads-up notification whose action PendingIntent is granted BAL.
-        postDeleteConfirmNotification(uri, title)
+        val intent = Intent(this, DeleteActivity::class.java).apply {
+            putExtra(DeleteActivity.EXTRA_URI, uri.toString())
+            putExtra(DeleteActivity.EXTRA_TITLE, title)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        try {
+            startActivity(intent)
+        } catch (_: Exception) {
+            postDeleteConfirmNotification(uri, title)
+        }
     }
 
     private fun postDeleteConfirmNotification(uri: Uri, title: String) {
