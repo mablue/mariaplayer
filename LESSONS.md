@@ -181,3 +181,9 @@
   - lyrics.ovh: HTTP 404 for Persian
 - learned: no free API reliably serves Persian lyrics. Manual paste + Google search is the only 100% solution.
 - fix: three-layer architecture — LRCLIB → Genius strict → manual paste UI
+
+## 2026-10-30 Kotlin: return inside expression-body function prohibited
+- tried: private fun foo() = try { ... return null ... } catch { null }
+- why-failed: Kotlin expression-body functions (= expr) cannot contain return statements
+- learned: when you need return inside try/catch, use block body: fun foo() { return try { ... } catch { ... } }
+- fixed-by: rewrote trySearch to block body with `return try { ... } catch { null }`

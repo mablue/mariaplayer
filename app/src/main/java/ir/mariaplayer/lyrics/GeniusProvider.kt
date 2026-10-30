@@ -51,30 +51,32 @@ object GeniusProvider {
 
     private data class Cand(val trackName: String, val artistName: String, val url: String)
 
-    private fun trySearch(url: String, timeoutMs: Int): List<Cand>? = try {
-        val body = httpGet(url, timeoutMs) ?: return null
-        val sections = JSONObject(body).getJSONObject("response").getJSONArray("sections")
-        val out = mutableListOf<Cand>()
-        for (i in 0 until sections.length()) {
-            val sec = sections.getJSONObject(i)
-            if (sec.optString("type") != "song") continue
-            val hits = sec.optJSONArray("hits") ?: continue
-            for (j in 0 until hits.length()) {
-                val r = hits.getJSONObject(j).getJSONObject("result")
-                val pageUrl = r.optString("url")
-                if (pageUrl.isNotBlank()) {
-                    out += Cand(
-                        trackName = r.optString("title", ""),
-                        artistName = r.optJSONObject("primary_artist")?.optString("name", "").orEmpty(),
-                        url = pageUrl,
-                    )
-                    if (out.size >= 3) break
+    private fun trySearch(url: String, timeoutMs: Int): List<Cand>? {
+        return try {
+            val body = httpGet(url, timeoutMs) ?: return null
+            val sections = JSONObject(body).getJSONObject("response").getJSONArray("sections")
+            val out = mutableListOf<Cand>()
+            for (i in 0 until sections.length()) {
+                val sec = sections.getJSONObject(i)
+                if (sec.optString("type") != "song") continue
+                val hits = sec.optJSONArray("hits") ?: continue
+                for (j in 0 until hits.length()) {
+                    val r = hits.getJSONObject(j).getJSONObject("result")
+                    val pageUrl = r.optString("url")
+                    if (pageUrl.isNotBlank()) {
+                        out += Cand(
+                            trackName = r.optString("title", ""),
+                            artistName = r.optJSONObject("primary_artist")?.optString("name", "").orEmpty(),
+                            url = pageUrl,
+                        )
+                        if (out.size >= 3) break
+                    }
                 }
+                if (out.size >= 3) break
             }
-            if (out.size >= 3) break
-        }
-        out
-    } catch (_: Exception) { null }
+            out
+        } catch (_: Exception) { null }
+    }
 
     private fun tryLyrics(url: String, timeoutMs: Int): String? = try {
         val html = httpGet(url, timeoutMs) ?: return null
