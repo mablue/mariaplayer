@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +57,7 @@ import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.PermissionScreen
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import java.util.Locale
 
@@ -88,6 +90,7 @@ private fun AppRoot() {
         value = LibraryScanner.scan(context)
     }
     val controller = rememberPlayerController()
+    val scope = rememberCoroutineScope()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
 
     var sortMode by remember { mutableStateOf(SortMode.TITLE) }
@@ -163,7 +166,7 @@ private fun AppRoot() {
         onFavOnlyChange = { favOnly = it },
         favorites = favorites,
         onToggleFavorite = { id ->
-            kotlinx.coroutines.MainScope().launchFavorite(context, id)
+            scope.launch { FavoritesPrefs.toggle(context, id) }
         },
         onShuffleClick = {
             val c = controller ?: return@LibraryScreen
@@ -183,14 +186,6 @@ private fun AppRoot() {
             if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
         },
     )
-}
-
-private fun kotlinx.coroutines.CoroutineScope.launchFavorite(
-    context: android.content.Context, id: Long,
-) {
-    launch(kotlinx.coroutines.Dispatchers.IO) {
-        FavoritesPrefs.toggle(context, id)
-    }
 }
 
 private fun playQueue(
