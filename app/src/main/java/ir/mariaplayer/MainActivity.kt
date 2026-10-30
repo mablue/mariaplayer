@@ -22,16 +22,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
@@ -62,8 +60,8 @@ import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.PermissionScreen
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -77,6 +75,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppRoot() {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     if (Build.VERSION.SDK_INT >= 33) {
         val launcher = rememberLauncherForActivityResult(
@@ -95,7 +94,6 @@ private fun AppRoot() {
         value = LibraryScanner.scan(context)
     }
     val controller = rememberPlayerController()
-    val scope = rememberCoroutineScope()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
 
     var sortMode by remember { mutableStateOf(SortMode.TITLE) }
@@ -132,7 +130,6 @@ private fun AppRoot() {
             .toList()
     }
 
-    // Resume last queue+position
     LaunchedEffect(controller, tracks) {
         val c = controller ?: return@LaunchedEffect
         val list = tracks ?: return@LaunchedEffect
@@ -155,7 +152,6 @@ private fun AppRoot() {
         }
     }
 
-
     LibraryScreen(
         allTracks = tracks,
         visible = visible,
@@ -171,9 +167,7 @@ private fun AppRoot() {
         favOnly = favOnly,
         onFavOnlyChange = { favOnly = it },
         favorites = favorites,
-        onToggleFavorite = { id ->
-            scope.launch { FavoritesPrefs.toggle(context, id) }
-        },
+        onToggleFavorite = { id -> scope.launch { FavoritesPrefs.toggle(context, id) } },
         onShuffleClick = {
             val c = controller ?: return@LibraryScreen
             val list = visible ?: return@LibraryScreen
@@ -192,11 +186,12 @@ private fun AppRoot() {
             if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
         },
         onDeleteRequest = { t ->
-            val intent = Intent(context, DeleteActivity::class.java).apply {
-                putExtra(DeleteActivity.EXTRA_URI, t.contentUri)
-                putExtra(DeleteActivity.EXTRA_TITLE, t.title)
-            }
-            context.startActivity(intent)
+            context.startActivity(
+                Intent(context, DeleteActivity::class.java).apply {
+                    putExtra(DeleteActivity.EXTRA_URI, t.contentUri)
+                    putExtra(DeleteActivity.EXTRA_TITLE, t.title)
+                }
+            )
         },
     )
 }
@@ -252,7 +247,8 @@ private fun LibraryScreen(
     var folderMenuOpen by remember { mutableStateOf(false) }
 
     val folderList = remember(allTracks) {
-        allTracks?.map { it.folder }?.filter { it.isNotEmpty() }?.distinct()?.sorted() ?: emptyList()
+        allTracks?.map { it.folder }?.filter { it.isNotEmpty() }?.distinct()?.sorted()
+            ?: emptyList()
     }
 
     Scaffold(
@@ -260,11 +256,18 @@ private fun LibraryScreen(
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
+                    // Sort
                     Box {
-                        TextButton(onClick = { sortMenuOpen = true }) {
-                            Text("Sort: ${sortMode.label}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        IconButton(onClick = { sortMenuOpen = true }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_sort),
+                                contentDescription = "Sort by ${sortMode.label}",
+                            )
                         }
-                        DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
+                        DropdownMenu(
+                            expanded = sortMenuOpen,
+                            onDismissRequest = { sortMenuOpen = false },
+                        ) {
                             SortMode.entries.forEach { m ->
                                 DropdownMenuItem(
                                     text = { Text(m.label) },
@@ -273,8 +276,14 @@ private fun LibraryScreen(
                             }
                         }
                     }
-                    TextButton(onClick = onShuffleClick) {
-                        Text(if (shuffleOn) "Shuffle ON" else "Shuffle")
+                    // Shuffle
+                    IconButton(onClick = onShuffleClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_shuffle),
+                            contentDescription = if (shuffleOn) "Shuffle on" else "Shuffle off",
+                            tint = if (shuffleOn) MaterialTheme.colorScheme.primary
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 },
             )
@@ -290,33 +299,48 @@ private fun LibraryScreen(
                 placeholder = { Text("Search title, artist, album") },
                 trailingIcon = {
                     if (query.isNotEmpty()) {
-                        TextButton(onClick = { onQueryChange("") }) { Text("Clear") }
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_close),
+                                contentDescription = "Clear search",
+                            )
+                        }
                     }
                 },
             )
-            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                TextButton(onClick = { onFavOnlyChange(!favOnly) }) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                // Favorites filter
+                IconButton(onClick = { onFavOnlyChange(!favOnly) }) {
                     Icon(
-                        painter = androidx.compose.ui.res.painterResource(
+                        painter = painterResource(
                             if (favOnly) R.drawable.ic_favorite_filled
                             else R.drawable.ic_favorite_border
                         ),
-                        contentDescription = null,
+                        contentDescription =
+                            if (favOnly) "Favorites filter on" else "Favorites filter off",
+                        tint = if (favOnly) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.width(4.dp))
-                    Text(if (favOnly) "Favorites ON" else "Favorites")
                 }
+                // Folder filter
                 Box {
-                    TextButton(onClick = { folderMenuOpen = true }) {
-                        Text(
-                            if (folderFilter.isEmpty()) "Folder: All"
-                            else "Folder: $folderFilter",
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    IconButton(onClick = { folderMenuOpen = true }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_folder),
+                            contentDescription =
+                                if (folderFilter.isEmpty()) "Folder filter: all"
+                                else "Folder filter: $folderFilter",
+                            tint = if (folderFilter.isNotEmpty())
+                                       MaterialTheme.colorScheme.primary
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    DropdownMenu(expanded = folderMenuOpen, onDismissRequest = { folderMenuOpen = false }) {
+                    DropdownMenu(
+                        expanded = folderMenuOpen,
+                        onDismissRequest = { folderMenuOpen = false },
+                    ) {
                         DropdownMenuItem(
-                            text = { Text("All") },
+                            text = { Text("All folders") },
                             onClick = { onFolderFilterChange(""); folderMenuOpen = false },
                         )
                         folderList.forEach { f ->
@@ -328,7 +352,12 @@ private fun LibraryScreen(
                     }
                 }
                 if (folderFilter.isNotEmpty()) {
-                    TextButton(onClick = { onFolderFilterChange("") }) { Text("Clear") }
+                    IconButton(onClick = { onFolderFilterChange("") }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_close),
+                            contentDescription = "Clear folder filter",
+                        )
+                    }
                 }
             }
             Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -339,7 +368,7 @@ private fun LibraryScreen(
                             allTracks.isNullOrEmpty() ->
                                 "No audio files found.\nAdd music to /sdcard/Music, then reopen the app."
                             query.isNotBlank() -> "No results for \"$query\""
-                            favOnly -> "No favorites yet.\nTap ♡ next to a track to add."
+                            favOnly -> "No favorites yet.\nTap the heart next to a track to add."
                             folderFilter.isNotEmpty() -> "No tracks in \"$folderFilter\""
                             else -> "No tracks match the current filters."
                         }
@@ -351,7 +380,8 @@ private fun LibraryScreen(
                                 headlineContent = { Text(t.title) },
                                 supportingContent = {
                                     Text(
-                                        listOfNotNull(t.artist, t.album, t.folder, formatDuration(t.durationMs))
+                                        listOfNotNull(t.artist, t.album, t.folder,
+                                                      formatDuration(t.durationMs))
                                             .joinToString(" - ")
                                     )
                                 },
@@ -359,19 +389,22 @@ private fun LibraryScreen(
                                     Row {
                                         IconButton(onClick = { onToggleFavorite(t.id) }) {
                                             Icon(
-                                                painter = androidx.compose.ui.res.painterResource(
+                                                painter = painterResource(
                                                     if (t.id in favorites) R.drawable.ic_favorite_filled
                                                     else R.drawable.ic_favorite_border
                                                 ),
-                                                contentDescription = if (t.id in favorites) "Unfavorite" else "Favorite",
-                                                tint = if (t.id in favorites) MaterialTheme.colorScheme.primary
+                                                contentDescription = if (t.id in favorites)
+                                                    "Remove from favorites"
+                                                else "Add to favorites",
+                                                tint = if (t.id in favorites)
+                                                           MaterialTheme.colorScheme.primary
                                                        else MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }
                                         IconButton(onClick = { onDeleteRequest(t) }) {
                                             Icon(
-                                                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_delete),
-                                                contentDescription = "Delete",
+                                                painter = painterResource(R.drawable.ic_delete),
+                                                contentDescription = "Delete track",
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }

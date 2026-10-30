@@ -14,25 +14,47 @@ import androidx.activity.result.contract.ActivityResultContracts
 import ir.mariaplayer.playback.PlaybackService
 
 class DeleteActivity : ComponentActivity() {
+
+    private var pendingUri: Uri? = null
+    private var pendingTitle: String = ""
+
+    // Registered as a field initializer → runs in the constructor, before
+    // the Activity reaches STARTED. Calling registerForActivityResult()
+    // later (e.g. from a dialog button) throws IllegalStateException.
+    private val deleteLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        val uri = pendingUri
+        val title = pendingTitle
+        if (result.resultCode == Activity.RESULT_OK && uri != null) {
+            Toast.makeText(this, "Deleted: $title", Toast.LENGTH_SHORT).show()
+            notifyDeleted(uri)
+        }
+        finish()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val uriStr = intent.getStringExtra(EXTRA_URI)
         val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         if (uriStr == null) { finish(); return }
+
         val uri = Uri.parse(uriStr)
+        pendingUri = uri
+        pendingTitle = title
 
         val folder = queryFolder(uri)
         val msg = buildString {
             append("\"$title\"")
             if (folder.isNotBlank()) append("\n\nFolder: ").append(folder)
-            append("\n\nThis permanently deletes the file from this device.")
-            append(" It cannot be undone.")
+            append("\n\nThis permanently deletes the file. Cannot be undone.")
         }
 
         AlertDialog.Builder(this)
             .setTitle("Delete music file?")
             .setMessage(msg)
-            .setPositiveButton("Delete permanently") { _, _ -> proceedDelete(uri, title) }
+            .setPositiveButton("Delete") { _, _ -> proceedDelete() }
             .setNegativeButton("Cancel") { _, _ -> finish() }
             .setOnCancelListener { finish() }
             .show()
@@ -48,19 +70,18 @@ class DeleteActivity : ComponentActivity() {
         } ?: ""
     } catch (_: Exception) { "" }
 
-    private fun proceedDelete(uri: Uri, title: String) {
+    private fun proceedDelete() {
+        val uri = pendingUri ?: run { finish(); return }
+        val title = pendingTitle
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val launcher = registerForActivityResult(
-                ActivityResultContracts.StartIntentSenderForResult()
-            ) { result ->
-                if (result.resultCode == Activity.RESULT_OK) {
-                    Toast.makeText(this, "Deleted: $title", Toast.LENGTH_SHORT).show()
-                    notifyDeleted(uri)
-                }
+            try {
+                val pi = MediaStore.createDeleteRequest(contentResolver, listOf(uri))
+                deleteLauncher.launch(IntentSenderRequest.Builder(pi.intentSender).build())
+            } catch (e: Exception) {
+                Toast.makeText(this, "Cannot delete: ${e.message}", Toast.LENGTH_LONG).show()
                 finish()
             }
-            val pi = MediaStore.createDeleteRequest(contentResolver, listOf(uri))
-            launcher.launch(IntentSenderRequest.Builder(pi.intentSender).build())
         } else {
             try {
                 contentResolver.delete(uri, null, null)
