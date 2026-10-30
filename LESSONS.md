@@ -142,3 +142,10 @@
 - why-failed: anchor for LibraryScreen call assumed onLyricsClick BEFORE onDeleteRequest; actual order was reverse (PR-L3b added onLyricsClick first). SystemExit fired BEFORE p.write_text -> MainActivity unchanged. get-apk.sh green because untouched file compiles fine.
 - learned: (1) verify every anchor with grep -n BEFORE replacing; (2) python patch must print OK per step AND abort with real context on failure; (3) run grep -c verify AFTER commit; (4) get-apk.sh SUCCESS does NOT mean the feature works.
 - fixed-by: PR-P1-fix-2 — corrected anchors (onDeleteRequest included), verified counts, rewrote both screens.
+
+## 2026-10-30 vectors break with attr/colorControlNormal
+- tried: new vector drawables with android:tint="?attr/colorControlNormal"
+- why-failed: app theme is @android:style/Theme.Material.NoActionBar (platform), not AppCompat. Platform provides ?android:attr/colorControlNormal, NOT ?attr/colorControlNormal. AAPT link fails.
+- existing vectors (ic_sort, ic_shuffle, etc.) have no tint attribute — they rely on Compose Icon()'s tint param / LocalContentColor.
+- learned: NEVER add android:tint to vector XML in this project. Compose Icon() handles tint. If a raw ImageView needs tint, use android:tint="@android:color/white" or set at runtime.
+- fixed-by: sed removed tint from ic_add, ic_arrow_up, ic_arrow_down, ic_lyrics, ic_playlist.
