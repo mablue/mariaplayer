@@ -1,6 +1,7 @@
 package ir.mariaplayer
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -190,6 +191,13 @@ private fun AppRoot() {
             val idx = list.indexOfFirst { it.id == t.id }
             if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
         },
+        onDeleteRequest = { t ->
+            val intent = Intent(context, DeleteActivity::class.java).apply {
+                putExtra(DeleteActivity.EXTRA_URI, t.contentUri)
+                putExtra(DeleteActivity.EXTRA_TITLE, t.title)
+            }
+            context.startActivity(intent)
+        },
     )
 }
 
@@ -238,6 +246,7 @@ private fun LibraryScreen(
     onToggleFavorite: (Long) -> Unit,
     onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
+    onDeleteRequest: (Track) -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
