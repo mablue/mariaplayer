@@ -54,7 +54,7 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
 
     override fun onCreate() {
         super.onCreate()
-        setMediaNotificationProvider(MariaNotificationProvider(this))
+        setMediaNotificationProvider(MariaNotificationProvider(this) { favorites })
 
         scope.launch {
             FavoritesPrefs.observe(this@PlaybackService).collectLatest { favs ->
@@ -169,16 +169,9 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
      * notification-initiated PendingIntent is granted BAL.
      */
     private fun requestDelete(uri: Uri, title: String) {
-        val intent = Intent(this, DeleteActivity::class.java).apply {
-            putExtra(DeleteActivity.EXTRA_URI, uri.toString())
-            putExtra(DeleteActivity.EXTRA_TITLE, title)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        }
-        try {
-            startActivity(intent)
-        } catch (_: Exception) {
-            postDeleteConfirmNotification(uri, title)
-        }
+        // A MediaSessionService cannot reliably start an Activity on Android 10+.
+        // Post a heads-up notification whose action PendingIntent is granted BAL.
+        postDeleteConfirmNotification(uri, title)
     }
 
     private fun postDeleteConfirmNotification(uri: Uri, title: String) {
