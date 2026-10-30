@@ -187,3 +187,20 @@
 - why-failed: Kotlin expression-body functions (= expr) cannot contain return statements
 - learned: when you need return inside try/catch, use block body: fun foo() { return try { ... } catch { ... } }
 - fixed-by: rewrote trySearch to block body with `return try { ... } catch { null }`
+
+## 2026-10-30 SEARCH/REPLACE protocol (user directive)
+- user decision: SEARCH/REPLACE is THE patch method from this date forward
+- reason: 4 broken patches this session from guessed anchors in s.replace()
+  - sed -i '/android:tint=/d' deleted the tag close '>' — XML invalid
+  - python s.replace(guessed_anchor) fired SystemExit BEFORE p.write_text
+    -> 3 PRs (P1b1/b2/b3) never wired to MainActivity
+  - get-apk.sh reported SUCCESS because unmodified MainActivity compiled fine
+    -> dead code shipped 3 times
+- protocol:
+  - every patch = one or more <<<<<<< SEARCH / ======= / >>>>>>> REPLACE blocks
+  - SEARCH must appear exactly once (0 or 2+ -> abort)
+  - apply via tools/apply-patch.py <patch.txt> <target>
+  - verify after apply with grep -n
+  - commit + get-apk.sh in same message
+- NEVER: sed -i on XML; s.replace(guessed); patch scripts without uniqueness check
+- EXCEPTION: LESSONS.md itself uses cat >> (append-only by its own header)
