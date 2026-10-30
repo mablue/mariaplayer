@@ -13,8 +13,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
-import androidx.media3.session.ConnectionResult
 import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSession.ConnectionResult
+import androidx.media3.session.MediaSession.ConnectionResult.AcceptedResultBuilder
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
@@ -114,11 +115,11 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
     override fun onConnect(
         session: MediaSession,
         controller: MediaSession.ControllerInfo,
-    ): ConnectionResult {
-        val commands = ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+    ): MediaSession.ConnectionResult {
+        val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
             .add(SessionCommand(CMD_FAVORITE, Bundle.EMPTY))
             .build()
-        return ConnectionResult.AcceptedResultBuilder(session)
+        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
             .setAvailableSessionCommands(commands)
             .build()
     }

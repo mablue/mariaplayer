@@ -20,12 +20,13 @@ class MariaNotificationProvider(
         mediaButtons: ImmutableList<CommandButton>,
         builder: NotificationCompat.Builder,
         actionFactory: MediaNotification.ActionFactory,
-    ): ImmutableList<Int> {
-        val compact = super.addNotificationActions(
+    ): IntArray {
+        // media3 1.5.1: super returns IntArray (indices of actions it added)
+        val added: IntArray = super.addNotificationActions(
             mediaSession, mediaButtons, builder, actionFactory
         )
-        val item = mediaSession.player.currentMediaItem ?: return compact
-        val uri = item.localConfiguration?.uri ?: return compact
+        val item = mediaSession.player.currentMediaItem ?: return added
+        val uri = item.localConfiguration?.uri ?: return added
         val title = item.mediaMetadata.title?.toString().orEmpty()
 
         val intent = Intent(ctx, DeleteActivity::class.java).apply {
@@ -40,6 +41,6 @@ class MariaNotificationProvider(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         builder.addAction(android.R.drawable.ic_menu_delete, "Delete", pi)
-        return compact
+        return added
     }
 }
