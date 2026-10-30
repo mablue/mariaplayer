@@ -30,9 +30,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.media3.session.MediaController
 import ir.mariaplayer.R
 import ir.mariaplayer.data.Playlist
 import ir.mariaplayer.data.PlaylistPrefs
+import ir.mariaplayer.playback.NowPlayingBar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -41,6 +43,8 @@ import kotlinx.coroutines.launch
 fun PlaylistsScreen(
     onBack: () -> Unit,
     onOpenPlaylist: (Long) -> Unit,
+    controller: MediaController?,
+    onLyricsClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -67,6 +71,7 @@ fun PlaylistsScreen(
                 },
             )
         },
+        bottomBar = { NowPlayingBar(controller, onLyricsClick) },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 newName = ""

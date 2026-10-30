@@ -17,6 +17,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -68,7 +69,10 @@ import ir.mariaplayer.lyrics.LyricsPanel
 import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
+import ir.mariaplayer.ui.AddToPlaylistSheet
 import ir.mariaplayer.ui.PermissionScreen
+import ir.mariaplayer.ui.PlaylistDetailScreen
+import ir.mariaplayer.ui.PlaylistsScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -151,6 +155,8 @@ private fun AppRoot() {
     val controller = rememberPlayerController()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
     var lyricsSheetOpen by remember { mutableStateOf(false) }
+    var screen by rememberSaveable { mutableStateOf("library") }
+    var pendingTrackForPlaylist by remember { mutableStateOf<Track?>(null) }
 
     var sortMode by remember { mutableStateOf(SortMode.TITLE) }
     var prefsLoaded by remember { mutableStateOf(false) }
@@ -229,7 +235,33 @@ private fun AppRoot() {
         onDispose { c.removeListener(listener) }
     }
 
-    LibraryScreen(
+    when {
+        screen == "playlists" -> {
+            PlaylistsScreen(
+                onBack = { screen = "library" },
+                onOpenPlaylist = { id -> screen = "playlist:$id" },
+                controller = controller,
+                onLyricsClick = { lyricsSheetOpen = true },
+            )
+        }
+        screen.startsWith("playlist:") -> {
+            val pid = screen.removePrefix("playlist:").toLongOrNull()
+            if (pid == null) {
+                androidx.compose.runtime.LaunchedEffect(Unit) { screen = "playlists" }
+            } else {
+                PlaylistDetailScreen(
+                    playlistId = pid,
+                    allTracks = tracks ?: emptyList(),
+                    controller = controller,
+                    onPlayTrack = { list, idx ->
+                        playQueue(controller, list, idx, 0L, autoPlay = true)
+                    },
+                    onBack = { screen = "playlists" },
+                    onLyricsClick = { lyricsSheetOpen = true },
+                )
+            }
+        }
+        else -> LibraryScreen(
         allTracks = tracks,
         visible = visible,
         scanning = tracks == null,
@@ -262,7 +294,9 @@ private fun AppRoot() {
             val idx = list.indexOfFirst { it.id == t.id }
             if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
         },
+        onTrackLongClick = { t -> pendingTrackForPlaylist = t },
         onLyricsClick = { lyricsSheetOpen = true },
+        onPlaylistsClick = { screen = "playlists" },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
             if (Build.VERSION.SDK_INT >= 29) {
@@ -303,9 +337,14 @@ private fun AppRoot() {
             }
         },
     )
+    }
 
     if (lyricsSheetOpen) {
         LyricsPanel(controller) { lyricsSheetOpen = false }
+    }
+
+    pendingTrackForPlaylist?.let { pending ->
+        AddToPlaylistSheet(pending) { pendingTrackForPlaylist = null }
     }
 }
 
@@ -357,7 +396,9 @@ private fun LibraryScreen(
     onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
     onDeleteRequest: (Track) -> Unit,
+    onTrackLongClick: (Track) -> Unit,
     onLyricsClick: () -> Unit,
+    onPlaylistsClick: () -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
@@ -372,6 +413,12 @@ private fun LibraryScreen(
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
+                    IconButton(onClick = onPlaylistsClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_playlist),
+                            contentDescription = "Playlists",
+                        )
+                    }
                     // Sort
                     Box {
                         IconButton(onClick = { sortMenuOpen = true }) {
@@ -526,7 +573,10 @@ private fun LibraryScreen(
                                         }
                                     }
                                 },
-                                modifier = Modifier.clickable { onTrackClick(t) },
+                                modifier = Modifier.combinedClickable(
+                                    onClick = { onTrackClick(t) },
+                                    onLongClick = { onTrackLongClick(t) },
+                                ),
                             )
                             HorizontalDivider()
                         }

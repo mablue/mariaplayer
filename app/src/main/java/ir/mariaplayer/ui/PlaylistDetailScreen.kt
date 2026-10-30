@@ -34,6 +34,7 @@ import ir.mariaplayer.R
 import ir.mariaplayer.data.Playlist
 import ir.mariaplayer.data.PlaylistPrefs
 import ir.mariaplayer.data.Track
+import ir.mariaplayer.playback.NowPlayingBar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -46,6 +47,7 @@ fun PlaylistDetailScreen(
     controller: MediaController?,
     onPlayTrack: (List<Track>, Int) -> Unit,
     onBack: () -> Unit,
+    onLyricsClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -83,6 +85,7 @@ fun PlaylistDetailScreen(
                 },
             )
         },
+        bottomBar = { NowPlayingBar(controller, onLyricsClick) },
     ) { inner ->
         when {
             playlist == null -> Box(
@@ -123,14 +126,10 @@ fun PlaylistDetailScreen(
                                         onClick = {
                                             if (canUp) {
                                                 scope.launch {
-                                                    // Use the original trackIds index (not visible idx)
-                                                    // because some IDs may reference deleted files.
-                                                    val rawIdx = playlist.trackIds.indexOf(t.id)
-                                                    if (rawIdx > 0) {
-                                                        PlaylistPrefs.reorder(
-                                                            context, playlistId, rawIdx - 1, t.id,
-                                                        )
-                                                    }
+                                                    val r = playlist.trackIds.indexOf(t.id)
+                                                    if (r > 0) PlaylistPrefs.reorder(
+                                                        context, playlistId, r - 1, t.id,
+                                                    )
                                                 }
                                             }
                                         },
@@ -147,12 +146,11 @@ fun PlaylistDetailScreen(
                                         onClick = {
                                             if (canDown) {
                                                 scope.launch {
-                                                    val rawIdx = playlist.trackIds.indexOf(t.id)
-                                                    if (rawIdx >= 0 && rawIdx < playlist.trackIds.lastIndex) {
+                                                    val r = playlist.trackIds.indexOf(t.id)
+                                                    if (r >= 0 && r < playlist.trackIds.lastIndex)
                                                         PlaylistPrefs.reorder(
-                                                            context, playlistId, rawIdx + 1, t.id,
+                                                            context, playlistId, r + 1, t.id,
                                                         )
-                                                    }
                                                 }
                                             }
                                         },

@@ -136,3 +136,9 @@
 - user-directed override: "نمیخوام تگ گلینر داشته باشم... الگوریتم اینا رو با استراتژی های جستجوی لیریک ادغام کن"
 - reason: user prioritizes lyrics over tag-cleaner; algorithm (S10.1) reused as query normalizer only — no MediaStore writes
 - resulting: PR-L1 ships QueryNormalizer.kt (pure Kotlin) — used by upcoming LyricsFetcher in PR-L2
+
+## 2026-10-30 PR-P1b1..d wiring never landed
+- tried: python s.replace() with assumed anchor strings
+- why-failed: anchor for LibraryScreen call assumed onLyricsClick BEFORE onDeleteRequest; actual order was reverse (PR-L3b added onLyricsClick first). SystemExit fired BEFORE p.write_text -> MainActivity unchanged. get-apk.sh green because untouched file compiles fine.
+- learned: (1) verify every anchor with grep -n BEFORE replacing; (2) python patch must print OK per step AND abort with real context on failure; (3) run grep -c verify AFTER commit; (4) get-apk.sh SUCCESS does NOT mean the feature works.
+- fixed-by: PR-P1-fix-2 — corrected anchors (onDeleteRequest included), verified counts, rewrote both screens.
