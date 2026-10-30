@@ -23,27 +23,25 @@ class MariaNotificationProvider(
     ): ImmutableList<CommandButton> {
         val player = session.player
 
-        val prev = CommandButton.Builder()
+        // Transport controls — use CommandButton.ICON_* constants.
+        // These are guaranteed to exist and are what HyperOS reads
+        // from the PlaybackState actions.
+        val prev = CommandButton.Builder(CommandButton.ICON_PREVIOUS)
             .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS)
-            .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_previous)
             .setDisplayName("Previous")
             .setEnabled(player.hasPreviousMediaItem())
             .build()
 
-        val playPause = CommandButton.Builder()
+        val playPause = CommandButton.Builder(
+            if (player.playWhenReady) CommandButton.ICON_PAUSE
+            else CommandButton.ICON_PLAY
+        )
             .setPlayerCommand(Player.COMMAND_PLAY_PAUSE)
-            .setIconResId(
-                if (player.playWhenReady)
-                    androidx.media3.session.R.drawable.media3_notification_pause
-                else
-                    androidx.media3.session.R.drawable.media3_notification_play
-            )
             .setDisplayName(if (player.playWhenReady) "Pause" else "Play")
             .build()
 
-        val next = CommandButton.Builder()
+        val next = CommandButton.Builder(CommandButton.ICON_NEXT)
             .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT)
-            .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_next)
             .setDisplayName("Next")
             .setEnabled(player.hasNextMediaItem())
             .build()
@@ -55,20 +53,17 @@ class MariaNotificationProvider(
         val currentId = player.currentMediaItem?.mediaId?.toLongOrNull()
         val isFav = currentId != null && currentId in favoritesProvider()
 
-        val fav = CommandButton.Builder()
+        val fav = CommandButton.Builder(
+            if (isFav) CommandButton.ICON_HEART_FILLED
+            else CommandButton.ICON_HEART_UNFILLED
+        )
             .setSessionCommand(SessionCommand(PlaybackService.CMD_FAVORITE, Bundle.EMPTY))
-            .setCustomIconResId(
-                if (isFav) R.drawable.ic_favorite_filled else R.drawable.ic_favorite_border
-            )
             .setDisplayName(if (isFav) "Unfavorite" else "Favorite")
-            .setEnabled(true)
             .build()
 
-        val del = CommandButton.Builder()
+        val del = CommandButton.Builder(CommandButton.ICON_DELETE)
             .setSessionCommand(SessionCommand(PlaybackService.CMD_DELETE, Bundle.EMPTY))
-            .setCustomIconResId(R.drawable.ic_delete)
             .setDisplayName("Delete")
-            .setEnabled(true)
             .build()
 
         // HyperOS renders up to 5 actions. Order: fav, prev, play, next, delete
