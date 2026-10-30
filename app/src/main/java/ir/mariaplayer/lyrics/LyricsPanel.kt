@@ -3,11 +3,13 @@ package ir.mariaplayer.lyrics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -18,17 +20,21 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.media3.session.MediaController
@@ -51,19 +57,54 @@ fun LyricsPanel(
     controller: MediaController?,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val item = controller?.currentMediaItem
+    val mediaId = item?.mediaId
+    val trackId = mediaId?.toLongOrNull()
     val title    = item?.mediaMetadata?.title?.toString().orEmpty()
     val artist   = item?.mediaMetadata?.artist?.toString().orEmpty()
     val filename = item?.mediaMetadata?.extras?.getString("filename").orEmpty()
     val durationMs = controller?.duration?.takeIf { it > 0 } ?: 0L
 
-    var state by remember { mutableStateOf<LyricsState>(LyricsState.Empty) }
+    // Reset on track change; trigger fires the fetch.
+    var state by remember(mediaId) { mutableStateOf<LyricsState>(LyricsState.Empty) }
+    var trigger by remember(mediaId) { mutableStateOf(0) }
+    var offsetMs by remember(mediaId) { mutableLongStateOf(0L) }
 
-    // Reset when track changes
-    LaunchedEffect(item?.mediaId) { state = LyricsState.Empty }
+    // Load offset (and cached lyrics, if any) when track changes.
+    LaunchedEffect(mediaId, trackId) {
+        val id = trackId ?: return@LaunchedEffect
+        val cached = LyricsCache.read(context, id)
+        offsetMs = cached.offsetMs
+        // Only auto-populate from cache if there IS cached lyrics
+        if (cached.hasLyrics) {
+            state = toState(cached.synced, cached.plain)
+        }
+    }
+
+    // Fetch — keyed on (mediaId, trigger). Track change cancels mid-flight.
+    LaunchedEffect(mediaId, trigger) {
+        if (trigger == 0) return@LaunchedEffect
+        val id = trackId ?: run { state = LyricsState.NotFound; return@LaunchedEffect }
+        state = LyricsState.Loading
+        val r = LyricsFetcher().fetch(
+            title, artist, filename, (durationMs / 1000).toInt(),
+        )
+        state = when (r) {
+            is LyricsFetchResult.Found -> {
+                LyricsCache.writeLyrics(
+                    context, id, r.result.syncedLyrics, r.result.plainLyrics,
+                )
+                toState(r.result.syncedLyrics, r.result.plainLyrics)
+            }
+            LyricsFetchResult.NotFound -> LyricsState.NotFound
+            is LyricsFetchResult.NetworkError -> LyricsState.NetworkError(r.message)
+            LyricsFetchResult.Timeout -> LyricsState.Timeout
+        }
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -81,39 +122,34 @@ fun LyricsPanel(
             Spacer(Modifier.height(12.dp))
 
             when (val s = state) {
-                LyricsState.Empty -> Button(onClick = {
-                    state = LyricsState.Loading
-                    scope.launch {
-                        val r = LyricsFetcher().fetch(
-                            title, artist, filename, (durationMs / 1000).toInt(),
-                        )
-                        state = when (r) {
-                            is LyricsFetchResult.Found -> {
-                                val synced = r.result.syncedLyrics
-                                val plain  = r.result.plainLyrics
-                                if (!synced.isNullOrBlank()) {
-                                    val lines = LrcParser.parse(synced)
-                                    if (lines.isNotEmpty()) LyricsState.Synced(lines)
-                                    else LyricsState.Plain(plain ?: "(empty lyrics)")
-                                } else if (!plain.isNullOrBlank()) {
-                                    LyricsState.Plain(plain)
-                                } else {
-                                    LyricsState.NotFound
-                                }
-                            }
-                            LyricsFetchResult.NotFound -> LyricsState.NotFound
-                            is LyricsFetchResult.NetworkError -> LyricsState.NetworkError(r.message)
-                            LyricsFetchResult.Timeout -> LyricsState.Timeout
-                        }
-                    }
-                }) { Text("Search Lyrics") }
-
-                LyricsState.Loading -> {
-                    CircularProgressIndicator()
+                LyricsState.Empty -> {
+                    Button(onClick = { trigger += 1 }) { Text("Search Lyrics") }
                 }
 
+                LyricsState.Loading -> CircularProgressIndicator()
+
                 is LyricsState.Synced -> {
-                    SyncedLyrics(controller, s.lines)
+                    SyncedLyrics(controller, s.lines, offsetMs)
+                    Spacer(Modifier.height(8.dp))
+                    OffsetControl(
+                        current = offsetMs,
+                        onChange = { newOffset ->
+                            offsetMs = newOffset
+                            trackId?.let {
+                                scope.launch { LyricsCache.writeOffset(context, it, newOffset) }
+                            }
+                        },
+                    )
+                    ActionRow(
+                        onRefresh = {
+                            trackId?.let { id ->
+                                scope.launch {
+                                    LyricsCache.clearLyrics(context, id)
+                                    trigger += 1
+                                }
+                            }
+                        },
+                    )
                 }
 
                 is LyricsState.Plain -> {
@@ -129,6 +165,16 @@ fun LyricsPanel(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth())
                     }
+                    ActionRow(
+                        onRefresh = {
+                            trackId?.let { id ->
+                                scope.launch {
+                                    LyricsCache.clearLyrics(context, id)
+                                    trigger += 1
+                                }
+                            }
+                        },
+                    )
                 }
 
                 LyricsState.NotFound -> {
@@ -137,16 +183,17 @@ fun LyricsPanel(
                         "Try a different track, or fix the title in your library.",
                     )
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = { state = LyricsState.Empty }) { Text("Retry") }
+                    Row {
+                        Button(onClick = { trigger += 1 }) { Text("Retry") }
+                    }
                 }
 
                 is LyricsState.NetworkError -> {
-                    MessageBlock(
-                        "Network error.",
-                        s.msg,
-                    )
+                    MessageBlock("Network error.", s.msg)
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = { state = LyricsState.Empty }) { Text("Retry") }
+                    Row {
+                        Button(onClick = { trigger += 1 }) { Text("Retry") }
+                    }
                 }
 
                 LyricsState.Timeout -> {
@@ -155,11 +202,58 @@ fun LyricsPanel(
                         "Check your internet connection and try again.",
                     )
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = { state = LyricsState.Empty }) { Text("Retry") }
+                    Row {
+                        Button(onClick = { trigger += 1 }) { Text("Retry") }
+                    }
                 }
             }
             Spacer(Modifier.height(16.dp))
         }
+    }
+}
+
+private fun toState(synced: String?, plain: String?): LyricsState {
+    if (!synced.isNullOrBlank()) {
+        val lines = LrcParser.parse(synced)
+        if (lines.isNotEmpty()) return LyricsState.Synced(lines)
+    }
+    if (!plain.isNullOrBlank()) return LyricsState.Plain(plain)
+    return LyricsState.NotFound
+}
+
+@Composable
+private fun ActionRow(onRefresh: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        TextButton(onClick = onRefresh) { Text("Refresh") }
+    }
+}
+
+@Composable
+private fun OffsetControl(current: Long, onChange: (Long) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Offset", style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "${if (current >= 0) "+" else ""}${current}ms",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.width(8.dp))
+            TextButton(onClick = { onChange(0L) }) { Text("Reset") }
+        }
+        Slider(
+            value = current.toFloat(),
+            onValueChange = { onChange(it.toLong().coerceIn(-500L, 500L)) },
+            valueRange = -500f..500f,
+            steps = 19,
+        )
     }
 }
 
@@ -179,9 +273,9 @@ private fun MessageBlock(headline: String, detail: String) {
 }
 
 @Composable
-private fun SyncedLyrics(controller: MediaController?, lines: List<LrcLine>) {
+private fun SyncedLyrics(controller: MediaController?, lines: List<LrcLine>, offsetMs: Long) {
     val listState = rememberLazyListState()
-    var positionMs by remember { mutableStateOf(controller?.currentPosition ?: 0L) }
+    var positionMs by remember { mutableLongStateOf(controller?.currentPosition ?: 0L) }
 
     LaunchedEffect(controller) {
         val c = controller ?: return@LaunchedEffect
@@ -191,7 +285,7 @@ private fun SyncedLyrics(controller: MediaController?, lines: List<LrcLine>) {
         }
     }
 
-    val active = LrcParser.activeIndex(lines, positionMs)
+    val active = LrcParser.activeIndex(lines, positionMs + offsetMs)
     LaunchedEffect(active) {
         if (active >= 0) {
             try { listState.animateScrollToItem(active, scrollOffset = -200) } catch (_: Exception) {}
