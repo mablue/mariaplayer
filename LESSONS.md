@@ -130,3 +130,9 @@
   on onIsPlayingChanged + READY/ENDED; typed PlaybackException with toast +
   auto-skip; no catch(_: Exception) {} anywhere that mutates state or files.
 - fixed-by: this commit
+
+## 2026-10-30 lyrics-v1 (Λ79/Ω04 override)
+- tried: deferring lyrics to v2 per Λ79+Ω04
+- user-directed override: "نمیخوام تگ گلینر داشته باشم... الگوریتم اینا رو با استراتژی های جستجوی لیریک ادغام کن"
+- reason: user prioritizes lyrics over tag-cleaner; algorithm (S10.1) reused as query normalizer only — no MediaStore writes
+- resulting: PR-L1 ships QueryNormalizer.kt (pure Kotlin) — used by upcoming LyricsFetcher in PR-L2

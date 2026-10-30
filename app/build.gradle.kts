@@ -51,3 +51,7 @@ dependencies {
     implementation("androidx.media3:media3-session:1.5.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 }
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+}

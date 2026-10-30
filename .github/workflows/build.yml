@@ -38,6 +38,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/keystore"
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/keystore/mariaplayer.jks"
           stat -c%s "$RUNNER_TEMP/keystore/mariaplayer.jks"
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Build release APK
         env:
           VERSION_CODE:  ${{ github.run_number }}
