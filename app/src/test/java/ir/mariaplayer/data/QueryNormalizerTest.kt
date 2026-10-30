@@ -142,6 +142,6 @@ class QueryNormalizerTest {
 
     @Test fun emojiNote()         = cleanTitle("Song ♫", "Song")
     @Test fun emojiMusic()        = cleanTitle("Title 🎵", "Title")
-    @Test fun urlHttp()           = cleanTitle("http://foo.com/Song", "Song")
+    @Test fun urlHttp()           = cleanTitle("Song http://foo.com/bar", "Song")
     @Test fun telegramLink()      = cleanTitle("t.me/channel Song", "Song")
 }

@@ -54,7 +54,7 @@ object QueryNormalizer {
         """|\b\d+(?:\.\d+)?\s*(?:MiB|KiB|KB|MB|GB)\b""" +
         """|[\(\[\{]\s*[\)\]\}]""" +
         """|[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}♫♪♬🎵🎶♥💜💎🔴✨👑👽🆑™©®]""" +
-        """|(?i:UpMusic|MusicDel|MusicsWeb|Music[-_ ]?Fa(?:\.Com)?|BibakMusic|GahMusic|RozMusic|SevilMusic|CafehMusic|MusicViral|Saz[-_ ]?Music|Azturk|TabrizMusic|Galinmusic|ArdabilMusic|Download1Music|MihanSeda|Songha|Jonmusic|Melody98|Azerbaijan\d*|BehMelody|Nex1Music|Takmusic\d*|Hamtarane\d*|Bikalambox|EDMmusics|ReMiXeRapY|GlinMusic|Radio98|RadioP0l|soonami|samfonibox|mah6il|MokhtalefMusic|MusicTaj|webahang|musicsingle|smelody|tabanmusic|TehranMusic|AzadMusic|دائمی|کانال|سایت|موزیکدل|جویا موزیک|نیاز موزیک|کافه موزیک|اوپن موزیک)""" +
+        """|(?i:UpMusic|MusicDel|MusicsWeb|Music[-_ ]?Fa(?:\.Com)?|BibakMusic|GahMusic|RozMusic|SevilMusic|CafehMusic|MusicViral|Saz[-_ ]?Music|Azturk|TabrizMusic|Galinmusic|ArdabilMusic|Download1Music|MihanSeda|Songha|Jonmusic|Melody98|Azerbaijan\d*|BehMelody|Nex1Music|Takmusic\d*|Hamtarane\d*|Bikalambox|EDMmusics|ReMiXeRapY|GlinMusic|Radio98|RadioP0l|soonami|samfonibox|mah6il|MokhtalefMusic|MusicTaj|webahang|musicsingle|smelody|tabanmusic|TehranMusic|AzadMusic|دائمی|کانال|سایت|موزیکدل|جویا موزیک|نیاز موزیک|کافه موزیک|اوپن موزیک|آهنگدونی|موزیکفا|آپ[-_ ]?موزیک|نواک)""" +
         """|_{2,}\S*""" +
         """|\b(?i:(?:audio|video)?cutter)\w*""" +
         """|OfficialVisualizer\w*""" +
@@ -77,6 +77,9 @@ object QueryNormalizer {
         """\d+(\.\d+)?\s*(MiB|KiB|KB|MB|GB)""",
         RegexOption.IGNORE_CASE,
     )
+
+    private val VERSION_V2_RE    = Regex("""\s*[\(\[]?v\d+[\)\]]?\s*$""", RegexOption.IGNORE_CASE)
+    private val BITRATE_BARE_RE  = Regex("""\s+(?:128|192|256|320)\s*$""")
 
     private val PLACEHOLDERS = setOf(
         "factory bot", "audiolab", "audio lab", "audio-labs",
@@ -128,6 +131,12 @@ object QueryNormalizer {
         if (afterYear.count { it.isLetter() } >= 2) s = afterYear
 
         s = WS.replace(s, " ").trim()
+
+        // Trailing-only cleanups: version suffix and bare bitrate number.
+        val afterV2 = VERSION_V2_RE.replace(s, "")
+        if (afterV2.isNotBlank()) s = afterV2.trim()
+        val afterBitrate = BITRATE_BARE_RE.replace(s, "")
+        if (afterBitrate.isNotBlank()) s = afterBitrate.trim()
 
         repeat(3) {
             val before = s

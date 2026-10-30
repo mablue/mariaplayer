@@ -161,3 +161,10 @@
 - why-failed: foundation API is @RequiresOptIn(level=ERROR). Without @OptIn the compiler treats it as error.
 - learned: any use of combinedClickable / detectDragGesturesAfterLongPress etc. requires @OptIn(ExperimentalFoundationApi::class) on the enclosing composable.
 - fixed-by: added to LibraryScreen @OptIn alongside ExperimentalMaterial3Api.
+
+## 2026-10-30 QueryNormalizer missing 4 regexes that Python build had
+- tried: port S10.1 to Kotlin by copying only RX chain
+- why-failed: Python clean_v2 applied VERSION_V2_RE and BITRATE_BARE_RE separately, outside RX. Kotlin port omitted both. Also Persian site list in RX was incomplete (had موزیکدل but not آهنگدونی/موزیکفا/آپموزیک/نواک — those existed in Python as a separate PERSIAN_SITES list that was also dropped).
+- tests urlHttp was written wrong: input was a pure URL, all consumed → title="" correctly, but test expected title="Song". Fixed test to have a bare title alongside URL.
+- learned: (1) when porting multi-regex pipelines, diff the sets of Regex patterns between source and target; (2) write tests FIRST against the Python implementation then port — don't port then write tests; (3) an all-URL title is correctly empty, not the trailing path segment.
+- fixed-by: added VERSION_V2_RE, BITRATE_BARE_RE; extended RX site list; corrected urlHttp test.
