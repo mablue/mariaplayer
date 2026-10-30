@@ -7,45 +7,51 @@ REPO="$OWNER/mariaplayer"
 LOCAL_SHA=$(git rev-parse --short HEAD)
 LOGF="$HOME/ci-failed.log"
 
-# ── Probe once: is Termux:API alive? 3s timeout treats hang as absent.
+# ── Sound (silent if Termux:API app missing) ────────────────────────
 HAVE_API=0
 if command -v termux-tts-speak >/dev/null 2>&1; then
-    if timeout 3 termux-tts-speak "" >/dev/null 2>&1; then
-        HAVE_API=1
-    fi
+    timeout 3 termux-tts-speak "" >/dev/null 2>&1 && HAVE_API=1 || true
 fi
-if [ "$HAVE_API" = "0" ] && command -v termux-notification >/dev/null 2>&1; then
-    if timeout 3 termux-notification --title t --content t >/dev/null 2>&1; then
-        HAVE_API=1
-    fi
-fi
-
 notify() {
     local level="$1" msg="$2" icon
-    case "$level" in
-        success) icon="OK  " ;;
-        error)   icon="FAIL" ;;
-        *)       icon="--  " ;;
-    esac
+    case "$level" in success) icon="OK  ";; error) icon="FAIL";; *) icon="--  ";; esac
     echo
     echo "[$icon] $msg"
     echo
     if [ "$HAVE_API" = "1" ]; then
         timeout 5 termux-tts-speak "$msg" >/dev/null 2>&1 || true
-        timeout 5 termux-notification \
-            --title "MariaPlayer build" \
+        timeout 5 termux-notification --title "MariaPlayer build" \
             --content "$msg" --priority high >/dev/null 2>&1 || true
-        if [ "$level" = "error" ]; then
-            timeout 3 termux-vibrate -d 800 -f >/dev/null 2>&1 || true
-        fi
+        [ "$level" = "error" ] && timeout 3 termux-vibrate -d 800 -f >/dev/null 2>&1 || true
     fi
 }
-
 if [ "$HAVE_API" = "0" ]; then
     echo "NOTE: Termux:API not reachable — running silent."
-    echo "      one-time: pkg install termux-api  +  install 'Termux:API' app from F-Droid"
     echo
 fi
+
+# ── Auto error extractor (only errors, no stack frames) ─────────────
+print_ci_errors() {
+    local logf="$1"
+    echo
+    echo "════════ CI ERRORS ONLY ════════"
+    echo
+    echo "── Kotlin/Java (e: file:///…:line:col) ──"
+    grep -E '^e: file:///' "$logf" \
+      | sed -E 's#file:///[^/]+/[^/]+/[^/]+/#file:///#g' \
+      || echo "  (none)"
+    echo
+    echo "── Failed tasks ──"
+    grep -E '^(> Task .* FAILED|FAILURE:)' "$logf" || echo "  (none)"
+    echo
+    echo "── Root causes ──"
+    grep -E '^(Caused by:|Could not resolve|Execution failed|Unresolved|cannot find symbol|Could not find)' "$logf" \
+      | grep -vE '^\s+at ' \
+      || echo "  (none)"
+    echo "════════════════════════════════"
+    echo "full log: $logf"
+    echo
+}
 
 echo "repo: $REPO  head: $LOCAL_SHA"
 
@@ -80,21 +86,7 @@ for r in runs:
         gh run view "$RID" --repo "$REPO" --log-failed 2>&1 \
           | sed -E 's/^[0-9T:.Z-]+[[:space:]]+//' > "$LOGF"
         notify error "CI build failed"
-
-        echo
-        echo "════════ CI ERROR — EXACT LOCATIONS ════════"
-        echo
-        echo "── Kotlin/Java compile errors (file:line:col) ──"
-        grep -E '^e: file:///' "$LOGF" | head -40 || true
-        echo
-        echo "── Failed tasks ──"
-        grep -E '^(> Task .* FAILED|FAILURE:)' "$LOGF" | head -10 || true
-        echo
-        echo "── Root causes (no stack frames) ──"
-        grep -E '^(Caused by:|Could not resolve|Execution failed|Unresolved|cannot find symbol)' "$LOGF" \
-          | grep -vE '^\s+at ' | head -15 || true
-        echo "════════════════════════════════════════════"
-        echo "full log: $LOGF"
+        print_ci_errors "$LOGF"
         exit 1
       fi
     else
