@@ -52,7 +52,10 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
                 }
             }
             for (i in toRemove.sortedDescending()) {
-                try { player.removeMediaItem(i) } catch (_: Exception) {}
+                try { player.removeMediaItem(i) }
+                catch (e: Exception) {
+                    android.util.Log.w("PlaybackService", "removeMediaItem($i) failed", e)
+                }
             }
         }
     }
@@ -81,6 +84,37 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 updateCustomLayout()
+            }
+        })
+
+        // Lambda-28: typed playback errors, user-visible toast, auto-skip.
+        player.addListener(object : Player.Listener {
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                android.util.Log.e(
+                    "PlaybackService",
+                    "playback error: " + error.errorCodeName,
+                    error,
+                )
+                val msg: String = when (error.errorCode) {
+                    androidx.media3.common.PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND ->
+                        "File not found - skipping"
+                    androidx.media3.common.PlaybackException.ERROR_CODE_IO_NO_PERMISSION ->
+                        "Permission denied - skipping"
+                    androidx.media3.common.PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
+                    androidx.media3.common.PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES ->
+                        "Codec not supported - skipping"
+                    androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+                    androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ->
+                        "Network error - skipping"
+                    androidx.media3.common.PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED,
+                    androidx.media3.common.PlaybackException.ERROR_CODE_PARSING_MANIFEST_MALFORMED ->
+                        "File is corrupt - skipping"
+                    else -> "Playback error - skipping"
+                }
+                android.widget.Toast.makeText(
+                    this@PlaybackService, msg, android.widget.Toast.LENGTH_LONG
+                ).show()
+                if (player.hasNextMediaItem()) player.seekToNextMediaItem() else player.pause()
             }
         })
 

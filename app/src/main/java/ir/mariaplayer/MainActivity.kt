@@ -99,9 +99,13 @@ private fun AppRoot() {
         return
     }
 
-    var reloadKey by remember { mutableIntStateOf(0) }
+    var tracks by remember { mutableStateOf<List<Track>?>(null) }
     var pendingDeleteUri by remember { mutableStateOf<Uri?>(null) }
     var pendingDeleteTitle by remember { mutableStateOf("") }
+
+    LaunchedEffect(hasAudio) {
+        if (hasAudio) tracks = LibraryScanner.scan(context)
+    }
 
     val deleteLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -123,7 +127,12 @@ private fun AppRoot() {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, i: Intent?) {
                 if (i?.action == ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED) {
-                    reloadKey++
+                    val deletedUri = i.getStringExtra(
+                        ir.mariaplayer.playback.PlaybackService.EXTRA_DELETED_URI
+                    )
+                    if (deletedUri != null) {
+                        tracks = tracks?.filterNot { it.contentUri == deletedUri }
+                    }
                 }
             }
         }
@@ -137,9 +146,7 @@ private fun AppRoot() {
         onDispose { try { context.unregisterReceiver(receiver) } catch (_: Exception) {} }
     }
 
-    val tracks by produceState<List<Track>?>(initialValue = null, hasAudio, reloadKey) {
-        value = LibraryScanner.scan(context)
-    }
+    // tracks populated by LaunchedEffect above; deleted items removed in receiver
     val controller = rememberPlayerController()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
 
@@ -189,14 +196,35 @@ private fun AppRoot() {
         shuffleOn = c.shuffleModeEnabled
     }
 
+    // Gamma-14: save position every 500ms plus on every play/pause and READY/ENDED.
     LaunchedEffect(controller) {
         val c = controller ?: return@LaunchedEffect
         while (true) {
-            delay(3000)
+            delay(500)
             val mi = c.currentMediaItem ?: continue
             val tid = mi.mediaId.toLongOrNull() ?: continue
             PlaybackPrefs.save(context, tid, c.currentPosition)
         }
+    }
+
+    DisposableEffect(controller) {
+        val c = controller ?: return@DisposableEffect onDispose {}
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                val mi = c.currentMediaItem ?: return
+                val tid = mi.mediaId.toLongOrNull() ?: return
+                scope.launch { PlaybackPrefs.save(context, tid, c.currentPosition) }
+            }
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY || state == Player.STATE_ENDED) {
+                    val mi = c.currentMediaItem ?: return
+                    val tid = mi.mediaId.toLongOrNull() ?: return
+                    scope.launch { PlaybackPrefs.save(context, tid, c.currentPosition) }
+                }
+            }
+        }
+        c.addListener(listener)
+        onDispose { c.removeListener(listener) }
     }
 
     LibraryScreen(

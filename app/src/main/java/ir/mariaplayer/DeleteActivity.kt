@@ -58,8 +58,13 @@ class DeleteActivity : ComponentActivity() {
             if (rows > 0) {
                 Toast.makeText(this, "Deleted: $title", Toast.LENGTH_SHORT).show()
                 notifyDeleted(uri)
+            } else {
+                Toast.makeText(this, "Delete failed - no rows", Toast.LENGTH_LONG).show()
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            android.util.Log.w("DeleteActivity", "direct delete failed for $uri", e)
+            Toast.makeText(this, "Delete failed: " + e.message, Toast.LENGTH_LONG).show()
+        }
         finish()
     }
 

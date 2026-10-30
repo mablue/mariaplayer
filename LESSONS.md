@@ -116,3 +116,17 @@
   For queue: removeMediaItem on matching URIs; ExoPlayer auto-advances on
   current-item removal. Never leave dangling MediaItems pointing at deleted URIs.
 - fixed-by: this commit
+
+## 2026-10-30 audit — spec compliance gaps found after device confirm
+- tried: ship P2/P3 as done without running the SPD.MUSIC_PLAYER audit
+- why-failed: three code-level violations:
+  Omega-14: delete re-scanned ALL tracks via produceState(reloadKey)
+  Omega-16: tryDirectDelete + removeMediaItem had empty catch { }
+  Gamma-14: PlaybackPrefs ticker was 3000ms -> up to 3s drift on kill
+  Lambda-28: no typed PlaybackError -> generic or silent playback failures
+- learned: run the audit BEFORE declaring next phase done. Gamma-gates are
+  cheap to check; violating them after user says "works" wastes user trust.
+  Fixes: incremental list removal on delete broadcast; 500ms ticker + save
+  on onIsPlayingChanged + READY/ENDED; typed PlaybackException with toast +
+  auto-skip; no catch(_: Exception) {} anywhere that mutates state or files.
+- fixed-by: this commit
