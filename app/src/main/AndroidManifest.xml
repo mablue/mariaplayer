@@ -24,8 +24,7 @@
             android:name=".DeleteActivity"
             android:exported="false"
             android:excludeFromRecents="true"
-            android:noHistory="true"
-            android:theme="@android:style/Theme.Material.Dialog.Alert" />
+                        android:theme="@android:style/Theme.Material.Dialog.Alert" />
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -18,9 +18,7 @@ class DeleteActivity : ComponentActivity() {
     private var pendingUri: Uri? = null
     private var pendingTitle: String = ""
 
-    // Registered as a field initializer → runs in the constructor, before
-    // the Activity reaches STARTED. Calling registerForActivityResult()
-    // later (e.g. from a dialog button) throws IllegalStateException.
+    // Field initializer → registered during construction, before STARTED.
     private val deleteLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
@@ -79,19 +77,27 @@ class DeleteActivity : ComponentActivity() {
                 val pi = MediaStore.createDeleteRequest(contentResolver, listOf(uri))
                 deleteLauncher.launch(IntentSenderRequest.Builder(pi.intentSender).build())
             } catch (e: Exception) {
-                Toast.makeText(this, "Cannot delete: ${e.message}", Toast.LENGTH_LONG).show()
-                finish()
+                // HyperOS fallback: IllegalArgumentException / SecurityException
+                tryDirectDelete(uri, title)
             }
         } else {
-            try {
-                contentResolver.delete(uri, null, null)
+            tryDirectDelete(uri, title)
+        }
+    }
+
+    private fun tryDirectDelete(uri: Uri, title: String) {
+        try {
+            val rows = contentResolver.delete(uri, null, null)
+            if (rows > 0) {
                 Toast.makeText(this, "Deleted: $title", Toast.LENGTH_SHORT).show()
                 notifyDeleted(uri)
-            } catch (e: Exception) {
-                Toast.makeText(this, "Delete failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Delete failed — no rows", Toast.LENGTH_LONG).show()
             }
-            finish()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Delete failed: ${e.message}", Toast.LENGTH_LONG).show()
         }
+        finish()
     }
 
     private fun notifyDeleted(uri: Uri) {
