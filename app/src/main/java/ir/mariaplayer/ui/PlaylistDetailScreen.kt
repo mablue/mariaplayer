@@ -103,8 +103,9 @@ fun PlaylistDetailScreen(
             else -> LazyColumn(Modifier.fillMaxSize().padding(inner)) {
                 items(tracks, key = { it.id }) { t ->
                     val idx = tracks.indexOfFirst { it.id == t.id }
-                    val canUp = editMode && idx > 0
-                    val canDown = editMode && idx >= 0 && idx < tracks.lastIndex
+                    val rawIdx = playlist.trackIds.indexOf(t.id)
+                    val canUp = editMode && rawIdx > 0
+                    val canDown = editMode && rawIdx >= 0 && rawIdx < playlist.trackIds.lastIndex
 
                     ListItem(
                         headlineContent = { Text(t.title) },
@@ -122,9 +123,14 @@ fun PlaylistDetailScreen(
                                         onClick = {
                                             if (canUp) {
                                                 scope.launch {
-                                                    PlaylistPrefs.reorder(
-                                                        context, playlistId, idx - 1, t.id,
-                                                    )
+                                                    // Use the original trackIds index (not visible idx)
+                                                    // because some IDs may reference deleted files.
+                                                    val rawIdx = playlist.trackIds.indexOf(t.id)
+                                                    if (rawIdx > 0) {
+                                                        PlaylistPrefs.reorder(
+                                                            context, playlistId, rawIdx - 1, t.id,
+                                                        )
+                                                    }
                                                 }
                                             }
                                         },
@@ -141,9 +147,12 @@ fun PlaylistDetailScreen(
                                         onClick = {
                                             if (canDown) {
                                                 scope.launch {
-                                                    PlaylistPrefs.reorder(
-                                                        context, playlistId, idx + 1, t.id,
-                                                    )
+                                                    val rawIdx = playlist.trackIds.indexOf(t.id)
+                                                    if (rawIdx >= 0 && rawIdx < playlist.trackIds.lastIndex) {
+                                                        PlaylistPrefs.reorder(
+                                                            context, playlistId, rawIdx + 1, t.id,
+                                                        )
+                                                    }
                                                 }
                                             }
                                         },
