@@ -11,12 +11,12 @@ Grab the latest APK from [**Releases**](https://github.com/mablue/mariaplayer/re
 <!-- LATEST-BUILD:start -->
 | Field | Value |
 |---|---|
-| Release | [v0.1.0-build.22-3e5c4f1](https://github.com/mablue/mariaplayer/releases/tag/v0.1.0-build.22-3e5c4f1) |
+| Release | [v0.1.0-build.27-3c82e55](https://github.com/mablue/mariaplayer/releases/tag/v0.1.0-build.27-3c82e55) |
 | Version | 0.1.0 |
-| Commit | 3e5c4f1 |
+| Commit | 3c82e55 |
 | APK | [](https://github.com/mablue/mariaplayer/releases/latest/download/) |
-| Size | 9586742 bytes |
-| SHA-256 | 32c2e70c12a25c6ddb7621238dcc2c627a062ea110253e4f523ac886247d1c8d |
+| Size | 9930918 bytes |
+| SHA-256 | 10958afd0080e0b1cf5ef52d70afcbb52436109236d4d6a0e483eb200d19f568 |
 <!-- LATEST-BUILD:end -->
 
 ## Install
