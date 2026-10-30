@@ -1,6 +1,7 @@
 package ir.mariaplayer
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -20,6 +21,34 @@ class DeleteActivity : ComponentActivity() {
         if (uriStr == null) { finish(); return }
         val uri = Uri.parse(uriStr)
 
+        val folder = queryFolder(uri)
+        val msg = buildString {
+            append("\"$title\"")
+            if (folder.isNotBlank()) append("\n\nFolder: ").append(folder)
+            append("\n\nThis permanently deletes the file from this device.")
+            append(" It cannot be undone.")
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Delete music file?")
+            .setMessage(msg)
+            .setPositiveButton("Delete permanently") { _, _ -> proceedDelete(uri, title) }
+            .setNegativeButton("Cancel") { _, _ -> finish() }
+            .setOnCancelListener { finish() }
+            .show()
+    }
+
+    private fun queryFolder(uri: Uri): String = try {
+        val col = if (Build.VERSION.SDK_INT >= 29)
+            MediaStore.Audio.Media.RELATIVE_PATH
+        else
+            @Suppress("DEPRECATION") MediaStore.Audio.Media.DATA
+        contentResolver.query(uri, arrayOf(col), null, null, null)?.use { c ->
+            if (c.moveToFirst() && c.getColumnCount() > 0) c.getString(0) ?: "" else ""
+        } ?: ""
+    } catch (_: Exception) { "" }
+
+    private fun proceedDelete(uri: Uri, title: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val launcher = registerForActivityResult(
                 ActivityResultContracts.StartIntentSenderForResult()
