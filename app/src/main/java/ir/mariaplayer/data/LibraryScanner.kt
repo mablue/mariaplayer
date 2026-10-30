@@ -31,13 +31,20 @@ object LibraryScanner {
         else
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
-        val projection = arrayOf(
+        val base = mutableListOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.DURATION,
         )
+        val pathCol = if (Build.VERSION.SDK_INT >= 29)
+            MediaStore.Audio.Media.RELATIVE_PATH
+        else
+            @Suppress("DEPRECATION") MediaStore.Audio.Media.DATA
+        base += pathCol
+        val projection = base.toTypedArray()
+
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
         val sort = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
 
@@ -48,9 +55,11 @@ object LibraryScanner {
             val artistCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
             val albumCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val durCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+            val pCol = c.getColumnIndex(pathCol)
             while (c.moveToNext()) {
                 val id = c.getLong(idCol)
                 val uri = ContentUris.withAppendedId(collection, id)
+                val raw = if (pCol >= 0) c.getString(pCol) else null
                 out += Track(
                     id = id,
                     title = c.getString(titleCol) ?: "Unknown title",
@@ -58,9 +67,17 @@ object LibraryScanner {
                     album = c.getString(albumCol)?.takeUnless { it.isBlank() || it == "<unknown>" },
                     durationMs = c.getLong(durCol),
                     contentUri = uri.toString(),
+                    folder = folderName(raw),
                 )
             }
         }
         out
+    }
+
+    private fun folderName(raw: String?): String {
+        if (raw.isNullOrBlank()) return "Unknown"
+        val trimmed = raw.trimEnd('/')
+        val seg = if (trimmed.contains('/')) trimmed.substringAfterLast('/') else trimmed
+        return seg.ifBlank { "Root" }
     }
 }

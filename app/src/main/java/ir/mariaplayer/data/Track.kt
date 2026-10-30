@@ -7,4 +7,5 @@ data class Track(
     val album: String?,
     val durationMs: Long,
     val contentUri: String,
+    val folder: String = "",
 )
