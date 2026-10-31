@@ -62,10 +62,26 @@ class DeleteActivity : ComponentActivity() {
                 Toast.makeText(this, "Delete failed - no rows", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
+            // PR-L7e: Android 10 (Q) throws RecoverableSecurityException for
+            // media deletes; user must consent via IntentSender. The launcher
+            // callback calls finish(), so return without falling through.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && handleRecoverableDelete(e)) return
+
             android.util.Log.w("DeleteActivity", "direct delete failed for $uri", e)
             Toast.makeText(this, "Delete failed: " + e.message, Toast.LENGTH_LONG).show()
         }
         finish()
+    }
+
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.Q)
+    private fun handleRecoverableDelete(e: Exception): Boolean {
+        if (e !is android.app.RecoverableSecurityException) return false
+        return try {
+            deleteLauncher.launch(
+                IntentSenderRequest.Builder(e.userAction.actionIntent.intentSender).build()
+            )
+            true
+        } catch (_: Exception) { false }
     }
 
     private fun notifyDeleted(uri: Uri) {

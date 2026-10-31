@@ -105,6 +105,7 @@ object PlaylistPrefs {
         context.playlistStore.edit { p ->
             val list = parsePlaylistsJson(p[KEY].orEmpty()).map {
                 if (it.id == playlistId) {
+                    if (trackId !in it.trackIds) return@map it
                     val filtered = it.trackIds.filterNot { id -> id == trackId }
                     val insertAt = newIndex.coerceIn(0, filtered.size)
                     val reordered = filtered.toMutableList().apply { add(insertAt, trackId) }

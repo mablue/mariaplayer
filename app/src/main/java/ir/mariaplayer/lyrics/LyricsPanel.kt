@@ -103,6 +103,9 @@ fun LyricsPanel(
         val r = LyricsFetcher().fetch(
             editTitle, editArtist, filename, (durationMs / 1000).toInt(),
         )
+        // PR-L7b: user may have cancelled while the request was in flight.
+        // In that case state is Empty; drop the result rather than overriding.
+        if (state is LyricsState.Empty) return@LaunchedEffect
         state = when (r) {
             is LyricsFetchResult.Found -> {
                 LyricsCache.writeLyrics(
@@ -165,7 +168,13 @@ fun LyricsPanel(
                     )
                 }
 
-                LyricsState.Loading -> CircularProgressIndicator()
+                LyricsState.Loading -> {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(12.dp))
+                    TextButton(onClick = { state = LyricsState.Empty }) {
+                        Text("Cancel")
+                    }
+                }
 
                 is LyricsState.Synced -> {
                     SyncedLyrics(controller, s.lines, offsetMs)

@@ -51,6 +51,11 @@ fun NowPlayingBar(controller: MediaController?, onLyricsClick: () -> Unit = {}) 
                 hasPrev = controller.hasPreviousMediaItem()
                 hasNext = controller.hasNextMediaItem()
             }
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+                // PR-L7c: hasPrev/hasNext depend on shuffle state.
+                hasPrev = controller.hasPreviousMediaItem()
+                hasNext = controller.hasNextMediaItem()
+            }
         }
         controller.addListener(listener)
         onDispose { controller.removeListener(listener) }

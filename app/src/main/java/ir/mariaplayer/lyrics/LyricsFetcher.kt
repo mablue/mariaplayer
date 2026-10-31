@@ -106,7 +106,9 @@ class LyricsFetcher(
         artist: String,
         durationSec: Int,
     ): LyricsResult? {
-        val deltas = listOf(0, -2, 2, -3, 3, -5, 5)
+        // PR-L7a: when durationSec<=0 (player not ready), all deltas
+        // produce the same URL. Try once only.
+        val deltas = if (durationSec > 0) listOf(0, -2, 2, -3, 3, -5, 5) else listOf(0)
         for (d in deltas) {
             val dur = if (durationSec > 0) (durationSec + d).coerceAtLeast(0) else -1
             val urlStr = buildString {
@@ -140,8 +142,12 @@ class LyricsFetcher(
                     source       = "lrclib",
                     score        = 100,
                 )
+            } catch (e: SocketTimeoutException) {
+                throw e   // PR-L7a: propagate so fetch() sets lastError
+            } catch (e: IOException) {
+                throw e   // PR-L7a: propagate so fetch() sets lastError
             } catch (_: Exception) {
-                continue
+                continue  // JSON parse error — try next delta
             } finally {
                 try { conn.disconnect() } catch (_: Exception) {}
             }
