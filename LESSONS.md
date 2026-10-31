@@ -204,3 +204,9 @@
   - commit + get-apk.sh in same message
 - NEVER: sed -i on XML; s.replace(guessed); patch scripts without uniqueness check
 - EXCEPTION: LESSONS.md itself uses cat >> (append-only by its own header)
+
+## 2026-10-30 LRCLIB plain-only: try /api/get + prefer synced
+- observed: Dire Straits Water of Love got plain (no timestamps) via /api/search
+- cause: /api/search sometimes returns multiple entries; scorer picked plain even though a synced one at similar score existed
+- fix: (1) /api/get with deltas [0,±2,±3,±5] first (returns synced on exact match), (2) in pickBest, prefer synced when best is plain and an alternative has synced within 15 points of best score
+- also: patch1 indentation was wrong (4 spaces vs actual 8, inside withContext block) — tool correctly aborted before write

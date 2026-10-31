@@ -39,6 +39,20 @@ class LyricsFetcher(
         if (candidates.isEmpty()) return@withContext LyricsFetchResult.NotFound
 
         var lastError: IOException? = null
+
+        // First: try /api/get (exact match, returns synced when available)
+        for (q in candidates) {
+            try {
+                val hit = tryGetLrclib(q.title, q.artist, durationSec)
+                if (hit != null) return@withContext LyricsFetchResult.Found(hit)
+            } catch (e: SocketTimeoutException) {
+                lastError = e
+            } catch (e: IOException) {
+                lastError = e
+            }
+        }
+
+        // Second: /api/search (candidate list, uses scorer)
         for (q in candidates) {
             try {
                 val results = searchLrclib(q.title, q.artist)
@@ -85,6 +99,54 @@ class LyricsFetcher(
             out += Query(norm.title, "")
         }
         return out.distinctBy { "${it.title}\u0000${it.artist}" }
+    }
+
+    private fun tryGetLrclib(
+        title: String,
+        artist: String,
+        durationSec: Int,
+    ): LyricsResult? {
+        val deltas = listOf(0, -2, 2, -3, 3, -5, 5)
+        for (d in deltas) {
+            val dur = if (durationSec > 0) (durationSec + d).coerceAtLeast(0) else -1
+            val urlStr = buildString {
+                append("https://lrclib.net/api/get?track_name=")
+                    .append(URLEncoder.encode(title, "UTF-8"))
+                if (artist.isNotBlank()) {
+                    append("&artist_name=").append(URLEncoder.encode(artist, "UTF-8"))
+                }
+                if (dur > 0) append("&duration=").append(dur)
+            }
+            val conn = (URL(urlStr).openConnection() as HttpURLConnection).apply {
+                connectTimeout = timeoutMs
+                readTimeout = timeoutMs
+                requestMethod = "GET"
+                setRequestProperty("User-Agent", userAgent)
+                setRequestProperty("Accept", "application/json")
+            }
+            try {
+                val code = conn.responseCode
+                if (code == 404) continue
+                if (code != 200) return null
+                val body = conn.inputStream.bufferedReader().use { it.readText() }
+                val o = JSONObject(body)
+                return LyricsResult(
+                    title        = o.optString("trackName", ""),
+                    artist       = o.optString("artistName", ""),
+                    album        = o.optString("albumName", "").ifBlank { null },
+                    durationSec  = if (o.has("duration")) o.optInt("duration", -1).takeIf { it >= 0 } else null,
+                    syncedLyrics = o.optString("syncedLyrics", "").ifBlank { null },
+                    plainLyrics  = o.optString("plainLyrics", "").ifBlank { null },
+                    source       = "lrclib",
+                    score        = 100,
+                )
+            } catch (_: Exception) {
+                continue
+            } finally {
+                try { conn.disconnect() } catch (_: Exception) {}
+            }
+        }
+        return null
     }
 
     private fun searchLrclib(title: String, artist: String): List<LyricsResult> {

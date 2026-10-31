@@ -75,6 +75,13 @@ object LyricsScorer {
         val best = scored[0]
         if (best.score < threshold) return null
         if (scored.size > 1 && best.score - scored[1].score < ambiguousGap) return null
+        // Prefer synced lyrics if a near-tie alternative has them
+        if (best.syncedLyrics == null) {
+            val syncedAlt = scored.firstOrNull {
+                it.syncedLyrics != null && it.score >= threshold && it.score >= best.score - 15
+            }
+            if (syncedAlt != null) return syncedAlt
+        }
         return best
     }
 
