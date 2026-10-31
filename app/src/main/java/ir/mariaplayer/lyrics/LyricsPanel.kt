@@ -79,6 +79,11 @@ fun LyricsPanel(
     var trigger by remember(mediaId) { mutableStateOf(0) }
     var offsetMs by remember(mediaId) { mutableLongStateOf(0L) }
 
+    // PR-L6a: editable query fields, prefilled from media metadata.
+    // User can correct broken tags and retry without leaving the sheet.
+    var editTitle by remember(mediaId) { mutableStateOf(title) }
+    var editArtist by remember(mediaId) { mutableStateOf(artist) }
+
     // Load offset (and cached lyrics, if any) when track changes.
     LaunchedEffect(mediaId, trackId) {
         val id = trackId ?: return@LaunchedEffect
@@ -96,7 +101,7 @@ fun LyricsPanel(
         val id = trackId ?: run { state = LyricsState.NotFound; return@LaunchedEffect }
         state = LyricsState.Loading
         val r = LyricsFetcher().fetch(
-            title, artist, filename, (durationMs / 1000).toInt(),
+            editTitle, editArtist, filename, (durationMs / 1000).toInt(),
         )
         state = when (r) {
             is LyricsFetchResult.Found -> {
@@ -116,19 +121,48 @@ fun LyricsPanel(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(title.ifBlank { "Unknown title" },
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center)
-            if (artist.isNotBlank()) {
-                Text(artist,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OutlinedTextField(
+                value = editTitle,
+                onValueChange = { editTitle = it },
+                label = { Text("Title") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(6.dp))
+            OutlinedTextField(
+                value = editArtist,
+                onValueChange = { editArtist = it },
+                label = { Text("Artist (optional)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(6.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Button(
+                    enabled = editTitle.isNotBlank() && state !is LyricsState.Loading,
+                    onClick = { trigger += 1 },
+                ) { Text("Search") }
+                Spacer(Modifier.width(8.dp))
+                TextButton(
+                    onClick = {
+                        editTitle = title
+                        editArtist = artist
+                    },
+                ) { Text("Reset") }
             }
             Spacer(Modifier.height(12.dp))
 
             when (val s = state) {
                 LyricsState.Empty -> {
-                    Button(onClick = { trigger += 1 }) { Text("Search Lyrics") }
+                    Text(
+                        "Edit title/artist if needed, then tap Search.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
                 }
 
                 LyricsState.Loading -> CircularProgressIndicator()
