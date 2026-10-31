@@ -74,6 +74,7 @@ import ir.mariaplayer.ui.AddToPlaylistSheet
 import ir.mariaplayer.ui.PermissionScreen
 import ir.mariaplayer.ui.PlaylistDetailScreen
 import ir.mariaplayer.ui.PlaylistsScreen
+import ir.mariaplayer.ui.SelfTestScreen
 import ir.mariaplayer.ui.ModelManagerScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -249,6 +250,9 @@ private fun AppRoot() {
         screen == "models" -> {
             ModelManagerScreen(onBack = { screen = "library" })
         }
+        screen == "selftest" -> {
+            SelfTestScreen(onBack = { screen = "library" })
+        }
         screen.startsWith("playlist:") -> {
             val pid = screen.removePrefix("playlist:").toLongOrNull()
             if (pid == null) {
@@ -302,6 +306,7 @@ private fun AppRoot() {
         onTrackLongClick = { t -> pendingTrackForPlaylist = t },
         onLyricsClick = { lyricsSheetOpen = true },
         onPlaylistsClick = { screen = "playlists" },
+        onSelfTestClick = { screen = "selftest" },
         onModelsClick = { screen = "models" },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
@@ -405,6 +410,7 @@ private fun LibraryScreen(
     onTrackLongClick: (Track) -> Unit,
     onLyricsClick: () -> Unit,
     onPlaylistsClick: () -> Unit,
+    onSelfTestClick: () -> Unit,
     onModelsClick: () -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
@@ -424,6 +430,12 @@ private fun LibraryScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_model),
                             contentDescription = "Models",
+                        )
+                    }
+                    IconButton(onClick = onSelfTestClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_self_test),
+                            contentDescription = "Self-test",
                         )
                     }
                     IconButton(onClick = onPlaylistsClick) {

@@ -1,0 +1,330 @@
+package ir.mariaplayer.ui
+
+import android.content.Context
+import android.os.Build
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import ir.mariaplayer.R
+import ir.mariaplayer.data.FavoritesPrefs
+import ir.mariaplayer.data.LibraryPrefs
+import ir.mariaplayer.data.LibraryScanner
+import ir.mariaplayer.data.PlaybackPrefs
+import ir.mariaplayer.data.PlaylistPrefs
+import ir.mariaplayer.data.QueryNormalizer
+import ir.mariaplayer.data.SortMode
+import ir.mariaplayer.data.Source
+import ir.mariaplayer.lyrics.LrcLine
+import ir.mariaplayer.lyrics.LrcParser
+import ir.mariaplayer.lyrics.LyricsCache
+import ir.mariaplayer.lyrics.LyricsScorer
+import ir.mariaplayer.models.ModelCatalog
+import ir.mariaplayer.models.ModelDownloader
+import ir.mariaplayer.translate.TranslationManager
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.random.Random
+
+private data class TestOutcome(val name: String, val passed: Boolean, val detail: String)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SelfTestScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    val outcomes = remember { mutableStateListOf<TestOutcome>() }
+    var running by remember { mutableStateOf(true) }
+    var report by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        delay(250)  // let first frame draw
+        val rep = runAllTests(context) { name, passed, detail ->
+            outcomes.add(TestOutcome(name, passed, detail))
+        }
+        report = rep
+        running = false
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Self-test") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_close),
+                            contentDescription = "Back",
+                        )
+                    }
+                },
+                actions = {
+                    TextButton(
+                        enabled = !running && report.isNotEmpty(),
+                        onClick = { clipboard.setText(AnnotatedString(report)) },
+                    ) { Text("Copy") }
+                },
+            )
+        },
+    ) { inner ->
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            if (running) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Running tests...",
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+            LazyColumn(Modifier.weight(1f)) {
+                items(outcomes) { o ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            if (o.passed) "✔" else "✘",
+                            color = if (o.passed) Color(0xFF2E7D32) else Color(0xFFC62828),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(o.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                o.detail,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    HorizontalDivider()
+                }
+            }
+            if (!running && report.isNotEmpty()) {
+                HorizontalDivider()
+                SelectionContainer {
+                    Text(
+                        report,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 220.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(12.dp),
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private suspend fun runAllTests(
+    context: Context,
+    onOutcome: (String, Boolean, String) -> Unit,
+): String {
+    val results = mutableListOf<TestOutcome>()
+
+    suspend fun test(name: String, block: suspend () -> String) {
+        try {
+            val detail = block()
+            results.add(TestOutcome(name, true, detail))
+            onOutcome(name, true, detail)
+        } catch (e: Throwable) {
+            val msg = (e.message ?: e::class.simpleName ?: "error").take(70)
+            results.add(TestOutcome(name, false, msg))
+            onOutcome(name, false, msg)
+        }
+    }
+
+    // 1) Permission
+    test("Audio permission") {
+        if (LibraryScanner.hasAudioPermission(context)) "granted"
+        else throw IllegalStateException("not granted")
+    }
+
+    // 2) Library scan
+    test("Library scan") {
+        val tracks = LibraryScanner.scan(context)
+        if (tracks.isEmpty()) throw IllegalStateException("0 tracks")
+        "${tracks.size} tracks"
+    }
+
+    // 3) Favorites round-trip
+    test("Favorites round-trip") {
+        val testId = 9_900_000_000L + Random.nextLong(100_000)
+        FavoritesPrefs.set(context, testId, true)
+        val added = FavoritesPrefs.snapshot(context).contains(testId)
+        FavoritesPrefs.set(context, testId, false)
+        val removed = !FavoritesPrefs.snapshot(context).contains(testId)
+        if (!added || !removed) throw IllegalStateException("add=$added rm=$removed")
+        "ok"
+    }
+
+    // 4) Sort pref
+    test("Sort preference") {
+        val orig = LibraryPrefs.readSort(context)
+        LibraryPrefs.saveSort(context, SortMode.DURATION)
+        val got = LibraryPrefs.readSort(context)
+        LibraryPrefs.saveSort(context, orig)
+        if (got != SortMode.DURATION) throw IllegalStateException("got $got")
+        "ok"
+    }
+
+    // 5) PlaybackPrefs
+    test("Playback resume state") {
+        val orig = PlaybackPrefs.read(context)
+        PlaybackPrefs.save(context, 12_345L, 6_789L)
+        val got = PlaybackPrefs.read(context)
+        PlaybackPrefs.save(context, orig.trackId ?: 0L, orig.positionMs)
+        if (got.trackId != 12_345L || got.positionMs != 6_789L)
+            throw IllegalStateException("got ${got.trackId}/${got.positionMs}")
+        "ok"
+    }
+
+    // 6) Playlist CRUD
+    test("Playlist CRUD") {
+        val name = "selftest_${System.currentTimeMillis()}"
+        val id = PlaylistPrefs.create(context, name)
+        if (id <= 0) throw IllegalStateException("create id=$id")
+        val tId = 888_888L
+        val added = PlaylistPrefs.addTrack(context, id, tId)
+        val found = PlaylistPrefs.snapshot(context).find { it.id == id }
+        PlaylistPrefs.delete(context, id)
+        val gone = PlaylistPrefs.snapshot(context).none { it.id == id }
+        if (!added || found?.trackIds?.contains(tId) != true || !gone)
+            throw IllegalStateException("add=$added gone=$gone")
+        "ok"
+    }
+
+    // 7) Lyrics cache
+    test("Lyrics cache") {
+        val id = 9_999_991L
+        LyricsCache.writeLyrics(context, id, "[00:01.00]test", "plain test")
+        val got = LyricsCache.read(context, id)
+        LyricsCache.clearLyrics(context, id)
+        if (got.synced?.contains("test") != true)
+            throw IllegalStateException("synced=null")
+        "ok"
+    }
+
+    // 8) LRC parser
+    test("LRC parser") {
+        val lrc = "[00:01.00]Hello\n[00:05.50]World\n[00:10.00]!"
+        val lines = LrcParser.parse(lrc)
+        if (lines.size != 3) throw IllegalStateException("size=${lines.size}")
+        if (lines[0].timeMs != 1_000L) throw IllegalStateException("t0=${lines[0].timeMs}")
+        if (lines[1].timeMs != 5_500L) throw IllegalStateException("t1=${lines[1].timeMs}")
+        "${lines.size} lines"
+    }
+
+    // 9) activeIndex
+    test("LRC activeIndex") {
+        val lines = listOf(LrcLine(1_000L, "a"), LrcLine(5_000L, "b"), LrcLine(10_000L, "c"))
+        if (LrcParser.activeIndex(lines, 0L) != -1) throw IllegalStateException("t0")
+        if (LrcParser.activeIndex(lines, 1_500L) != 0) throw IllegalStateException("t1")
+        if (LrcParser.activeIndex(lines, 7_000L) != 1) throw IllegalStateException("t2")
+        "ok"
+    }
+
+    // 10) LyricsScorer
+    test("Lyrics scorer") {
+        val s = LyricsScorer.score("Hello", "Adele", 295, "Hello", "Adele", 295)
+        if (s != 100) throw IllegalStateException("perfect=$s")
+        val s2 = LyricsScorer.score("Hello", "Adele", 295, "Goodbye", "Other", 100)
+        if (s2 >= 40) throw IllegalStateException("reject=$s2")
+        "ok"
+    }
+
+    // 11) QueryNormalizer
+    test("Query normalizer") {
+        val n = QueryNormalizer.normalize("Hello", "Adele", "hello.mp3")
+        if (n.title != "Hello" || n.source != Source.TAG)
+            throw IllegalStateException("${n.title}/${n.source}")
+        val n2 = QueryNormalizer.normalize("", "", "07_song_name.mp3")
+        if (n2.title.isBlank()) throw IllegalStateException("empty")
+        "ok"
+    }
+
+    // 12) Model catalog asset
+    test("Model catalog") {
+        val models = ModelCatalog.load(context)
+        if (models.isEmpty()) throw IllegalStateException("empty")
+        "${models.size} models"
+    }
+
+    // 13) Downloaded models list
+    test("Models on disk") {
+        val dl = ModelDownloader(context)
+        "${dl.listDownloaded().size} on disk"
+    }
+
+    // 14) Translation detect (ML Kit language-id, ~2MB one-time)
+    test("Translation detect") {
+        try {
+            val lang = TranslationManager.detect("Hello world")
+            if (lang != "en") throw IllegalStateException("got $lang")
+            "en"
+        } catch (e: Throwable) {
+            throw IllegalStateException("offline or model missing")
+        }
+    }
+
+    // ── Build report ──
+    val pass = results.count { it.passed }
+    val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
+    val sb = StringBuilder()
+    sb.appendLine("MariaPlayer Self-Test")
+    sb.appendLine("Time:    $time")
+    sb.appendLine("Device:  ${Build.MANUFACTURER} ${Build.MODEL}")
+    sb.appendLine("Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
+    sb.appendLine("─".repeat(52))
+    results.forEach { o ->
+        val mark = if (o.passed) "✔ PASS" else "✘ FAIL"
+        sb.appendLine("$mark  ${o.name}  —  ${o.detail}")
+    }
+    sb.appendLine("─".repeat(52))
+    sb.appendLine("Result: $pass/${results.size} passed")
+    return sb.toString()
+}
