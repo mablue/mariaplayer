@@ -311,6 +311,118 @@ private suspend fun runAllTests(
         }
     }
 
+    // 15) Catalog schema: required fields present on every entry
+    test("Catalog schema") {
+        val models = ModelCatalog.load(context)
+        if (models.isEmpty()) throw IllegalStateException("empty")
+        val bad = models.filter { m ->
+            m.id.isBlank() || m.name.isBlank() || m.url.isBlank() || m.sizeBytes <= 0
+        }
+        if (bad.isNotEmpty())
+            throw IllegalStateException("${bad.size} invalid: ${bad.first().id}")
+        "all ${models.size} valid"
+    }
+
+    // 16) Catalog engine diversity (verifies multi-engine coverage)
+    test("Catalog engines") {
+        val models = ModelCatalog.load(context)
+        val engines = models.map { it.engine }.distinct().sorted()
+        if (engines.size < 3)
+            throw IllegalStateException("only ${engines.size} engine(s)")
+        "${engines.size}: ${engines.joinToString(",")}"
+    }
+
+    // 17) Downloader: isDownloaded must be false for unknown id
+    test("Downloader isDownloaded") {
+        val dl = ModelDownloader(context)
+        if (dl.isDownloaded("__selftest_nope__", null))
+            throw IllegalStateException("no-hash should be false")
+        if (dl.isDownloaded("__selftest_nope__", "deadbeef"))
+            throw IllegalStateException("bad-hash should be false")
+        "ok"
+    }
+
+    // 18) Translation cache round-trip (no ML Kit call, pure DataStore)
+    test("Translation cache") {
+        val id = 9_888_881L
+        LyricsCache.writeTranslation(context, id, "fa", "سلام دنیا")
+        val got = LyricsCache.readTranslation(context, id)
+        LyricsCache.clearTranslation(context, id)
+        val after = LyricsCache.readTranslation(context, id)
+        if (got?.first != "fa" || got.second != "سلام دنیا")
+            throw IllegalStateException("got $got")
+        if (after != null)
+            throw IllegalStateException("not cleared")
+        "ok"
+    }
+
+    // 19) Language detection: Persian (2MB model, cached after first run)
+    test("Detect Persian") {
+        try {
+            val lang = TranslationManager.detect("سلام دنیا")
+            if (lang != "fa") throw IllegalStateException("got $lang")
+            "fa"
+        } catch (e: Throwable) {
+            throw IllegalStateException("offline or model missing")
+        }
+    }
+
+    // 15) Catalog schema: required fields present on every entry
+    test("Catalog schema") {
+        val models = ModelCatalog.load(context)
+        if (models.isEmpty()) throw IllegalStateException("empty")
+        val bad = models.filter { m ->
+            m.id.isBlank() || m.name.isBlank() || m.url.isBlank() || m.sizeBytes <= 0
+        }
+        if (bad.isNotEmpty())
+            throw IllegalStateException("${bad.size} invalid: ${bad.first().id}")
+        "all ${models.size} valid"
+    }
+
+    // 16) Catalog engine diversity
+    test("Catalog engines") {
+        val models = ModelCatalog.load(context)
+        val engines = models.map { it.engine }.distinct().sorted()
+        if (engines.size < 3)
+            throw IllegalStateException("only ${engines.size} engine(s)")
+        "${engines.size}: ${engines.joinToString(",")}"
+    }
+
+    // 17) Downloader: isDownloaded returns false for unknown id
+    test("Downloader isDownloaded") {
+        val dl = ModelDownloader(context)
+        if (dl.isDownloaded("__selftest_nope__", null))
+            throw IllegalStateException("no-hash should be false")
+        if (dl.isDownloaded("__selftest_nope__", "deadbeef"))
+            throw IllegalStateException("bad-hash should be false")
+        "ok"
+    }
+
+    // 18) Translation cache round-trip (pure DataStore, no ML Kit call)
+    test("Translation cache") {
+        val id = 9_888_881L
+        LyricsCache.writeTranslation(context, id, "fa", "سلام دنیا")
+        val got = LyricsCache.readTranslation(context, id)
+        LyricsCache.clearTranslation(context, id)
+        val after = LyricsCache.readTranslation(context, id)
+        if (got?.first != "fa" || got.second != "سلام دنیا")
+            throw IllegalStateException("got $got")
+        if (after != null)
+            throw IllegalStateException("not cleared")
+        "ok"
+    }
+
+    // 19) Language detection: Persian (2MB model, cached after first run)
+    test("Detect Persian") {
+        try {
+            val lang = TranslationManager.detect("سلام دنیا")
+            if (lang != "fa") throw IllegalStateException("got $lang")
+            "fa"
+        } catch (e: Throwable) {
+            throw IllegalStateException("offline or model missing")
+        }
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
