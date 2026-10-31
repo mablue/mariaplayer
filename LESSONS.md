@@ -210,3 +210,15 @@
 - cause: /api/search sometimes returns multiple entries; scorer picked plain even though a synced one at similar score existed
 - fix: (1) /api/get with deltas [0,±2,±3,±5] first (returns synced on exact match), (2) in pickBest, prefer synced when best is plain and an alternative has synced within 15 points of best score
 - also: patch1 indentation was wrong (4 spaces vs actual 8, inside withContext block) — tool correctly aborted before write
+
+## 2026-10-31 VAD harms music transcription
+- tried: whisper-cli --vad with ggml-silero-v5.1.2 on music
+- result:
+  - EN: VAD stripped all lyrics, kept only spoken intro (6 lines vs 30+)
+  - TR: 3 lines output instead of 9
+  - FA: garbled CJK code tokens (not even valid Persian)
+- cause: Silero VAD is trained on speech, not singing. It treats vocals as noise.
+- learned: NEVER use VAD for music ASR. Skip it entirely.
+- also: tiny-q5_1 (31MB) fundamentally cannot handle Persian music — garbled output even without VAD
+- decision: EN/TR try base-q5_1 (60MB) WITHOUT VAD. FA: disable whisper entirely.
+- refused: Spleeter (30MB) test — tiny model is the bottleneck, not audio quality
