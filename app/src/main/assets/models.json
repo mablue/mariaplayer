@@ -5,7 +5,10 @@
     {
       "id": "whisper-tiny-q5_1",
       "name": "Whisper Tiny (q5_1)",
-      "language": ["en", "multi"],
+      "language": [
+        "en",
+        "multi"
+      ],
       "sizeBytes": 32000000,
       "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny-q5_1.bin",
       "format": "ggml",
@@ -16,7 +19,9 @@
     {
       "id": "whisper-tiny-en-q5_1",
       "name": "Whisper Tiny EN (q5_1)",
-      "language": ["en"],
+      "language": [
+        "en"
+      ],
       "sizeBytes": 32000000,
       "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en-q5_1.bin",
       "format": "ggml",
@@ -27,7 +32,10 @@
     {
       "id": "whisper-base-q5_1",
       "name": "Whisper Base (q5_1)",
-      "language": ["en", "multi"],
+      "language": [
+        "en",
+        "multi"
+      ],
       "sizeBytes": 60000000,
       "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin",
       "format": "ggml",
@@ -38,7 +46,9 @@
     {
       "id": "whisper-base-en-q5_1",
       "name": "Whisper Base EN (q5_1)",
-      "language": ["en"],
+      "language": [
+        "en"
+      ],
       "sizeBytes": 60000000,
       "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en-q5_1.bin",
       "format": "ggml",
@@ -49,7 +59,10 @@
     {
       "id": "whisper-small-q5_1",
       "name": "Whisper Small (q5_1)",
-      "language": ["en", "multi"],
+      "language": [
+        "en",
+        "multi"
+      ],
       "sizeBytes": 190000000,
       "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin",
       "format": "ggml",
@@ -60,7 +73,9 @@
     {
       "id": "whisper-small-en-q5_1",
       "name": "Whisper Small EN (q5_1)",
-      "language": ["en"],
+      "language": [
+        "en"
+      ],
       "sizeBytes": 190000000,
       "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en-q5_1.bin",
       "format": "ggml",
@@ -71,7 +86,10 @@
     {
       "id": "whisper-large-v3-turbo-q5_0",
       "name": "Whisper Large v3 Turbo (q5_0)",
-      "language": ["en", "multi"],
+      "language": [
+        "en",
+        "multi"
+      ],
       "sizeBytes": 574000000,
       "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
       "format": "ggml",
@@ -82,7 +100,9 @@
     {
       "id": "moonshine-tiny-q4_k",
       "name": "Moonshine Tiny (Q4_K)",
-      "language": ["en"],
+      "language": [
+        "en"
+      ],
       "sizeBytes": 21000000,
       "url": "https://huggingface.co/UsefulSensors/moonshine/resolve/main/onnx/tiny/quantized/tiny_q4_k.onnx",
       "format": "onnx",
@@ -93,7 +113,9 @@
     {
       "id": "moonshine-base-q4_k",
       "name": "Moonshine Base (Q4_K)",
-      "language": ["en"],
+      "language": [
+        "en"
+      ],
       "sizeBytes": 61000000,
       "url": "https://huggingface.co/UsefulSensors/moonshine/resolve/main/onnx/base/quantized/base_q4_k.onnx",
       "format": "onnx",
@@ -103,41 +125,87 @@
     },
     {
       "id": "shenava-rizeh-pizeh-int8",
-      "name": "Shenava Rizeh-Pizeh (INT8)",
-      "language": ["fa"],
+      "name": "Shenava Rizeh-Pizeh v1.0 (sherpa-onnx)",
+      "language": [
+        "fa"
+      ],
       "sizeBytes": 15000000,
-      "url": "https://huggingface.co/alirezamsh/shenava/resolve/main/rizeh-pizeh/model.int8.onnx",
-      "format": "onnx",
+      "url": "https://huggingface.co/Reza2kn/Shenava-Rizeh-Pizeh-v1.0-sherpa-onnx/resolve/main/model.onnx",
+      "format": "nemo-ctc",
       "engine": "sherpa-onnx",
       "license": "Apache-2.0",
-      "musicRating": "Unknown"
+      "musicRating": "Unknown",
+      "files": [
+        {
+          "name": "model.onnx",
+          "url": "https://huggingface.co/Reza2kn/Shenava-Rizeh-Pizeh-v1.0-sherpa-onnx/resolve/main/model.onnx"
+        },
+        {
+          "name": "tokens.txt",
+          "url": "https://huggingface.co/Reza2kn/Shenava-Rizeh-Pizeh-v1.0-sherpa-onnx/resolve/main/tokens.txt"
+        }
+      ]
     },
     {
       "id": "shenava-rizeh-int8",
-      "name": "Shenava Rizeh (INT8)",
-      "language": ["fa"],
+      "name": "Shenava Rizeh v1.0 (sherpa-onnx, INT8)",
+      "language": [
+        "fa"
+      ],
       "sizeBytes": 35000000,
-      "url": "https://huggingface.co/alirezamsh/shenava/resolve/main/rizeh/model.int8.onnx",
-      "format": "onnx",
+      "url": "https://huggingface.co/Reza2kn/Shenava-Rizeh-v1.0-sherpa-onnx/resolve/main/model.onnx",
+      "format": "nemo-ctc",
       "engine": "sherpa-onnx",
       "license": "Apache-2.0",
-      "musicRating": "Unknown"
+      "musicRating": "Unknown",
+      "files": [
+        {
+          "name": "model.onnx",
+          "url": "https://huggingface.co/Reza2kn/Shenava-Rizeh-v1.0-sherpa-onnx/resolve/main/model.onnx"
+        },
+        {
+          "name": "tokens.txt",
+          "url": "https://huggingface.co/Reza2kn/Shenava-Rizeh-v1.0-sherpa-onnx/resolve/main/tokens.txt"
+        }
+      ]
     },
     {
       "id": "shenava-koochik-int8",
-      "name": "Shenava Koochik (INT8)",
-      "language": ["fa"],
+      "name": "Shenava Koochik v1.5 (sherpa-onnx, INT8)",
+      "language": [
+        "fa"
+      ],
       "sizeBytes": 120000000,
-      "url": "https://huggingface.co/alirezamsh/shenava/resolve/main/koochik/model.int8.onnx",
-      "format": "onnx",
+      "url": "https://huggingface.co/Reza2kn/Shenava-Koochik-v1.5-RNNT-sherpa-onnx/resolve/main/encoder.int8.onnx",
+      "format": "nemo-transducer",
       "engine": "sherpa-onnx",
       "license": "Apache-2.0",
-      "musicRating": "Unknown"
+      "musicRating": "Unknown",
+      "files": [
+        {
+          "name": "encoder.int8.onnx",
+          "url": "https://huggingface.co/Reza2kn/Shenava-Koochik-v1.5-RNNT-sherpa-onnx/resolve/main/encoder.int8.onnx"
+        },
+        {
+          "name": "decoder.int8.onnx",
+          "url": "https://huggingface.co/Reza2kn/Shenava-Koochik-v1.5-RNNT-sherpa-onnx/resolve/main/decoder.int8.onnx"
+        },
+        {
+          "name": "joiner.int8.onnx",
+          "url": "https://huggingface.co/Reza2kn/Shenava-Koochik-v1.5-RNNT-sherpa-onnx/resolve/main/joiner.int8.onnx"
+        },
+        {
+          "name": "tokens.txt",
+          "url": "https://huggingface.co/Reza2kn/Shenava-Koochik-v1.5-RNNT-sherpa-onnx/resolve/main/tokens.txt"
+        }
+      ]
     },
     {
       "id": "vosk-small-en-us",
       "name": "Vosk Small EN-US",
-      "language": ["en"],
+      "language": [
+        "en"
+      ],
       "sizeBytes": 40000000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
       "format": "zip",
@@ -148,7 +216,9 @@
     {
       "id": "vosk-small-tr",
       "name": "Vosk Small TR",
-      "language": ["tr"],
+      "language": [
+        "tr"
+      ],
       "sizeBytes": 52000000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-small-tr-0.3.zip",
       "format": "zip",
@@ -159,7 +229,9 @@
     {
       "id": "vosk-small-cn",
       "name": "Vosk Small Chinese",
-      "language": ["zh"],
+      "language": [
+        "zh"
+      ],
       "sizeBytes": 32000000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-small-cn-0.3.zip",
       "format": "zip",
@@ -170,7 +242,9 @@
     {
       "id": "vosk-small-ru",
       "name": "Vosk Small Russian",
-      "language": ["ru"],
+      "language": [
+        "ru"
+      ],
       "sizeBytes": 39000000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip",
       "format": "zip",
@@ -181,7 +255,9 @@
     {
       "id": "vosk-small-de",
       "name": "Vosk Small German",
-      "language": ["de"],
+      "language": [
+        "de"
+      ],
       "sizeBytes": 45000000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-small-de-0.15.zip",
       "format": "zip",
@@ -192,7 +268,9 @@
     {
       "id": "vosk-small-fr",
       "name": "Vosk Small French",
-      "language": ["fr"],
+      "language": [
+        "fr"
+      ],
       "sizeBytes": 41000000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip",
       "format": "zip",
@@ -203,7 +281,9 @@
     {
       "id": "vosk-small-es",
       "name": "Vosk Small Spanish",
-      "language": ["es"],
+      "language": [
+        "es"
+      ],
       "sizeBytes": 39000000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip",
       "format": "zip",
@@ -214,7 +294,9 @@
     {
       "id": "vosk-small-hi",
       "name": "Vosk Small Hindi",
-      "language": ["hi"],
+      "language": [
+        "hi"
+      ],
       "sizeBytes": 45000000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-small-hi-0.22.zip",
       "format": "zip",
@@ -225,7 +307,9 @@
     {
       "id": "vosk-arabic-small",
       "name": "Vosk Arabic (Small)",
-      "language": ["ar"],
+      "language": [
+        "ar"
+      ],
       "sizeBytes": 317800000,
       "url": "https://alphacephei.com/vosk/models/vosk-model-ar-mgb2-0.4.zip",
       "format": "zip",
@@ -236,7 +320,10 @@
     {
       "id": "zipformer-zh-en-bilingual",
       "name": "Zipformer Bilingual ZH-EN",
-      "language": ["zh", "en"],
+      "language": [
+        "zh",
+        "en"
+      ],
       "sizeBytes": 174000000,
       "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20.tar.bz2",
       "format": "tar.bz2",
@@ -247,7 +334,9 @@
     {
       "id": "zipformer-ko",
       "name": "Zipformer Korean",
-      "language": ["ko"],
+      "language": [
+        "ko"
+      ],
       "sizeBytes": 134000000,
       "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-korean-2024-06-16.tar.bz2",
       "format": "tar.bz2",
@@ -258,7 +347,9 @@
     {
       "id": "zipformer-ja",
       "name": "Zipformer Japanese",
-      "language": ["ja"],
+      "language": [
+        "ja"
+      ],
       "sizeBytes": 152000000,
       "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-ja-reazonspeech-2024-08-01.tar.bz2",
       "format": "tar.bz2",
@@ -269,7 +360,16 @@
     {
       "id": "zipformer-multi-8lang",
       "name": "Zipformer Multi (8 languages)",
-      "language": ["ar", "en", "id", "ja", "ru", "th", "vi", "zh"],
+      "language": [
+        "ar",
+        "en",
+        "id",
+        "ja",
+        "ru",
+        "th",
+        "vi",
+        "zh"
+      ],
       "sizeBytes": 341000000,
       "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-multi-8lang-2024-07-16.tar.bz2",
       "format": "tar.bz2",
@@ -280,7 +380,13 @@
     {
       "id": "sensevoice-small-zh-en-ja-ko-yue",
       "name": "SenseVoice Small (ZH/EN/JA/KO/YUE)",
-      "language": ["zh", "en", "ja", "ko", "yue"],
+      "language": [
+        "zh",
+        "en",
+        "ja",
+        "ko",
+        "yue"
+      ],
       "sizeBytes": 239200000,
       "url": "https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/model.int8.onnx",
       "format": "onnx",

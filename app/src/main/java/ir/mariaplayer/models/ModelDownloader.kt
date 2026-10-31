@@ -47,6 +47,11 @@ class ModelDownloader(private val context: Context) {
     fun modelFile(id: String): File = File(dir, "$id.bin")
     fun partFile(id: String): File  = File(dir, "$id.bin.part")
 
+    // PR-L10a: multi-file models (sherpa-onnx needs model.onnx + tokens.txt).
+    // Everything lives under models/<id>/ for easy engine access.
+    fun modelDir(id: String): File = File(dir, id).apply { mkdirs() }
+    fun modelPath(id: String, filename: String): File = File(modelDir(id), filename)
+
     fun isDownloaded(id: String, expectedSha256: String?): Boolean {
         val f = modelFile(id)
         if (!f.exists()) return false
@@ -167,6 +172,56 @@ class ModelDownloader(private val context: Context) {
     fun delete(id: String) {
         modelFile(id).delete()
         partFile(id).delete()
+        modelDir(id).deleteRecursively()
+    }
+
+    /**
+     * PR-L10a: download a set of files into models/<id>/.
+     * Each entry is (filename, url). Progress reports aggregate bytes.
+     * Resumable per file via .part suffix. No SHA-256 (sherpa models don't
+     * publish one); size is validated implicitly by successful HTTP 200.
+     */
+    suspend fun downloadFiles(
+        id: String,
+        files: List<Pair<String, String>>,
+        onProgress: (DownloadProgress) -> Unit = {},
+    ): File = withContext(Dispatchers.IO) {
+        val targetDir = modelDir(id)
+        var totalBytes = 0L
+        var downloaded = 0L
+
+        for ((filename, url) in files) {
+            val dst = File(targetDir, filename)
+            val part = File(targetDir, "$filename.part")
+            if (dst.exists() && dst.length() > 0) {
+                totalBytes += dst.length()
+                downloaded += dst.length()
+                onProgress(DownloadProgress(downloaded, totalBytes, done = false))
+                continue
+            }
+            var lastErr: String? = null
+            var ok = false
+            repeat(3) { attempt ->
+                try {
+                    val resumeFrom = if (part.exists()) part.length() else 0L
+                    downloadOnce(url, part, resumeFrom) { p ->
+                        onProgress(DownloadProgress(downloaded + p.bytesDownloaded, -1L, false))
+                    }
+                    if (dst.exists()) dst.delete()
+                    if (!part.renameTo(dst)) { part.copyTo(dst, true); part.delete() }
+                    downloaded += dst.length()
+                    totalBytes += dst.length()
+                    ok = true
+                    return@repeat
+                } catch (e: Exception) {
+                    lastErr = e.message ?: "IO"
+                    if (attempt < 2) delay(1000L * (attempt + 1))
+                }
+            }
+            if (!ok) throw IOException("Failed $filename: $lastErr")
+        }
+        onProgress(DownloadProgress(downloaded, downloaded, done = true))
+        targetDir
     }
 
     fun listDownloaded(): List<File> =

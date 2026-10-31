@@ -52,6 +52,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("com.google.mlkit:translate:17.0.3")
     implementation("com.google.mlkit:language-id:17.0.5")
+    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8")
 }
 
 dependencies {
