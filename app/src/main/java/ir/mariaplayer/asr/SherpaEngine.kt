@@ -1,5 +1,7 @@
 package ir.mariaplayer.asr
 
+import com.k2fsa.sherpa.onnx.FeatureConfig
+import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineNemoEncDecCtcModelConfig
 import com.k2fsa.sherpa.onnx.OfflineRecognizer
 import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
@@ -12,9 +14,10 @@ import java.io.File
  *   models/<id>/model.onnx
  *   models/<id>/tokens.txt
  *
- * The recognizer is stateful per config; reuse one instance per model.
- * This class is deliberately dumb: feed it 16 kHz mono float samples,
- * get text back. Audio decoding lives in PR-L10b.
+ * API notes (verified against k2-fsa/sherpa-onnx master Kotlin source):
+ *   - NeMo CTC config field on OfflineModelConfig is `nemo` (NOT `nemoCtc`)
+ *   - Feature extractor config class is `FeatureConfig` (NOT `FeatureExtractorConfig`)
+ *   - OfflineRecognizer supports a single-arg constructor that takes config only
  */
 class SherpaEngine(
     private val modelDir: File,
@@ -30,12 +33,12 @@ class SherpaEngine(
         require(tokens.exists()) { "tokens.txt missing" }
 
         val config = OfflineRecognizerConfig(
-            featConfig = com.k2fsa.sherpa.onnx.FeatureExtractorConfig(
-                samplingRate = 16000,
+            featConfig = FeatureConfig(
+                sampleRate = 16000,
                 featureDim = 80,
             ),
-            modelConfig = com.k2fsa.sherpa.onnx.OfflineModelConfig(
-                nemoCtc = OfflineNemoEncDecCtcModelConfig(
+            modelConfig = OfflineModelConfig(
+                nemo = OfflineNemoEncDecCtcModelConfig(
                     model = model.absolutePath,
                 ),
                 tokens = tokens.absolutePath,
