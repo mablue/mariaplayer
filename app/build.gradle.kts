@@ -38,6 +38,10 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
 }
+configurations.all {
+    exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")
+}
+
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.10.01"))
     implementation("androidx.compose.material3:material3")
@@ -52,7 +56,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("com.google.mlkit:translate:17.0.3")
     implementation("com.google.mlkit:language-id:17.0.5")
-    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8")
+    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8") {
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")
+    } {
+        // JitPack POM pulls both the Android AAR and the desktop JVM jar.
+        // They contain identical com.k2fsa.sherpa.onnx.* classes → duplicate-class
+        // failure at checkReleaseDuplicateClasses. Android only needs the AAR.
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")
+    }
 }
 
 dependencies {
