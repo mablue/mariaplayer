@@ -61,8 +61,6 @@ dependencies {
     implementation("com.google.mlkit:translate:17.0.3")
     implementation("com.google.mlkit:language-id:17.0.5")
     implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8") {
-        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")
-    } {
         // JitPack POM pulls both the Android AAR and the desktop JVM jar.
         // They contain identical com.k2fsa.sherpa.onnx.* classes → duplicate-class
         // failure at checkReleaseDuplicateClasses. Android only needs the AAR.
