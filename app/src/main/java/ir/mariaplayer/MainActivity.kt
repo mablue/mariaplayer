@@ -74,6 +74,7 @@ import ir.mariaplayer.ui.AddToPlaylistSheet
 import ir.mariaplayer.ui.PermissionScreen
 import ir.mariaplayer.ui.PlaylistDetailScreen
 import ir.mariaplayer.ui.PlaylistsScreen
+import ir.mariaplayer.ui.ModelManagerScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -245,6 +246,9 @@ private fun AppRoot() {
                 onLyricsClick = { lyricsSheetOpen = true },
             )
         }
+        screen == "models" -> {
+            ModelManagerScreen(onBack = { screen = "library" })
+        }
         screen.startsWith("playlist:") -> {
             val pid = screen.removePrefix("playlist:").toLongOrNull()
             if (pid == null) {
@@ -298,6 +302,7 @@ private fun AppRoot() {
         onTrackLongClick = { t -> pendingTrackForPlaylist = t },
         onLyricsClick = { lyricsSheetOpen = true },
         onPlaylistsClick = { screen = "playlists" },
+        onModelsClick = { screen = "models" },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
             if (Build.VERSION.SDK_INT >= 29) {
@@ -400,6 +405,7 @@ private fun LibraryScreen(
     onTrackLongClick: (Track) -> Unit,
     onLyricsClick: () -> Unit,
     onPlaylistsClick: () -> Unit,
+    onModelsClick: () -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
@@ -414,6 +420,12 @@ private fun LibraryScreen(
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
+                    IconButton(onClick = onModelsClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_model),
+                            contentDescription = "Models",
+                        )
+                    }
                     IconButton(onClick = onPlaylistsClick) {
                         Icon(
                             painter = painterResource(R.drawable.ic_playlist),
