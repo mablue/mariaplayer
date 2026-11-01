@@ -5,7 +5,13 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -315,9 +321,7 @@ fun LyricsDisplayScreen(
                         onArtistChange = { editArtist = it },
                         onSearch = { trigger += 1 },
                     )
-                    DispState.Loading -> CenterBox {
-                        CircularProgressIndicator(color = Color.White)
-                    }
+                    DispState.Loading -> LoadingPulse()
                     is DispState.Synced -> SyncedBody(
                         lines = s.lines,
                         translations = translations,
@@ -478,6 +482,51 @@ private fun FieldBlock(label: String, value: String) {
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+@Composable
+private fun LoadingPulse() {
+    val t = rememberInfiniteTransition(label = "loading")
+    val scale by t.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.18f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "scale",
+    )
+    val alpha by t.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "alpha",
+    )
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "♪",
+                fontSize = 84.sp,
+                color = Color.White.copy(alpha = alpha),
+                modifier = Modifier.graphicsLayer(scaleX = scale, scaleY = scale),
+            )
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "Searching lyrics…",
+                color = Color.White.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Trying multiple tag combinations",
+                color = Color.White.copy(alpha = 0.4f),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
     }
 }
 

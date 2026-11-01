@@ -356,6 +356,34 @@ private suspend fun runAllTests(
         "ok"
     }
 
+    // 19c) Scorer rejects empty-shell results
+    test("Scorer rejects empty") {
+        val empty = ir.mariaplayer.lyrics.LyricsResult(
+            title = "X", artist = "Y", album = null, durationSec = 100,
+            syncedLyrics = null, plainLyrics = null,
+            source = "test", score = 0,
+        )
+        val r = ir.mariaplayer.lyrics.LyricsScorer.pickBest(
+            listOf(empty), "X", "Y", 100,
+        )
+        if (r != null) throw IllegalStateException("empty accepted")
+        "ok"
+    }
+
+    // 19d) Scorer accepts real lyrics
+    test("Scorer accepts real") {
+        val real = ir.mariaplayer.lyrics.LyricsResult(
+            title = "X", artist = "Y", album = null, durationSec = 100,
+            syncedLyrics = null, plainLyrics = "line one\nline two",
+            source = "test", score = 0,
+        )
+        val r = ir.mariaplayer.lyrics.LyricsScorer.pickBest(
+            listOf(real), "X", "Y", 100,
+        )
+        if (r == null) throw IllegalStateException("real rejected")
+        "ok"
+    }
+
     // 20) Sherpa engine: Shenava Rizeh model on disk + load test
     test("Sherpa Shenava load") {
         val dl = ModelDownloader(context)

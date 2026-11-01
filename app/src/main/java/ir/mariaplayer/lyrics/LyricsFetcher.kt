@@ -1,7 +1,6 @@
 package ir.mariaplayer.lyrics
 
 import ir.mariaplayer.data.QueryNormalizer
-import ir.mariaplayer.data.Source
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -13,18 +12,23 @@ import java.net.URL
 import java.net.URLEncoder
 
 /**
- * Fetches lyrics from LRCLIB (https://lrclib.net/api/search).
+ * PR-L13: multi-strategy lyrics fetcher.
  *
- * Behaviour:
- *   - Builds up to 3 candidate queries from QueryNormalizer output.
- *   - Stops at the first query that yields a scored result above threshold.
- *   - Never fires automatically — caller must invoke fetch().
- *   - Returns NetworkError / Timeout so UI can distinguish "offline"
- *     from "no lyrics".
+ * For each candidate query (up to 6, in order of confidence):
+ *  1. cleaned title + artist
+ *  2. title with camelCase split + artist
+ *  3. title alone (drop placeholder artist)
+ *  4. first 3 words of title + artist
+ *  5. filename without extension
+ *  6. filename with camelCase split
+ *
+ * Stop at the first candidate that yields a result **with actual lyrics**.
+ * Empty-shell results (both plain and synced null) are filtered at every
+ * stage so we never show a blank "found" screen.
  */
 class LyricsFetcher(
     private val timeoutMs: Int = 8000,
-    private val userAgent: String = "MariaPlayer/1.0 (lyrics PR-L2)",
+    private val userAgent: String = "MariaPlayer/1.0 (lyrics PR-L13)",
 ) {
 
     suspend fun fetch(
@@ -34,81 +38,96 @@ class LyricsFetcher(
         durationSec: Int,
     ): LyricsFetchResult = withContext(Dispatchers.IO) {
         val norm = QueryNormalizer.normalize(rawTitle, rawArtist, filename)
-        val candidates = buildCandidates(norm)
+        val candidates = buildCandidates(norm, filename)
 
         if (candidates.isEmpty()) return@withContext LyricsFetchResult.NotFound
 
         var lastError: IOException? = null
 
-        // First: try /api/get (exact match, returns synced when available)
-        for (q in candidates) {
+        for ((idx, q) in candidates.withIndex()) {
+            // /api/get — only first candidate runs the delta sweep.
+            val deltas = if (idx == 0 && durationSec > 0)
+                listOf(0, -2, 2, -3, 3, -5, 5) else listOf(0)
             try {
-                val hit = tryGetLrclib(q.title, q.artist, durationSec)
-                if (hit != null) return@withContext LyricsFetchResult.Found(hit)
-            } catch (e: SocketTimeoutException) {
-                lastError = e
-            } catch (e: IOException) {
-                lastError = e
-            }
-        }
+                val hit = tryGetLrclib(q.title, q.artist, durationSec, deltas)
+                if (hit != null && hasLyrics(hit)) {
+                    return@withContext LyricsFetchResult.Found(hit)
+                }
+            } catch (e: SocketTimeoutException) { lastError = e }
+              catch (e: IOException) { lastError = e }
 
-        // Second: /api/search (candidate list, uses scorer)
-        for (q in candidates) {
+            // /api/search — filter empty shells before scoring.
             try {
-                val results = searchLrclib(q.title, q.artist)
+                val raw = searchLrclib(q.title, q.artist)
+                val usable = raw.filter { hasLyrics(it) }
                 val best = LyricsScorer.pickBest(
-                    results, q.title, q.artist, durationSec,
+                    usable, q.title, q.artist, durationSec,
                 )
                 if (best != null) return@withContext LyricsFetchResult.Found(best)
-            } catch (e: SocketTimeoutException) {
-                lastError = e
-            } catch (e: IOException) {
-                lastError = e
+            } catch (e: SocketTimeoutException) { lastError = e }
+              catch (e: IOException) { lastError = e }
+
+            // Genius — first 2 candidates only (avoid rate limits).
+            if (idx < 2) {
+                try {
+                    val r = GeniusProvider.fetch(q.title, q.artist)
+                    if (r is LyricsFetchResult.Found && hasLyrics(r.result)) {
+                        return@withContext r
+                    }
+                } catch (_: Exception) {}
             }
         }
 
-        // Second layer: Genius with strict filter (helps Persian)
-        for (q in candidates) {
-            try {
-                val r = GeniusProvider.fetch(q.title, q.artist)
-                if (r is LyricsFetchResult.Found) return@withContext r
-            } catch (_: Exception) {}
-        }
         if (lastError is SocketTimeoutException) LyricsFetchResult.Timeout
-        else if (lastError != null) LyricsFetchResult.NetworkError(lastError!!.message ?: "IO")
+        else if (lastError != null)
+            LyricsFetchResult.NetworkError(lastError!!.message ?: "IO")
         else LyricsFetchResult.NotFound
     }
 
-    // ─── Internal ────────────────────────────────────────────────────────
+    private fun hasLyrics(r: LyricsResult): Boolean =
+        !r.plainLyrics.isNullOrBlank() || !r.syncedLyrics.isNullOrBlank()
 
     private data class Query(val title: String, val artist: String)
 
-    private fun buildCandidates(norm: ir.mariaplayer.data.NormalizedQuery): List<Query> {
+    private fun buildCandidates(
+        norm: ir.mariaplayer.data.NormalizedQuery,
+        filename: String,
+    ): List<Query> {
         val out = mutableListOf<Query>()
-        // Prefer the cleaned tag/filename title with cleaned artist.
-        if (norm.title.isNotBlank()) {
-            out += Query(norm.title, norm.artist)
-            // Second try: without artist (helps with placeholder-y artist names
-            // that slipped past PLACEHOLDERS list).
-            if (norm.artist.isNotBlank()) {
-                out += Query(norm.title, "")
-            }
-        }
-        // Filename variant only when tag was INVALID.
-        if (norm.source == Source.INVALID && norm.title.isNotBlank()) {
-            out += Query(norm.title, "")
-        }
-        return out.distinctBy { "${it.title}\u0000${it.artist}" }
+        val title = norm.title.trim()
+        val artist = norm.artist.trim()
+
+        if (title.isNotBlank()) out += Query(title, artist)
+
+        val camelTitle = splitCamel(title)
+        if (camelTitle != title) out += Query(camelTitle, artist)
+
+        if (title.isNotBlank() && artist.isNotBlank()) out += Query(title, "")
+
+        val short = title.split(" ").take(3).joinToString(" ").trim()
+        if (short.length >= 3 && short != title) out += Query(short, artist)
+
+        val fn = filename.substringBeforeLast('.')
+            .replace('_', ' ')
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        if (fn.isNotBlank() && fn != title) out += Query(fn, "")
+
+        val fnCamel = splitCamel(fn)
+        if (fnCamel != fn) out += Query(fnCamel, "")
+
+        return out.distinctBy { "${it.title}\u0000${it.artist}" }.take(6)
     }
+
+    private fun splitCamel(s: String): String =
+        s.replace(Regex("([a-z])([A-Z])"), "$1 $2")
 
     private fun tryGetLrclib(
         title: String,
         artist: String,
         durationSec: Int,
+        deltas: List<Int>,
     ): LyricsResult? {
-        // PR-L7a: when durationSec<=0 (player not ready), all deltas
-        // produce the same URL. Try once only.
-        val deltas = if (durationSec > 0) listOf(0, -2, 2, -3, 3, -5, 5) else listOf(0)
         for (d in deltas) {
             val dur = if (durationSec > 0) (durationSec + d).coerceAtLeast(0) else -1
             val urlStr = buildString {
@@ -136,18 +155,19 @@ class LyricsFetcher(
                     title        = o.optString("trackName", ""),
                     artist       = o.optString("artistName", ""),
                     album        = o.optString("albumName", "").ifBlank { null },
-                    durationSec  = if (o.has("duration")) o.optInt("duration", -1).takeIf { it >= 0 } else null,
+                    durationSec  = if (o.has("duration"))
+                        o.optInt("duration", -1).takeIf { it >= 0 } else null,
                     syncedLyrics = o.optString("syncedLyrics", "").ifBlank { null },
                     plainLyrics  = o.optString("plainLyrics", "").ifBlank { null },
                     source       = "lrclib",
                     score        = 100,
                 )
             } catch (e: SocketTimeoutException) {
-                throw e   // PR-L7a: propagate so fetch() sets lastError
+                throw e
             } catch (e: IOException) {
-                throw e   // PR-L7a: propagate so fetch() sets lastError
+                throw e
             } catch (_: Exception) {
-                continue  // JSON parse error — try next delta
+                continue
             } finally {
                 try { conn.disconnect() } catch (_: Exception) {}
             }
@@ -190,7 +210,8 @@ class LyricsFetcher(
                     title        = o.optString("trackName", ""),
                     artist       = o.optString("artistName", ""),
                     album        = o.optString("albumName", "").ifBlank { null },
-                    durationSec  = if (o.has("duration")) o.optInt("duration", -1).takeIf { it >= 0 } else null,
+                    durationSec  = if (o.has("duration"))
+                        o.optInt("duration", -1).takeIf { it >= 0 } else null,
                     syncedLyrics = o.optString("syncedLyrics", "").ifBlank { null },
                     plainLyrics  = o.optString("plainLyrics", "").ifBlank { null },
                     source       = "lrclib",

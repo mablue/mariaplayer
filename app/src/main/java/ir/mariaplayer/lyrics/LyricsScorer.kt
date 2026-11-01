@@ -63,7 +63,14 @@ object LyricsScorer {
         ambiguousGap: Int = 5,
     ): LyricsResult? {
         if (candidates.isEmpty()) return null
-        val scored = candidates.map { c ->
+        // PR-L13: reject "empty shell" candidates. LRCLIB has metadata-only
+        // entries where both plainLyrics and syncedLyrics are null. Scoring
+        // matches them by title+artist+duration alone and returns blank text.
+        val usable = candidates.filter {
+            !it.plainLyrics.isNullOrBlank() || !it.syncedLyrics.isNullOrBlank()
+        }
+        if (usable.isEmpty()) return null
+        val scored = usable.map { c ->
             c.copy(
                 score = score(
                     targetTitle, targetArtist, targetDurationSec,
