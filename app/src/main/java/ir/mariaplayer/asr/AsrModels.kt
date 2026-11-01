@@ -19,9 +19,9 @@ data class AvailableAsr(
 /**
  * PR-L14b: model discovery + selection.
  *
- * Scans filesDir/models/* for directories with a valid layout:
- *   CTC  → model.onnx or model.int8.onnx + tokens.txt
- *   RNNT → encoder + decoder + joiner (.onnx or .int8.onnx) + tokens.txt
+ * Scans each subdirectory of filesDir/models for a valid layout:
+ *   CTC  - model.onnx or model.int8.onnx + tokens.txt
+ *   RNNT - encoder + decoder + joiner (.onnx or .int8.onnx) + tokens.txt
  * The user's chosen model id is stored in the "asr" DataStore so it
  * survives app restarts and per-track invocations.
  */
