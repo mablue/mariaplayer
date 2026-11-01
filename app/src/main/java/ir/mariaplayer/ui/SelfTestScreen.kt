@@ -456,6 +456,23 @@ private suspend fun runAllTests(
         models.joinToString(", ") { "${it.displayName}:${it.arch}" }
     }
 
+    // 19h) AsrManager.toLrc formatting
+    test("Asr toLrc format") {
+        val chunks = listOf(
+            ir.mariaplayer.asr.AsrManager.AsrChunk(65_500L, "hello"),
+            ir.mariaplayer.asr.AsrManager.AsrChunk(125_000L, "world"),
+            ir.mariaplayer.asr.AsrManager.AsrChunk(180_000L, ""),
+        )
+        val lrc = ir.mariaplayer.asr.AsrManager.toLrc(chunks)
+        if (!lrc.contains("[01:05.50]hello"))
+            throw IllegalStateException("bad min:sec: ${lrc.take(20)}")
+        if (!lrc.contains("[02:05.00]world"))
+            throw IllegalStateException("bad second line")
+        if (lrc.contains("[03:00"))
+            throw IllegalStateException("blank not dropped")
+        "ok"
+    }
+
     // 20) Sherpa engine: Shenava Rizeh model on disk + load test
     test("Sherpa Shenava load") {
         val dl = ModelDownloader(context)

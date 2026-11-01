@@ -70,9 +70,12 @@ object AsrModels {
     }
 
     private fun priority(id: String): Int = when {
-        id.contains("rizeh") && !id.contains("rizeh-pizeh") -> 0
-        id.contains("rizeh-pizeh") -> 1
-        id.contains("koochik") -> 2
+        // PR-L14c: Koochik (RNNT, 114M) empirically wins on Persian music
+        // vs Rizeh (CTC, 32M) — smaller model, worse accuracy. Default to
+        // the biggest, highest-quality model the user has downloaded.
+        id.contains("koochik") -> 0
+        id.contains("rizeh") && !id.contains("rizeh-pizeh") -> 1
+        id.contains("rizeh-pizeh") -> 2
         else -> 9
     }
 }

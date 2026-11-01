@@ -129,6 +129,7 @@ fun LyricsDisplayScreen(
     var state by remember(mediaId) { mutableStateOf<DispState>(DispState.Editing) }
     var trigger by remember(mediaId) { mutableStateOf(0) }
     var transcribeTrigger by remember(mediaId) { mutableIntStateOf(0) }
+    var transcribeFullMode by remember(mediaId) { mutableStateOf(false) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
     var albumArt by remember(mediaId) { mutableStateOf<Bitmap?>(null) }
@@ -209,8 +210,11 @@ fun LyricsDisplayScreen(
         }
     }
 
-    LaunchedEffect(mediaId, transcribeTrigger) {
-        if (transcribeTrigger == 0) return@LaunchedEffect
+    LaunchedEffect(mediaId, transcribeTrigger, transcribeFullMode) {
+        if (transcribeTrigger == 0) {
+            if (state is DispState.Transcribing) state = DispState.Editing
+            return@LaunchedEffect
+        }
         val id = trackId ?: return@LaunchedEffect
         val uri = contentUri ?: run {
             state = DispState.Error("No audio URI")
@@ -222,23 +226,35 @@ fun LyricsDisplayScreen(
                 state = DispState.Error("No ASR model downloaded")
                 return@LaunchedEffect
             }
+        val totalMs = if (transcribeFullMode)
+            durationMs.takeIf { it > 0 } ?: 180_000L
+        else
+            30_000L
         state = DispState.Transcribing(0f, "Loading ${model.displayName}…")
         try {
-            val text = AsrManager.transcribe(
+            val chunks = AsrManager.transcribeFull(
                 context = context,
                 uri = uri,
                 modelDir = model.dir,
-                startMs = 0L,
-                totalMs = 30_000L,
-                chunkMs = 5_000L,
-            ) { p ->
-                state = DispState.Transcribing(p, "Transcribing audio…")
+                totalMs = totalMs,
+                chunkMs = 10_000L,
+            ) { p, status ->
+                state = DispState.Transcribing(p, status)
             }
-            if (text.isBlank()) {
+            val allBlank = chunks.all { it.text.isBlank() }
+            if (chunks.isEmpty() || allBlank) {
                 state = DispState.NotFound
             } else {
-                LyricsCache.writeLyrics(context, id, null, text)
-                state = DispState.Plain(text)
+                val lrc = AsrManager.toLrc(chunks)
+                val plain = chunks.map { it.text }
+                    .filter { it.isNotBlank() }
+                    .joinToString("\n")
+                LyricsCache.writeLyrics(context, id, lrc, plain)
+                val lines = LrcParser.parse(lrc)
+                state = if (lines.isNotEmpty())
+                    DispState.Synced(lines)
+                else
+                    DispState.Plain(plain)
             }
         } catch (e: CancellationException) {
             throw e
@@ -371,19 +387,31 @@ fun LyricsDisplayScreen(
                         editArtist = editArtist,
                         filename = filename,
                         folder = folder,
+                        durationMs = durationMs,
                         availableModels = availableModels,
                         selectedModelId = selectedModelId,
                         onTitleChange = { editTitle = it },
                         onArtistChange = { editArtist = it },
                         onSearch = { trigger += 1 },
-                        onTranscribe = { transcribeTrigger += 1 },
+                        onTranscribe30s = {
+                            transcribeFullMode = false
+                            transcribeTrigger += 1
+                        },
+                        onTranscribeFull = {
+                            transcribeFullMode = true
+                            transcribeTrigger += 1
+                        },
                         onModelSelect = { newId ->
                             selectedModelId = newId
                             scope.launch { AsrModels.saveSelected(context, newId) }
                         },
                     )
                     DispState.Loading -> LoadingPulse()
-                    is DispState.Transcribing -> TranscribingBody(s.progress, s.status)
+                    is DispState.Transcribing -> TranscribingBody(
+                        progress = s.progress,
+                        status = s.status,
+                        onCancel = { transcribeTrigger = 0 },
+                    )
                     is DispState.Synced -> SyncedBody(
                         lines = s.lines,
                         translations = translations,
@@ -482,7 +510,7 @@ private fun LoadingPulse() {
 }
 
 @Composable
-private fun TranscribingBody(progress: Float, status: String) {
+private fun TranscribingBody(progress: Float, status: String, onCancel: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             Modifier.padding(horizontal = 32.dp),
@@ -501,6 +529,7 @@ private fun TranscribingBody(progress: Float, status: String) {
                 status,
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(16.dp))
             LinearProgressIndicator(
@@ -511,15 +540,28 @@ private fun TranscribingBody(progress: Float, status: String) {
             )
             Spacer(Modifier.height(10.dp))
             Text(
-                "${(progress * 100).toInt()}%  •  30s sample",
+                "${(progress * 100).toInt()}%",
                 color = Color.White.copy(alpha = 0.55f),
                 fontSize = 12.sp,
             )
             Spacer(Modifier.height(24.dp))
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.12f),
+                modifier = Modifier.clickable(onClick = onCancel),
+            ) {
+                Text(
+                    "Cancel",
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Spacer(Modifier.height(10.dp))
             Text(
-                "This may take 1–2 minutes on CPU.\nLeaving the screen will cancel.",
+                "Tap Cancel to return to edit form.",
                 color = Color.White.copy(alpha = 0.4f),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 textAlign = TextAlign.Center,
             )
         }
@@ -533,12 +575,14 @@ private fun EditForm(
     editArtist: String,
     filename: String,
     folder: String,
+    durationMs: Long,
     availableModels: List<AsrModels.AvailableAsr>,
     selectedModelId: String,
     onTitleChange: (String) -> Unit,
     onArtistChange: (String) -> Unit,
     onSearch: () -> Unit,
-    onTranscribe: () -> Unit,
+    onTranscribe30s: () -> Unit,
+    onTranscribeFull: () -> Unit,
     onModelSelect: (String) -> Unit,
 ) {
     val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -658,10 +702,10 @@ private fun EditForm(
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = Color.White.copy(alpha = 0.10f),
-                modifier = Modifier.clickable(onClick = onTranscribe),
+                modifier = Modifier.clickable(onClick = onTranscribe30s),
             ) {
                 Text(
-                    "🎤 Transcribe audio (offline)",
+                    "🎤 Transcribe 30s (offline)",
                     color = Color.White.copy(alpha = 0.85f),
                     modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
                     style = MaterialTheme.typography.bodyMedium,
@@ -669,11 +713,35 @@ private fun EditForm(
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                "Uses 30s sample · may take 1–2 min",
+                "Sample only · may take ~1 min",
                 color = Color.White.copy(alpha = 0.4f),
                 style = MaterialTheme.typography.labelSmall,
                 textAlign = TextAlign.Center,
             )
+
+            if (durationMs > 35_000L) {
+                Spacer(Modifier.height(14.dp))
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.White.copy(alpha = 0.16f),
+                    modifier = Modifier.clickable(onClick = onTranscribeFull),
+                ) {
+                    Text(
+                        "🎤 Transcribe full (${formatMs(durationMs)})",
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Produces timed lyrics · may take 5–15 min on CPU",
+                    color = Color.White.copy(alpha = 0.4f),
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
 
         Spacer(Modifier.height(40.dp))
