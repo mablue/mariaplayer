@@ -24,6 +24,13 @@ android {
         targetSdk = 36
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = "0.1.0"
+
+        // Ship native libs for one ABI only. sherpa-onnx + onnxruntime + mlkit
+        // each carry .so for arm64-v8a, armeabi-v7a, x86, x86_64 → ~150 MB wasted.
+        // arm64-v8a covers Xiaomi 2201123G (HyperOS 3) and all modern phones.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
     buildTypes {
         getByName("release") {
