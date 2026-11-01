@@ -175,6 +175,33 @@ class ModelDownloader(private val context: Context) {
         modelDir(id).deleteRecursively()
     }
 
+    // PR-L10a-fix: entry-based API. Handles both legacy single-file
+    // (Whisper .bin) and multi-file (Shenava, koochik).
+    fun isEntryDownloaded(entry: ModelEntry): Boolean {
+        return if (entry.files.isNotEmpty()) {
+            entry.files.all { (name, _) ->
+                val f = File(dir, "${entry.id}/$name")
+                f.exists() && f.length() > 0
+            }
+        } else {
+            isDownloaded(entry.id, entry.sha256)
+        }
+    }
+
+    suspend fun downloadEntry(
+        entry: ModelEntry,
+        onProgress: (DownloadProgress) -> Unit = {},
+    ): File = withContext(Dispatchers.IO) {
+        if (entry.files.isNotEmpty()) {
+            // Cleanup legacy single-file .bin from PR-L10a
+            modelFile(entry.id).delete()
+            partFile(entry.id).delete()
+            downloadFiles(entry.id, entry.files, onProgress)
+        } else {
+            download(entry.id, entry.url, entry.sha256, onProgress)
+        }
+    }
+
     /**
      * PR-L10a: download a set of files into models/<id>/.
      * Each entry is (filename, url). Progress reports aggregate bytes.

@@ -71,7 +71,7 @@ fun ModelManagerScreen(onBack: () -> Unit) {
     LaunchedEffect(catalog) {
         catalog.forEach { m ->
             if (states[m.id] == null) {
-                states[m.id] = if (downloader.isDownloaded(m.id, m.sha256))
+                states[m.id] = if (downloader.isEntryDownloaded(m))
                     ModelUiState.Downloaded else ModelUiState.NotDownloaded
             }
         }
@@ -154,7 +154,7 @@ fun ModelManagerScreen(onBack: () -> Unit) {
                                 scope.launch {
                                     states[m.id] = ModelUiState.Downloading(0f)
                                     try {
-                                        downloader.download(m.id, m.url, m.sha256) { p ->
+                                        downloader.downloadEntry(m) { p ->
                                             states[m.id] = when {
                                                 p.error != null -> ModelUiState.Error(p.error)
                                                 p.done -> ModelUiState.Downloaded

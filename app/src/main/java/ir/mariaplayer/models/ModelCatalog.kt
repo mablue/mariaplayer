@@ -31,6 +31,7 @@ data class ModelEntry(
     val license: String,
     val musicRating: String,
     val sha256: String?,
+    val files: List<Pair<String, String>> = emptyList(),
 ) {
     val sizeMb: Int get() = (sizeBytes / (1024 * 1024)).toInt().coerceAtLeast(1)
     val langLabel: String get() = languages.joinToString(", ").ifBlank { "?" }
@@ -101,6 +102,12 @@ object ModelCatalog {
                 license     = o.optString("license", "Unknown"),
                 musicRating = o.optString("musicRating", "Unknown"),
                 sha256      = o.optString("sha256", "").ifBlank { null },
+                files       = o.optJSONArray("files")?.let { a ->
+                    (0 until a.length()).map { i ->
+                        val f = a.getJSONObject(i)
+                        f.getString("name") to f.getString("url")
+                    }
+                } ?: emptyList(),
             )
         }
         out.sortedWith(compareBy({ it.engine }, { it.sizeBytes }))
