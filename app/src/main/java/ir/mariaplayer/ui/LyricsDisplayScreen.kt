@@ -38,6 +38,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -51,6 +52,8 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,16 +77,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.session.MediaController
 import ir.mariaplayer.R
+import ir.mariaplayer.asr.AsrManager
 import ir.mariaplayer.lyrics.LrcLine
 import ir.mariaplayer.lyrics.LrcParser
 import ir.mariaplayer.lyrics.LyricsCache
 import ir.mariaplayer.lyrics.LyricsFetchResult
 import ir.mariaplayer.lyrics.LyricsFetcher
+import ir.mariaplayer.models.ModelDownloader
 import ir.mariaplayer.translate.TranslationManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.net.URLEncoder
 import java.util.Locale
 import kotlin.math.abs
@@ -91,6 +98,7 @@ import kotlin.math.abs
 private sealed interface DispState {
     data object Editing : DispState
     data object Loading : DispState
+    data class Transcribing(val progress: Float, val status: String) : DispState
     data class Synced(val lines: List<LrcLine>) : DispState
     data class Plain(val text: String) : DispState
     data object NotFound : DispState
@@ -120,15 +128,21 @@ fun LyricsDisplayScreen(
     var settingsOpen by remember { mutableStateOf(false) }
     var state by remember(mediaId) { mutableStateOf<DispState>(DispState.Editing) }
     var trigger by remember(mediaId) { mutableStateOf(0) }
+    var transcribeTrigger by remember(mediaId) { mutableIntStateOf(0) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
     var albumArt by remember(mediaId) { mutableStateOf<Bitmap?>(null) }
     var translations by remember(mediaId) { mutableStateOf<List<String>?>(null) }
     var translating by remember(mediaId) { mutableStateOf(false) }
 
-    // Editable query fields — prefilled from current media metadata
     var editTitle by remember(mediaId) { mutableStateOf(rawTitle) }
     var editArtist by remember(mediaId) { mutableStateOf(rawArtist) }
+
+    val canTranscribe = remember(mediaId) {
+        val dl = ModelDownloader(context)
+        val dir = dl.modelDir("shenava-rizeh-int8")
+        File(dir, "model.onnx").exists() && File(dir, "tokens.txt").exists()
+    }
 
     LaunchedEffect(Unit) { prefs = LyricsDisplayPrefs.read(context) }
 
@@ -151,7 +165,6 @@ fun LyricsDisplayScreen(
         }
     }
 
-    // Load lyrics from cache. If none, show edit form.
     LaunchedEffect(mediaId, trackId) {
         val id = trackId ?: run {
             state = DispState.Editing
@@ -168,7 +181,6 @@ fun LyricsDisplayScreen(
         }
     }
 
-    // Fetch on trigger using the user-edited query fields
     LaunchedEffect(mediaId, trigger) {
         if (trigger == 0) return@LaunchedEffect
         val id = trackId ?: run { state = DispState.NotFound; return@LaunchedEffect }
@@ -192,7 +204,44 @@ fun LyricsDisplayScreen(
         }
     }
 
-    // Translation loader
+    LaunchedEffect(mediaId, transcribeTrigger) {
+        if (transcribeTrigger == 0) return@LaunchedEffect
+        val id = trackId ?: return@LaunchedEffect
+        val uri = contentUri ?: run {
+            state = DispState.Error("No audio URI")
+            return@LaunchedEffect
+        }
+        val dl = ModelDownloader(context)
+        val dir = dl.modelDir("shenava-rizeh-int8")
+        if (!File(dir, "model.onnx").exists() || !File(dir, "tokens.txt").exists()) {
+            state = DispState.Error("Shenava model not downloaded")
+            return@LaunchedEffect
+        }
+        state = DispState.Transcribing(0f, "Loading Shenava model…")
+        try {
+            val text = AsrManager.transcribe(
+                context = context,
+                uri = uri,
+                modelDir = dir,
+                startMs = 0L,
+                totalMs = 30_000L,
+                chunkMs = 5_000L,
+            ) { p ->
+                state = DispState.Transcribing(p, "Transcribing audio…")
+            }
+            if (text.isBlank()) {
+                state = DispState.NotFound
+            } else {
+                LyricsCache.writeLyrics(context, id, null, text)
+                state = DispState.Plain(text)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            state = DispState.Error("Transcribe: ${e.message ?: "unknown"}")
+        }
+    }
+
     LaunchedEffect(mediaId, trackId, state, prefs.showTranslation, prefs.translationLang) {
         if (!prefs.showTranslation) { translations = null; return@LaunchedEffect }
         val synced = state as? DispState.Synced ?: return@LaunchedEffect
@@ -317,11 +366,14 @@ fun LyricsDisplayScreen(
                         editArtist = editArtist,
                         filename = filename,
                         folder = folder,
+                        canTranscribe = canTranscribe,
                         onTitleChange = { editTitle = it },
                         onArtistChange = { editArtist = it },
                         onSearch = { trigger += 1 },
+                        onTranscribe = { transcribeTrigger += 1 },
                     )
                     DispState.Loading -> LoadingPulse()
+                    is DispState.Transcribing -> TranscribingBody(s.progress, s.status)
                     is DispState.Synced -> SyncedBody(
                         lines = s.lines,
                         translations = translations,
@@ -374,117 +426,6 @@ private fun fallbackBackground(): Brush = Brush.verticalGradient(
     listOf(Color(0xFF0A0A12), Color(0xFF050508), Color.Black)
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EditForm(
-    editTitle: String,
-    editArtist: String,
-    filename: String,
-    folder: String,
-    onTitleChange: (String) -> Unit,
-    onArtistChange: (String) -> Unit,
-    onSearch: () -> Unit,
-) {
-    val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        focusedBorderColor = Color.White.copy(alpha = 0.65f),
-        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-        focusedLabelColor = Color.White,
-        unfocusedLabelColor = Color.White.copy(alpha = 0.55f),
-        cursorColor = Color.White,
-    )
-
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            "Search lyrics",
-            color = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "Fix tags if they look wrong, then tap Search.",
-            color = Color.White.copy(alpha = 0.55f),
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(20.dp))
-
-        OutlinedTextField(
-            value = editTitle,
-            onValueChange = onTitleChange,
-            label = { Text("Title") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors,
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = editArtist,
-            onValueChange = onArtistChange,
-            label = { Text("Artist (optional)") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors,
-        )
-
-        Spacer(Modifier.height(20.dp))
-        if (filename.isNotBlank()) {
-            FieldBlock("File", filename)
-            Spacer(Modifier.height(10.dp))
-        }
-        if (folder.isNotBlank()) {
-            FieldBlock("Folder", folder)
-        }
-
-        Spacer(Modifier.height(28.dp))
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White.copy(alpha = 0.18f),
-            modifier = Modifier.clickable(onClick = onSearch),
-        ) {
-            Text(
-                "Search",
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 36.dp, vertical = 12.dp),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Spacer(Modifier.height(40.dp))
-    }
-}
-
-@Composable
-private fun FieldBlock(label: String, value: String) {
-    Column(
-        Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            label,
-            color = Color.White.copy(alpha = 0.45f),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            value,
-            color = Color.White.copy(alpha = 0.8f),
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
 @Composable
 private fun LoadingPulse() {
     val t = rememberInfiniteTransition(label = "loading")
@@ -531,6 +472,188 @@ private fun LoadingPulse() {
 }
 
 @Composable
+private fun TranscribingBody(progress: Float, status: String) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            Modifier.padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                "🎤",
+                fontSize = 72.sp,
+                modifier = Modifier.graphicsLayer(
+                    scaleX = 0.9f + progress * 0.2f,
+                    scaleY = 0.9f + progress * 0.2f,
+                ),
+            )
+            Spacer(Modifier.height(20.dp))
+            Text(
+                status,
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(16.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(4.dp),
+                color = Color.White,
+                trackColor = Color.White.copy(alpha = 0.2f),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "${(progress * 100).toInt()}%  •  30s sample",
+                color = Color.White.copy(alpha = 0.55f),
+                fontSize = 12.sp,
+            )
+            Spacer(Modifier.height(24.dp))
+            Text(
+                "This may take 1–2 minutes on CPU.\nLeaving the screen will cancel.",
+                color = Color.White.copy(alpha = 0.4f),
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditForm(
+    editTitle: String,
+    editArtist: String,
+    filename: String,
+    folder: String,
+    canTranscribe: Boolean,
+    onTitleChange: (String) -> Unit,
+    onArtistChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    onTranscribe: () -> Unit,
+) {
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        focusedBorderColor = Color.White.copy(alpha = 0.65f),
+        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+        focusedLabelColor = Color.White,
+        unfocusedLabelColor = Color.White.copy(alpha = 0.55f),
+        cursorColor = Color.White,
+    )
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "Lyrics",
+            color = Color.White,
+            style = MaterialTheme.typography.titleLarge,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Fix tags if needed, then search online or transcribe offline.",
+            color = Color.White.copy(alpha = 0.55f),
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = editTitle,
+            onValueChange = onTitleChange,
+            label = { Text("Title") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors,
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = editArtist,
+            onValueChange = onArtistChange,
+            label = { Text("Artist (optional)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors,
+        )
+
+        Spacer(Modifier.height(20.dp))
+        if (filename.isNotBlank()) {
+            FieldBlock("File", filename)
+            Spacer(Modifier.height(10.dp))
+        }
+        if (folder.isNotBlank()) {
+            FieldBlock("Folder", folder)
+        }
+
+        Spacer(Modifier.height(24.dp))
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White.copy(alpha = 0.18f),
+            modifier = Modifier.clickable(onClick = onSearch),
+        ) {
+            Text(
+                "Search lyrics",
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 36.dp, vertical = 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+
+        if (canTranscribe) {
+            Spacer(Modifier.height(20.dp))
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White.copy(alpha = 0.10f),
+                modifier = Modifier.clickable(onClick = onTranscribe),
+            ) {
+                Text(
+                    "🎤 Transcribe audio (offline)",
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Uses 30s sample · may take 1–2 min",
+                color = Color.White.copy(alpha = 0.4f),
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        Spacer(Modifier.height(40.dp))
+    }
+}
+
+@Composable
+private fun FieldBlock(label: String, value: String) {
+    Column(
+        Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            label,
+            color = Color.White.copy(alpha = 0.45f),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            value,
+            color = Color.White.copy(alpha = 0.8f),
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
 private fun SyncedBody(
     lines: List<LrcLine>,
     translations: List<String>?,
@@ -544,13 +667,11 @@ private fun SyncedBody(
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val vp = maxHeight * 0.5f
-
         LaunchedEffect(active, maxHeight) {
             try {
                 listState.animateScrollToItem(active)
             } catch (_: Exception) {}
         }
-
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -568,7 +689,6 @@ private fun SyncedBody(
                 )
             }
         }
-
         Box(
             Modifier.fillMaxWidth().height(70.dp).background(
                 Brush.verticalGradient(
@@ -683,7 +803,7 @@ private fun NotFoundBody(onEdit: () -> Unit, onGoogle: () -> Unit) {
             Text("Lyrics not found.", color = Color.White.copy(alpha = 0.75f))
             Spacer(Modifier.height(6.dp))
             Text(
-                "Try editing the tags, or search externally.",
+                "Try editing tags or transcribing offline.",
                 color = Color.White.copy(alpha = 0.5f),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
@@ -701,7 +821,9 @@ private fun NotFoundBody(onEdit: () -> Unit, onGoogle: () -> Unit) {
 private fun ErrorBody(msg: String, onRetry: () -> Unit, onEdit: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Network error: $msg", color = Color.White.copy(alpha = 0.7f))
+            Text("Error: $msg", color = Color.White.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp))
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ChipButton("Retry", onRetry)
@@ -724,11 +846,6 @@ private fun ChipButton(label: String, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
         )
     }
-}
-
-@Composable
-private fun CenterBox(content: @Composable () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
 }
 
 @Composable
