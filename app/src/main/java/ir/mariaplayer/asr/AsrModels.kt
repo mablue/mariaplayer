@@ -9,13 +9,6 @@ import java.io.File
 
 private val Context.asrStore by preferencesDataStore("asr")
 
-data class AvailableAsr(
-    val id: String,
-    val displayName: String,
-    val arch: String,
-    val dir: File,
-)
-
 /**
  * PR-L14b: model discovery + selection.
  *
@@ -26,6 +19,13 @@ data class AvailableAsr(
  * survives app restarts and per-track invocations.
  */
 object AsrModels {
+
+    data class AvailableAsr(
+        val id: String,
+        val displayName: String,
+        val arch: String,
+        val dir: File,
+    )
 
     private val KEY = stringPreferencesKey("selected_model")
 
@@ -76,3 +76,5 @@ object AsrModels {
         else -> 9
     }
 }
+
+
