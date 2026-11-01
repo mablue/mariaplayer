@@ -34,6 +34,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -81,7 +83,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 private sealed interface DispState {
-    data object Empty : DispState
+    data object Editing : DispState
     data object Loading : DispState
     data class Synced(val lines: List<LrcLine>) : DispState
     data class Plain(val text: String) : DispState
@@ -101,21 +103,26 @@ fun LyricsDisplayScreen(
     val item = controller?.currentMediaItem
     val mediaId = item?.mediaId
     val trackId = mediaId?.toLongOrNull()
-    val title = item?.mediaMetadata?.title?.toString().orEmpty()
-    val artist = item?.mediaMetadata?.artist?.toString().orEmpty()
+    val rawTitle = item?.mediaMetadata?.title?.toString().orEmpty()
+    val rawArtist = item?.mediaMetadata?.artist?.toString().orEmpty()
     val filename = item?.mediaMetadata?.extras?.getString("filename").orEmpty()
+    val folder = item?.mediaMetadata?.extras?.getString("folder").orEmpty()
     val contentUri = item?.localConfiguration?.uri
     val durationMs = controller?.duration?.takeIf { it > 0 } ?: 0L
 
     var prefs by remember { mutableStateOf(DisplayPrefs()) }
     var settingsOpen by remember { mutableStateOf(false) }
-    var state by remember(mediaId) { mutableStateOf<DispState>(DispState.Empty) }
+    var state by remember(mediaId) { mutableStateOf<DispState>(DispState.Editing) }
     var trigger by remember(mediaId) { mutableStateOf(0) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
     var albumArt by remember(mediaId) { mutableStateOf<Bitmap?>(null) }
     var translations by remember(mediaId) { mutableStateOf<List<String>?>(null) }
     var translating by remember(mediaId) { mutableStateOf(false) }
+
+    // Editable query fields — prefilled from current media metadata
+    var editTitle by remember(mediaId) { mutableStateOf(rawTitle) }
+    var editArtist by remember(mediaId) { mutableStateOf(rawArtist) }
 
     LaunchedEffect(Unit) { prefs = LyricsDisplayPrefs.read(context) }
 
@@ -138,31 +145,36 @@ fun LyricsDisplayScreen(
         }
     }
 
+    // Load lyrics from cache. If none, show edit form.
     LaunchedEffect(mediaId, trackId) {
-        val id = trackId ?: return@LaunchedEffect
+        val id = trackId ?: run {
+            state = DispState.Editing
+            return@LaunchedEffect
+        }
         val c = LyricsCache.read(context, id)
         state = when {
             !c.synced.isNullOrBlank() -> {
                 val lines = LrcParser.parse(c.synced!!)
-                if (lines.isNotEmpty()) DispState.Synced(lines) else DispState.Empty
+                if (lines.isNotEmpty()) DispState.Synced(lines) else DispState.Editing
             }
             !c.plain.isNullOrBlank() -> DispState.Plain(c.plain!!)
-            else -> DispState.Empty
+            else -> DispState.Editing
         }
     }
 
+    // Fetch on trigger using the user-edited query fields
     LaunchedEffect(mediaId, trigger) {
         if (trigger == 0) return@LaunchedEffect
         val id = trackId ?: run { state = DispState.NotFound; return@LaunchedEffect }
         state = DispState.Loading
-        val r = LyricsFetcher().fetch(title, artist, filename, (durationMs / 1000).toInt())
+        val r = LyricsFetcher().fetch(editTitle, editArtist, filename, (durationMs / 1000).toInt())
         state = when (r) {
             is LyricsFetchResult.Found -> {
                 LyricsCache.writeLyrics(context, id, r.result.syncedLyrics, r.result.plainLyrics)
                 when {
                     !r.result.syncedLyrics.isNullOrBlank() -> {
                         val lines = LrcParser.parse(r.result.syncedLyrics!!)
-                        if (lines.isNotEmpty()) DispState.Synced(lines) else DispState.Empty
+                        if (lines.isNotEmpty()) DispState.Synced(lines) else DispState.NotFound
                     }
                     !r.result.plainLyrics.isNullOrBlank() -> DispState.Plain(r.result.plainLyrics!!)
                     else -> DispState.NotFound
@@ -174,6 +186,7 @@ fun LyricsDisplayScreen(
         }
     }
 
+    // Translation loader
     LaunchedEffect(mediaId, trackId, state, prefs.showTranslation, prefs.translationLang) {
         if (!prefs.showTranslation) { translations = null; return@LaunchedEffect }
         val synced = state as? DispState.Synced ?: return@LaunchedEffect
@@ -258,13 +271,14 @@ fun LyricsDisplayScreen(
                 }
                 Column(Modifier.weight(1f)) {
                     Text(
-                        title.ifBlank { "—" }, color = Color.White,
+                        editTitle.ifBlank { rawTitle.ifBlank { "—" } },
+                        color = Color.White,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
-                    if (artist.isNotBlank()) {
+                    if (editArtist.isNotBlank()) {
                         Text(
-                            artist, color = Color.White.copy(alpha = 0.6f),
+                            editArtist, color = Color.White.copy(alpha = 0.6f),
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
@@ -274,6 +288,12 @@ fun LyricsDisplayScreen(
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp).padding(end = 8.dp),
                         color = Color.White, strokeWidth = 2.dp,
+                    )
+                }
+                IconButton(onClick = { state = DispState.Editing }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_edit),
+                        contentDescription = "Edit tags", tint = Color.White,
                     )
                 }
                 IconButton(onClick = { settingsOpen = true }) {
@@ -286,7 +306,15 @@ fun LyricsDisplayScreen(
 
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (val s = state) {
-                    DispState.Empty -> EmptyBody { trigger += 1 }
+                    DispState.Editing -> EditForm(
+                        editTitle = editTitle,
+                        editArtist = editArtist,
+                        filename = filename,
+                        folder = folder,
+                        onTitleChange = { editTitle = it },
+                        onArtistChange = { editArtist = it },
+                        onSearch = { trigger += 1 },
+                    )
                     DispState.Loading -> CenterBox {
                         CircularProgressIndicator(color = Color.White)
                     }
@@ -299,9 +327,11 @@ fun LyricsDisplayScreen(
                     )
                     is DispState.Plain -> PlainBody(s.text)
                     DispState.NotFound -> NotFoundBody(
-                        onRetry = { trigger += 1 },
+                        onEdit = { state = DispState.Editing },
                         onGoogle = {
-                            val q = URLEncoder.encode("$title $artist lyrics", "UTF-8")
+                            val q = URLEncoder.encode(
+                                "$editTitle $editArtist lyrics", "UTF-8"
+                            )
                             context.startActivity(
                                 Intent(
                                     Intent.ACTION_VIEW,
@@ -310,7 +340,11 @@ fun LyricsDisplayScreen(
                             )
                         },
                     )
-                    is DispState.Error -> ErrorBody(s.msg) { trigger += 1 }
+                    is DispState.Error -> ErrorBody(
+                        msg = s.msg,
+                        onRetry = { trigger += 1 },
+                        onEdit = { state = DispState.Editing },
+                    )
                 }
             }
 
@@ -336,6 +370,117 @@ private fun fallbackBackground(): Brush = Brush.verticalGradient(
     listOf(Color(0xFF0A0A12), Color(0xFF050508), Color.Black)
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditForm(
+    editTitle: String,
+    editArtist: String,
+    filename: String,
+    folder: String,
+    onTitleChange: (String) -> Unit,
+    onArtistChange: (String) -> Unit,
+    onSearch: () -> Unit,
+) {
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        focusedBorderColor = Color.White.copy(alpha = 0.65f),
+        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+        focusedLabelColor = Color.White,
+        unfocusedLabelColor = Color.White.copy(alpha = 0.55f),
+        cursorColor = Color.White,
+    )
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "Search lyrics",
+            color = Color.White,
+            style = MaterialTheme.typography.titleLarge,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Fix tags if they look wrong, then tap Search.",
+            color = Color.White.copy(alpha = 0.55f),
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = editTitle,
+            onValueChange = onTitleChange,
+            label = { Text("Title") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors,
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = editArtist,
+            onValueChange = onArtistChange,
+            label = { Text("Artist (optional)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors,
+        )
+
+        Spacer(Modifier.height(20.dp))
+        if (filename.isNotBlank()) {
+            FieldBlock("File", filename)
+            Spacer(Modifier.height(10.dp))
+        }
+        if (folder.isNotBlank()) {
+            FieldBlock("Folder", folder)
+        }
+
+        Spacer(Modifier.height(28.dp))
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White.copy(alpha = 0.18f),
+            modifier = Modifier.clickable(onClick = onSearch),
+        ) {
+            Text(
+                "Search",
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 36.dp, vertical = 12.dp),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Spacer(Modifier.height(40.dp))
+    }
+}
+
+@Composable
+private fun FieldBlock(label: String, value: String) {
+    Column(
+        Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            label,
+            color = Color.White.copy(alpha = 0.45f),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            value,
+            color = Color.White.copy(alpha = 0.8f),
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
 @Composable
 private fun SyncedBody(
     lines: List<LrcLine>,
@@ -349,9 +494,6 @@ private fun SyncedBody(
     val active = if (rawActive < 0) 0 else rawActive
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        // contentPadding (not Spacer items) keeps itemsIndexed indices aligned
-        // with `active`, so animateScrollToItem(active) hits the right line.
-        // Half-viewport padding on both ends lets any line center vertically.
         val vp = maxHeight * 0.5f
 
         LaunchedEffect(active, maxHeight) {
@@ -404,9 +546,6 @@ private fun SyncedLine(
     prefs: DisplayPrefs,
     onClick: () -> Unit,
 ) {
-    // Every line renders (no early return). Far lines get alpha=0 so
-    // LazyColumn height math stays consistent - no jumps when a line
-    // crosses a visibility threshold. GPU skips alpha=0 layers.
     val targetAlpha = when {
         isActive -> 1f
         distance == 1 -> 0.65f
@@ -470,8 +609,6 @@ private fun SyncedLine(
 
 @Composable
 private fun PlainBody(text: String) {
-    // NOT LazyColumn: a single item wrapping a huge Text cannot scroll
-    // properly inside LazyColumn (item height is content height).
     Column(
         Modifier
             .fillMaxSize()
@@ -491,36 +628,20 @@ private fun PlainBody(text: String) {
 }
 
 @Composable
-private fun EmptyBody(onSearch: () -> Unit) {
+private fun NotFoundBody(onEdit: () -> Unit, onGoogle: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("♪", fontSize = 72.sp, color = Color.White.copy(alpha = 0.25f))
-            Spacer(Modifier.height(16.dp))
-            Text("No lyrics yet.", color = Color.White.copy(alpha = 0.65f))
-            Spacer(Modifier.height(12.dp))
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.12f),
-                modifier = Modifier.clickable(onClick = onSearch),
-            ) {
-                Text(
-                    "Search lyrics",
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun NotFoundBody(onRetry: () -> Unit, onGoogle: () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Lyrics not found.", color = Color.White.copy(alpha = 0.7f))
-            Spacer(Modifier.height(16.dp))
+            Text("Lyrics not found.", color = Color.White.copy(alpha = 0.75f))
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Try editing the tags, or search externally.",
+                color = Color.White.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ChipButton("Retry", onRetry)
+                ChipButton("Edit tags", onEdit)
                 ChipButton("Google", onGoogle)
             }
         }
@@ -528,12 +649,15 @@ private fun NotFoundBody(onRetry: () -> Unit, onGoogle: () -> Unit) {
 }
 
 @Composable
-private fun ErrorBody(msg: String, onRetry: () -> Unit) {
+private fun ErrorBody(msg: String, onRetry: () -> Unit, onEdit: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Network error: $msg", color = Color.White.copy(alpha = 0.7f))
             Spacer(Modifier.height(16.dp))
-            ChipButton("Retry", onRetry)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ChipButton("Retry", onRetry)
+                ChipButton("Edit tags", onEdit)
+            }
         }
     }
 }

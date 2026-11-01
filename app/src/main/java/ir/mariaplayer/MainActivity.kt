@@ -380,7 +380,10 @@ private fun playQueue(
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(t.title).setArtist(t.artist).setAlbumTitle(t.album)
-                    .setExtras(Bundle().apply { putString("filename", t.filename) })
+                    .setExtras(Bundle().apply {
+                        putString("filename", t.filename)
+                        putString("folder", t.folder)
+                    })
                     .build()
             )
             .build()
