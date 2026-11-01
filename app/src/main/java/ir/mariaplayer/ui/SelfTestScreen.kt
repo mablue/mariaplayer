@@ -384,6 +384,42 @@ private suspend fun runAllTests(
         "ok"
     }
 
+    // 19e) Sherpa transcribe — real 15s Persian audio
+    test("Sherpa transcribe FA (15s)") {
+        val dl = ModelDownloader(context)
+        val dir = dl.modelDir("shenava-rizeh-int8")
+        val model = java.io.File(dir, "model.onnx")
+        val tokens = java.io.File(dir, "tokens.txt")
+        if (!model.exists() || !tokens.exists())
+            throw IllegalStateException("shenava not downloaded")
+
+        val tracks = LibraryScanner.scan(context)
+        if (tracks.isEmpty()) throw IllegalStateException("no tracks")
+
+        val persianRe = Regex("[\\u0600-\\u06FF]")
+        val fa = tracks.firstOrNull {
+            persianRe.containsMatchIn(it.title) ||
+            (it.artist?.let { a -> persianRe.containsMatchIn(a) } == true)
+        } ?: tracks.first()
+
+        val samples = ir.mariaplayer.asr.AudioDecoder.decodeToFloat(
+            context,
+            android.net.Uri.parse(fa.contentUri),
+            0L,
+            15_000L,
+        )
+        if (samples.isEmpty()) throw IllegalStateException("decode returned 0 samples")
+
+        val eng = ir.mariaplayer.asr.SherpaEngine(dir)
+        try {
+            val text = eng.transcribe(samples)
+            val preview = text.take(80).replace("\n", " ").ifBlank { "(empty)" }
+            "track=${fa.title.take(24)} | ${samples.size} samples | got: $preview"
+        } finally {
+            eng.close()
+        }
+    }
+
     // 20) Sherpa engine: Shenava Rizeh model on disk + load test
     test("Sherpa Shenava load") {
         val dl = ModelDownloader(context)
