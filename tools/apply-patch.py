@@ -14,7 +14,7 @@ def main():
     if not target.exists():
         print(f'ERROR: {target} not found'); return 1
     s = target.read_text()
-    blocks = re.findall(r'<<<<<<< SEARCH\n(.*?)\n=======\n(.*?)\n>>>>>>> REPLACE', text, re.DOTALL)
+    blocks = re.findall(r'<<<<<<< SEARCH\n(.*?)\n=======\n(.*?)\n?>>>>>>> REPLACE', text, re.DOTALL)
     if not blocks:
         print('ERROR: no SEARCH/DIFF blocks found'); return 1
     applied = 0
