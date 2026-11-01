@@ -420,6 +420,35 @@ private suspend fun runAllTests(
         }
     }
 
+    // 19f) Sherpa architecture detection — no engine load, fast
+    test("Sherpa arch detect") {
+        val dir = java.io.File(context.filesDir, "models")
+        if (!dir.exists()) return@test "no models dir"
+        val subdirs = dir.listFiles()?.filter { it.isDirectory } ?: return@test "no subdirs"
+        if (subdirs.isEmpty()) return@test "no models downloaded"
+        val results = subdirs.mapNotNull { d ->
+            val tokens = java.io.File(d, "tokens.txt").takeIf { it.exists() }
+                ?: return@mapNotNull null
+            val hasRnnt = listOf("encoder", "decoder", "joiner").all { base ->
+                listOf(
+                    java.io.File(d, "$base.int8.onnx"),
+                    java.io.File(d, "$base.onnx"),
+                ).any { it.exists() }
+            }
+            val hasCtc = listOf(
+                java.io.File(d, "model.int8.onnx"),
+                java.io.File(d, "model.onnx"),
+            ).any { it.exists() }
+            val arch = when {
+                hasRnnt -> "rnnt"
+                hasCtc -> "ctc"
+                else -> "???"
+            }
+            "${d.name}:$arch"
+        }
+        if (results.isEmpty()) "no valid models" else results.joinToString(", ")
+    }
+
     // 20) Sherpa engine: Shenava Rizeh model on disk + load test
     test("Sherpa Shenava load") {
         val dl = ModelDownloader(context)
