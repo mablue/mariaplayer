@@ -449,6 +449,13 @@ private suspend fun runAllTests(
         if (results.isEmpty()) "no valid models" else results.joinToString(", ")
     }
 
+    // 19g) Asr models list (from disk)
+    test("Asr models list") {
+        val models = ir.mariaplayer.asr.AsrModels.list(context)
+        if (models.isEmpty()) throw IllegalStateException("empty")
+        models.joinToString(", ") { "${it.displayName}:${it.arch}" }
+    }
+
     // 20) Sherpa engine: Shenava Rizeh model on disk + load test
     test("Sherpa Shenava load") {
         val dl = ModelDownloader(context)

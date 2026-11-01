@@ -83,7 +83,7 @@ import ir.mariaplayer.lyrics.LrcParser
 import ir.mariaplayer.lyrics.LyricsCache
 import ir.mariaplayer.lyrics.LyricsFetchResult
 import ir.mariaplayer.lyrics.LyricsFetcher
-import ir.mariaplayer.models.ModelDownloader
+import ir.mariaplayer.asr.AsrModels
 import ir.mariaplayer.translate.TranslationManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -138,13 +138,18 @@ fun LyricsDisplayScreen(
     var editTitle by remember(mediaId) { mutableStateOf(rawTitle) }
     var editArtist by remember(mediaId) { mutableStateOf(rawArtist) }
 
-    val canTranscribe = remember(mediaId) {
-        val dl = ModelDownloader(context)
-        val dir = dl.modelDir("shenava-rizeh-int8")
-        File(dir, "model.onnx").exists() && File(dir, "tokens.txt").exists()
-    }
+    var availableModels by remember { mutableStateOf<List<AsrModels.AvailableAsr>>(emptyList()) }
+    var selectedModelId by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) { prefs = LyricsDisplayPrefs.read(context) }
+    LaunchedEffect(Unit) {
+        prefs = LyricsDisplayPrefs.read(context)
+        availableModels = AsrModels.list(context)
+        val saved = AsrModels.selected(context)
+        selectedModelId = if (saved.isNotBlank() && availableModels.any { it.id == saved })
+            saved
+        else
+            availableModels.firstOrNull()?.id.orEmpty()
+    }
 
     LaunchedEffect(mediaId, contentUri) {
         albumArt = if (contentUri == null) null else withContext(Dispatchers.IO) {
@@ -211,18 +216,18 @@ fun LyricsDisplayScreen(
             state = DispState.Error("No audio URI")
             return@LaunchedEffect
         }
-        val dl = ModelDownloader(context)
-        val dir = dl.modelDir("shenava-rizeh-int8")
-        if (!File(dir, "model.onnx").exists() || !File(dir, "tokens.txt").exists()) {
-            state = DispState.Error("Shenava model not downloaded")
-            return@LaunchedEffect
-        }
-        state = DispState.Transcribing(0f, "Loading Shenava model…")
+        val model = availableModels.firstOrNull { it.id == selectedModelId }
+            ?: availableModels.firstOrNull()
+            ?: run {
+                state = DispState.Error("No ASR model downloaded")
+                return@LaunchedEffect
+            }
+        state = DispState.Transcribing(0f, "Loading ${model.displayName}…")
         try {
             val text = AsrManager.transcribe(
                 context = context,
                 uri = uri,
-                modelDir = dir,
+                modelDir = model.dir,
                 startMs = 0L,
                 totalMs = 30_000L,
                 chunkMs = 5_000L,
@@ -366,11 +371,16 @@ fun LyricsDisplayScreen(
                         editArtist = editArtist,
                         filename = filename,
                         folder = folder,
-                        canTranscribe = canTranscribe,
+                        availableModels = availableModels,
+                        selectedModelId = selectedModelId,
                         onTitleChange = { editTitle = it },
                         onArtistChange = { editArtist = it },
                         onSearch = { trigger += 1 },
                         onTranscribe = { transcribeTrigger += 1 },
+                        onModelSelect = { newId ->
+                            selectedModelId = newId
+                            scope.launch { AsrModels.saveSelected(context, newId) }
+                        },
                     )
                     DispState.Loading -> LoadingPulse()
                     is DispState.Transcribing -> TranscribingBody(s.progress, s.status)
@@ -523,11 +533,13 @@ private fun EditForm(
     editArtist: String,
     filename: String,
     folder: String,
-    canTranscribe: Boolean,
+    availableModels: List<AsrModels.AvailableAsr>,
+    selectedModelId: String,
     onTitleChange: (String) -> Unit,
     onArtistChange: (String) -> Unit,
     onSearch: () -> Unit,
     onTranscribe: () -> Unit,
+    onModelSelect: (String) -> Unit,
 ) {
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.White,
@@ -602,8 +614,47 @@ private fun EditForm(
             )
         }
 
-        if (canTranscribe) {
+        if (availableModels.isNotEmpty()) {
             Spacer(Modifier.height(20.dp))
+            if (availableModels.size > 1) {
+                Text(
+                    "Model",
+                    color = Color.White.copy(alpha = 0.55f),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    availableModels.forEach { m ->
+                        val isSel = m.id == selectedModelId
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = if (isSel) Color.White.copy(alpha = 0.22f)
+                                    else Color.White.copy(alpha = 0.08f),
+                            modifier = Modifier.clickable { onModelSelect(m.id) },
+                        ) {
+                            Column(
+                                Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    m.displayName,
+                                    color = if (isSel) Color.White
+                                            else Color.White.copy(alpha = 0.7f),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (isSel) FontWeight.Bold
+                                                 else FontWeight.Normal,
+                                )
+                                Text(
+                                    m.arch.uppercase(),
+                                    color = Color.White.copy(alpha = 0.4f),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = Color.White.copy(alpha = 0.10f),
