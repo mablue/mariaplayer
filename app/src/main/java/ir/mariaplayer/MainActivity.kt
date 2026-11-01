@@ -76,6 +76,7 @@ import ir.mariaplayer.ui.PlaylistDetailScreen
 import ir.mariaplayer.ui.PlaylistsScreen
 import ir.mariaplayer.ui.SelfTestScreen
 import ir.mariaplayer.ui.ModelManagerScreen
+import ir.mariaplayer.ui.LyricsDisplayScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -239,12 +240,15 @@ private fun AppRoot() {
     }
 
     when {
+        screen == "lyrics_display" -> {
+            LyricsDisplayScreen(controller, onBack = { screen = "library" })
+        }
         screen == "playlists" -> {
             PlaylistsScreen(
                 onBack = { screen = "library" },
                 onOpenPlaylist = { id -> screen = "playlist:$id" },
                 controller = controller,
-                onLyricsClick = { lyricsSheetOpen = true },
+                onLyricsClick = { screen = "lyrics_display" },
             )
         }
         screen == "models" -> {
@@ -266,7 +270,7 @@ private fun AppRoot() {
                         playQueue(controller, list, idx, 0L, autoPlay = true)
                     },
                     onBack = { screen = "playlists" },
-                    onLyricsClick = { lyricsSheetOpen = true },
+                    onLyricsClick = { screen = "lyrics_display" },
                 )
             }
         }
@@ -304,7 +308,7 @@ private fun AppRoot() {
             if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
         },
         onTrackLongClick = { t -> pendingTrackForPlaylist = t },
-        onLyricsClick = { lyricsSheetOpen = true },
+        onLyricsClick = { screen = "lyrics_display" },
         onPlaylistsClick = { screen = "playlists" },
         onSelfTestClick = { screen = "selftest" },
         onModelsClick = { screen = "models" },
@@ -426,52 +430,70 @@ private fun LibraryScreen(
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
-                    IconButton(onClick = onModelsClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_model),
-                            contentDescription = "Models",
-                        )
+                    val sz = Modifier.size(36.dp)
+                    val isz = Modifier.size(22.dp)
+                    IconButton(onClick = { onModelsClick() }, modifier = sz) {
+                        Icon(painter = painterResource(R.drawable.ic_model),
+                            contentDescription = "Models", modifier = isz)
                     }
-                    IconButton(onClick = onSelfTestClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_self_test),
-                            contentDescription = "Self-test",
-                        )
+                    IconButton(onClick = { onSelfTestClick() }, modifier = sz) {
+                        Icon(painter = painterResource(R.drawable.ic_self_test),
+                            contentDescription = "Self-test", modifier = isz)
                     }
-                    IconButton(onClick = onPlaylistsClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_playlist),
-                            contentDescription = "Playlists",
-                        )
+                    IconButton(onClick = { onPlaylistsClick() }, modifier = sz) {
+                        Icon(painter = painterResource(R.drawable.ic_playlist),
+                            contentDescription = "Playlists", modifier = isz)
                     }
-                    // Sort
                     Box {
-                        IconButton(onClick = { sortMenuOpen = true }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_sort),
+                        IconButton(onClick = { sortMenuOpen = true }, modifier = sz) {
+                            Icon(painter = painterResource(R.drawable.ic_sort),
                                 contentDescription = "Sort by ${sortMode.label}",
-                            )
+                                modifier = isz)
                         }
-                        DropdownMenu(
-                            expanded = sortMenuOpen,
-                            onDismissRequest = { sortMenuOpen = false },
-                        ) {
+                        DropdownMenu(expanded = sortMenuOpen,
+                            onDismissRequest = { sortMenuOpen = false }) {
                             SortMode.entries.forEach { m ->
-                                DropdownMenuItem(
-                                    text = { Text(m.label) },
-                                    onClick = { onSortChange(m); sortMenuOpen = false },
-                                )
+                                DropdownMenuItem(text = { Text(m.label) },
+                                    onClick = { onSortChange(m); sortMenuOpen = false })
                             }
                         }
                     }
-                    // Shuffle
-                    IconButton(onClick = onShuffleClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_shuffle),
+                    Box {
+                        IconButton(onClick = { folderMenuOpen = true }, modifier = sz) {
+                            Icon(painter = painterResource(R.drawable.ic_folder),
+                                contentDescription = if (folderFilter.isEmpty())
+                                    "Folder filter: all" else "Folder filter: $folderFilter",
+                                tint = if (folderFilter.isNotEmpty())
+                                    MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = isz)
+                        }
+                        DropdownMenu(expanded = folderMenuOpen,
+                            onDismissRequest = { folderMenuOpen = false }) {
+                            DropdownMenuItem(text = { Text("All folders") },
+                                onClick = { onFolderFilterChange(""); folderMenuOpen = false })
+                            folderList.forEach { f ->
+                                DropdownMenuItem(text = { Text(f) },
+                                    onClick = { onFolderFilterChange(f); folderMenuOpen = false })
+                            }
+                        }
+                    }
+                    IconButton(onClick = { onFavOnlyChange(!favOnly) }, modifier = sz) {
+                        Icon(painter = painterResource(
+                                if (favOnly) R.drawable.ic_favorite_filled
+                                else R.drawable.ic_favorite_border),
+                            contentDescription = if (favOnly) "Favorites filter on"
+                                else "Favorites filter off",
+                            tint = if (favOnly) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = isz)
+                    }
+                    IconButton(onClick = { onShuffleClick() }, modifier = sz) {
+                        Icon(painter = painterResource(R.drawable.ic_shuffle),
                             contentDescription = if (shuffleOn) "Shuffle on" else "Shuffle off",
                             tint = if (shuffleOn) MaterialTheme.colorScheme.primary
-                                   else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = isz)
                     }
                 },
             )
@@ -496,58 +518,7 @@ private fun LibraryScreen(
                     }
                 },
             )
-            Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-                // Favorites filter
-                IconButton(onClick = { onFavOnlyChange(!favOnly) }) {
-                    Icon(
-                        painter = painterResource(
-                            if (favOnly) R.drawable.ic_favorite_filled
-                            else R.drawable.ic_favorite_border
-                        ),
-                        contentDescription =
-                            if (favOnly) "Favorites filter on" else "Favorites filter off",
-                        tint = if (favOnly) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                // Folder filter
-                Box {
-                    IconButton(onClick = { folderMenuOpen = true }) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_folder),
-                            contentDescription =
-                                if (folderFilter.isEmpty()) "Folder filter: all"
-                                else "Folder filter: $folderFilter",
-                            tint = if (folderFilter.isNotEmpty())
-                                       MaterialTheme.colorScheme.primary
-                                   else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = folderMenuOpen,
-                        onDismissRequest = { folderMenuOpen = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("All folders") },
-                            onClick = { onFolderFilterChange(""); folderMenuOpen = false },
-                        )
-                        folderList.forEach { f ->
-                            DropdownMenuItem(
-                                text = { Text(f) },
-                                onClick = { onFolderFilterChange(f); folderMenuOpen = false },
-                            )
-                        }
-                    }
-                }
-                if (folderFilter.isNotEmpty()) {
-                    IconButton(onClick = { onFolderFilterChange("") }) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_close),
-                            contentDescription = "Clear folder filter",
-                        )
-                    }
-                }
-            }
+
             Box(Modifier.fillMaxWidth().weight(1f)) {
                 when {
                     scanning -> CenterText("Scanning library...")
