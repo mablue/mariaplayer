@@ -10,9 +10,13 @@ import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig
 import java.io.File
 
 /**
- * PR-L23: whisperLanguage accepted as constructor param.
- * Empty string = auto detect. "fa", "en", "ar", "tr", etc = forced language.
- * Non-Whisper models ignore it.
+ * PR-L23a: architecture-aware sherpa engine.
+ *   CTC    -> model.onnx + tokens.txt
+ *   RNNT   -> encoder + decoder + joiner + tokens.txt
+ *   Whisper-> encoder + decoder + tokens.txt (no joiner)
+ *
+ * whisperLanguage: "" = auto-detect, or BCP-47 ("fa", "en", "ar", "tr", ...).
+ * Ignored by CTC and RNNT models.
  */
 class SherpaEngine(
     private val modelDir: File,
@@ -91,8 +95,7 @@ class SherpaEngine(
 
     private fun detect(dir: File): Arch? {
         val files = dir.listFiles() ?: return null
-        val tokens = files.firstOrNull { it.isFile && it.name.endsWith("tokens.txt") }
-            ?: return null
+        val tokens = files.firstOrNull { it.isFile && it.name.endsWith("tokens.txt") } ?: return null
         val enc = pick(files, "encoder")
         val dec = pick(files, "decoder")
         val join = pick(files, "joiner")
