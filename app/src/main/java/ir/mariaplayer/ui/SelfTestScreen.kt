@@ -485,6 +485,16 @@ private suspend fun runAllTests(
         "${samples.size} samples from ${t.title.take(20)}"
     }
 
+    // 19j) Asr selected persists in DataStore
+    test("Asr selected persists") {
+        val orig = ir.mariaplayer.asr.AsrModels.selected(context)
+        ir.mariaplayer.asr.AsrModels.saveSelected(context, "__test__")
+        val got = ir.mariaplayer.asr.AsrModels.selected(context)
+        ir.mariaplayer.asr.AsrModels.saveSelected(context, orig)
+        if (got != "__test__") throw IllegalStateException("got $got")
+        "ok"
+    }
+
     // 20) Sherpa engine: Shenava Rizeh model on disk + load test
     test("Sherpa Shenava load") {
         val dl = ModelDownloader(context)

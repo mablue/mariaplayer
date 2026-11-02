@@ -103,6 +103,7 @@ private sealed interface DispState {
     data class Plain(val text: String) : DispState
     data object NotFound : DispState
     data class Error(val msg: String) : DispState
+    data object PasteSheet : DispState
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -394,6 +395,7 @@ fun LyricsDisplayScreen(
                         onTitleChange = { editTitle = it },
                         onArtistChange = { editArtist = it },
                         onSearch = { trigger += 1 },
+                        onPaste = { state = DispState.PasteSheet },
                         onTranscribe30s = {
                             transcribeFullMode = false
                             transcribeTrigger += 1
@@ -423,6 +425,7 @@ fun LyricsDisplayScreen(
                     is DispState.Plain -> PlainBody(s.text)
                     DispState.NotFound -> NotFoundBody(
                         onEdit = { state = DispState.Editing },
+                        onPaste = { state = DispState.PasteSheet },
                         onGoogle = {
                             val q = URLEncoder.encode(
                                 "$editTitle $editArtist lyrics", "UTF-8"
@@ -433,6 +436,20 @@ fun LyricsDisplayScreen(
                                     Uri.parse("https://www.google.com/search?q=$q"),
                                 )
                             )
+                        },
+                    )
+                    DispState.PasteSheet -> PasteSheetBody(
+                        onCancel = { state = DispState.NotFound },
+                        onSave = { text ->
+                            val id = trackId
+                            if (id != null && text.isNotBlank()) {
+                                scope.launch {
+                                    LyricsCache.writeLyrics(context, id, null, text)
+                                    state = DispState.Plain(text)
+                                }
+                            } else {
+                                state = DispState.NotFound
+                            }
                         },
                     )
                     is DispState.Error -> ErrorBody(
@@ -582,6 +599,7 @@ private fun EditForm(
     onTitleChange: (String) -> Unit,
     onArtistChange: (String) -> Unit,
     onSearch: () -> Unit,
+    onPaste: () -> Unit,
     onTranscribe30s: () -> Unit,
     onTranscribeFull: () -> Unit,
     onModelSelect: (String) -> Unit,
@@ -656,6 +674,20 @@ private fun EditForm(
                 modifier = Modifier.padding(horizontal = 36.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White.copy(alpha = 0.10f),
+            modifier = Modifier.clickable(onClick = onPaste),
+        ) {
+            Text(
+                "📋 Paste lyrics",
+                color = Color.White.copy(alpha = 0.85f),
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
 
@@ -917,21 +949,105 @@ private fun PlainBody(text: String) {
 }
 
 @Composable
-private fun NotFoundBody(onEdit: () -> Unit, onGoogle: () -> Unit) {
+private fun NotFoundBody(
+    onEdit: () -> Unit,
+    onPaste: () -> Unit,
+    onGoogle: () -> Unit,
+) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Lyrics not found.", color = Color.White.copy(alpha = 0.75f))
             Spacer(Modifier.height(6.dp))
             Text(
-                "Try editing tags or transcribing offline.",
+                "Try editing tags, paste lyrics, or search externally.",
                 color = Color.White.copy(alpha = 0.5f),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ChipButton("Edit tags", onEdit)
+                ChipButton("Edit", onEdit)
+                ChipButton("Paste", onPaste)
                 ChipButton("Google", onGoogle)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PasteSheetBody(
+    onCancel: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf("") }
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        focusedBorderColor = Color.White.copy(alpha = 0.65f),
+        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+        focusedLabelColor = Color.White,
+        unfocusedLabelColor = Color.White.copy(alpha = 0.55f),
+        cursorColor = Color.White,
+    )
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "Paste lyrics",
+            color = Color.White,
+            style = MaterialTheme.typography.titleLarge,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Stored locally in the app. Does not modify the audio file.",
+            color = Color.White.copy(alpha = 0.55f),
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            label = { Text("Lyrics text") },
+            minLines = 8,
+            maxLines = 20,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors,
+        )
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.10f),
+                modifier = Modifier.clickable(onClick = onCancel),
+            ) {
+                Text(
+                    "Cancel",
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
+                )
+            }
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = if (text.isNotBlank())
+                    Color.White.copy(alpha = 0.22f)
+                else
+                    Color.White.copy(alpha = 0.08f),
+                modifier = Modifier.clickable(enabled = text.isNotBlank()) {
+                    onSave(text)
+                },
+            ) {
+                Text(
+                    "Save",
+                    color = if (text.isNotBlank()) Color.White
+                            else Color.White.copy(alpha = 0.4f),
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp),
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }

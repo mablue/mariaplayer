@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import ir.mariaplayer.R
 import ir.mariaplayer.models.ModelCatalog
 import ir.mariaplayer.models.ModelDownloader
+import ir.mariaplayer.asr.AsrModels
+import ir.mariaplayer.asr.AsrModels
 import ir.mariaplayer.models.ModelEntry
 import kotlinx.coroutines.launch
 
@@ -66,6 +68,12 @@ fun ModelManagerScreen(onBack: () -> Unit) {
     val catalog by produceState<List<ModelEntry>>(initialValue = emptyList()) {
         value = ModelCatalog.load(context)
     }
+
+    var selectedAsrId by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { selectedAsrId = AsrModels.selected(context) }
+
+    var selectedAsrId by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { selectedAsrId = AsrModels.selected(context) }
 
     val states = remember { mutableStateMapOf<String, ModelUiState>() }
     LaunchedEffect(catalog) {
@@ -146,9 +154,19 @@ fun ModelManagerScreen(onBack: () -> Unit) {
                 LazyColumn(Modifier.fillMaxSize()) {
                     items(visible, key = { it.id }) { m ->
                         val st = states[m.id] ?: ModelUiState.NotDownloaded
+                        val isAsr = m.engine == "sherpa-onnx"
+                        val isDefaultAsr = isAsr && m.id == selectedAsrId
                         ModelRow(
                             model = m,
                             state = st,
+                            isDefaultAsr = isDefaultAsr,
+                            canSetDefaultAsr = isAsr && st is ModelUiState.Downloaded,
+                            onSetDefaultAsr = {
+                                scope.launch {
+                                    AsrModels.saveSelected(context, m.id)
+                                    selectedAsrId = m.id
+                                }
+                            },
                             onDownload = {
                                 if (st is ModelUiState.Downloading) return@ModelRow
                                 scope.launch {
@@ -184,6 +202,9 @@ fun ModelManagerScreen(onBack: () -> Unit) {
 private fun ModelRow(
     model: ModelEntry,
     state: ModelUiState,
+    isDefaultAsr: Boolean,
+    canSetDefaultAsr: Boolean,
+    onSetDefaultAsr: () -> Unit,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
     onRetry: () -> Unit,
@@ -232,7 +253,23 @@ private fun ModelRow(
                     CircularProgressIndicator(Modifier.padding(8.dp))
                 }
                 ModelUiState.Downloaded -> {
-                    TextButton(onClick = onDelete) { Text("Delete") }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (canSetDefaultAsr) {
+                            if (isDefaultAsr) {
+                                Text(
+                                    "Default",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(end = 4.dp),
+                                )
+                            } else {
+                                TextButton(onClick = onSetDefaultAsr) {
+                                    Text("Set default")
+                                }
+                            }
+                        }
+                        TextButton(onClick = onDelete) { Text("Delete") }
+                    }
                 }
                 is ModelUiState.Error -> {
                     Row {
