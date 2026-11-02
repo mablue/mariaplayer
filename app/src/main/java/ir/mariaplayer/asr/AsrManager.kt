@@ -9,13 +9,17 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * PR-L20: 30 s chunks with 3 s overlap. No VAD.
+ * PR-L24: 30 s chunks with 3 s overlap. No VAD.
  *
  * Silero VAD on music strips vocals as noise (see LESSONS.md), so we
  * deliberately avoid it. Larger chunks (30 s vs 15 s) halve the number
  * of boundaries, and 3 s overlap guarantees every boundary word appears
- * fully in at least one chunk. smartMerge dedups the overlap using
- * longest word n-gram matching.
+ * fully in at least one chunk. trimPrefix dedups the overlap.
+ *
+ * Chunks are kept SEPARATE (one AsrChunk per audio slice). toLrc then
+ * splits each chunk into sentence lines with proportional timestamps,
+ * so the offline-transcribed result looks like karaoke subtitles, not
+ * a wall of text.
  */
 object AsrManager {
 
@@ -24,6 +28,9 @@ object AsrManager {
     private const val CHUNK_MS = 30_000L
     private const val OVERLAP_MS = 3_000L
     private const val STEP_MS = CHUNK_MS - OVERLAP_MS
+
+    private val SENTENCE_SPLIT = Regex("(?<=[.!?،؟؛:])\\s+|\\n+")
+    private val WS = Regex("\\s+")
 
     suspend fun transcribe(
         context: Context, uri: Uri, modelDir: File,
@@ -82,55 +89,90 @@ object AsrManager {
             runCatching { eng.close() }
         }
 
-        // Merge overlapping chunks
+        // PR-L24: keep chunks SEPARATE. Only trim the boundary prefix of
+        // each chunk against the tail of the previous RAW chunk so that
+        // words cut by the 3 s overlap don't appear twice.
         val merged = ArrayList<AsrChunk>()
+        var prevRawText = ""
         for (c in raw) {
-            if (c.text.isBlank()) continue
-            if (merged.isEmpty()) merged.add(c)
-            else {
-                val prev = merged.last()
-                merged[merged.lastIndex] = AsrChunk(
-                    prev.startMs, smartMerge(prev.text, c.text),
-                )
-            }
+            if (c.text.isBlank()) { prevRawText = c.text; continue }
+            val deduped = if (prevRawText.isBlank()) c.text
+                          else trimPrefix(prevRawText, c.text)
+            if (deduped.isNotBlank()) merged.add(AsrChunk(c.startMs, deduped))
+            prevRawText = c.text
         }
         merged
     }
 
-    /**
-     * PR-L20: longest word n-gram boundary dedup.
-     * Find longest k (>=2) such that last k words of [a] == first k of [b].
-     * Drop that overlap from [b] and append the rest.
-     */
-    private fun smartMerge(a: String, b: String): String {
-        if (a.isBlank()) return b
-        if (b.isBlank()) return a
-        val aw = a.trim().split(Regex("\\s+"))
-        val bw = b.trim().split(Regex("\\s+"))
-        val maxK = minOf(aw.size, bw.size)
+    private fun trimPrefix(prevRaw: String, nextRaw: String): String {
+        if (prevRaw.isBlank() || nextRaw.isBlank()) return nextRaw
+        val pw = prevRaw.trim().split(WS)
+        val nw = nextRaw.trim().split(WS)
+        val maxK = minOf(pw.size, nw.size)
         for (k in maxK downTo 2) {
-            val aTail = aw.takeLast(k).joinToString(" ")
-            val bHead = bw.take(k).joinToString(" ")
-            if (aTail == bHead) {
-                val tail = bw.drop(k).joinToString(" ")
-                return if (tail.isBlank()) a else "$a $tail"
-            }
+            val pTail = pw.takeLast(k).joinToString(" ")
+            val nHead = nw.take(k).joinToString(" ")
+            if (pTail == nHead) return nw.drop(k).joinToString(" ")
         }
-        return "$a $b"
+        return nextRaw
     }
 
-    fun toLrc(chunks: List<AsrChunk>): String {
+    /**
+     * PR-L24: sentence-per-line LRC, karaoke style.
+     * Long run-on chunks (no punctuation) are force-split by word count
+     * so a 30 s monologue does not appear as a single giant subtitle.
+     */
+    fun toLrc(chunks: List<AsrChunk>, chunkSpanMs: Long = CHUNK_MS): String {
         val sb = StringBuilder()
         for (c in chunks) {
             if (c.text.isBlank()) continue
-            val sec = c.startMs / 1000
-            val min = sec / 60
-            val s = sec % 60
-            val cs = (c.startMs % 1000) / 10
-            if (sb.isNotEmpty()) sb.append('\n')
-            sb.append("[%02d:%02d.%02d]%s".format(min, s, cs, c.text))
+            val lines = splitIntoLines(c.text)
+            if (lines.isEmpty()) continue
+            if (lines.size == 1) {
+                appendLrcLine(sb, c.startMs, lines[0])
+            } else {
+                val totalChars = lines.sumOf { it.length }.coerceAtLeast(1)
+                var cumulativeMs = c.startMs
+                for (s in lines) {
+                    appendLrcLine(sb, cumulativeMs, s)
+                    val spanMs = (s.length.toLong() * chunkSpanMs) / totalChars
+                    cumulativeMs += spanMs.coerceAtLeast(500L)
+                }
+            }
         }
         return sb.toString()
+    }
+
+    private fun splitIntoLines(text: String): List<String> {
+        val trimmed = text.trim()
+        if (trimmed.isBlank()) return emptyList()
+        val byPunct = trimmed.split(SENTENCE_SPLIT)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        if (byPunct.size > 1) return byPunct
+        if (trimmed.length <= 50) return listOf(trimmed)
+        val words = trimmed.split(WS).filter { it.isNotBlank() }
+        if (words.size <= 10) return listOf(trimmed)
+        val groups = ArrayList<String>()
+        var cur = ArrayList<String>()
+        for (w in words) {
+            cur.add(w)
+            if (cur.size >= 8) {
+                groups.add(cur.joinToString(" "))
+                cur = ArrayList()
+            }
+        }
+        if (cur.isNotEmpty()) groups.add(cur.joinToString(" "))
+        return if (groups.isEmpty()) listOf(trimmed) else groups
+    }
+
+    private fun appendLrcLine(sb: StringBuilder, timeMs: Long, text: String) {
+        if (sb.isNotEmpty()) sb.append('\n')
+        val sec = timeMs / 1000
+        val min = sec / 60
+        val s = sec % 60
+        val cs = (timeMs % 1000) / 10
+        sb.append("[%02d:%02d.%02d]%s".format(min, s, cs, text))
     }
 
     private fun fmtEta(ms: Long): String {
@@ -138,7 +180,8 @@ object AsrManager {
         return if (sec < 60) "${sec}s" else "${sec / 60}m ${sec % 60}s"
     }
 
-    /** Test-visible wrapper for the merge logic. */
+    // ── Test-visible helpers (unchanged behavior for SelfTest) ──
+
     fun mergeForTest(chunks: List<AsrChunk>): List<AsrChunk> {
         val merged = ArrayList<AsrChunk>()
         for (c in chunks) {
@@ -149,5 +192,22 @@ object AsrManager {
             )
         }
         return merged
+    }
+
+    private fun smartMerge(a: String, b: String): String {
+        if (a.isBlank()) return b
+        if (b.isBlank()) return a
+        val aw = a.trim().split(WS)
+        val bw = b.trim().split(WS)
+        val maxK = minOf(aw.size, bw.size)
+        for (k in maxK downTo 2) {
+            val aTail = aw.takeLast(k).joinToString(" ")
+            val bHead = bw.take(k).joinToString(" ")
+            if (aTail == bHead) {
+                val tail = bw.drop(k).joinToString(" ")
+                return if (tail.isBlank()) a else "$a $tail"
+            }
+        }
+        return "$a $b"
     }
 }
