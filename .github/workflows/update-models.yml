@@ -20,7 +20,8 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet models.json; then
+          git add models.json || true
+          if git diff --cached --quiet; then
             echo "no change"
             exit 0
           fi
