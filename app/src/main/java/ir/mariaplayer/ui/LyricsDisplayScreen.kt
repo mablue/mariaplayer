@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -141,10 +143,12 @@ fun LyricsDisplayScreen(
     var editArtist by remember(mediaId) { mutableStateOf(rawArtist) }
 
     var hasAsrModel by remember { mutableStateOf(false) }
+    var selectedLang by remember { mutableStateOf("fa") }
 
     LaunchedEffect(Unit) {
         prefs = LyricsDisplayPrefs.read(context)
         hasAsrModel = AsrModels.list(context).isNotEmpty()
+        selectedLang = AsrModels.selectedLang(context)
     }
 
     LaunchedEffect(mediaId, contentUri) {
@@ -237,6 +241,7 @@ fun LyricsDisplayScreen(
                 uri = uri,
                 modelDir = model.dir,
                 totalMs = totalMs,
+                language = selectedLang,
             ) { p, status ->
                 state = DispState.Transcribing(p, status)
             }
@@ -399,6 +404,11 @@ fun LyricsDisplayScreen(
                         onTranscribeFull = {
                             transcribeFullMode = true
                             transcribeTrigger += 1
+                        },
+                        selectedLang = selectedLang,
+                        onLangChange = { newLang ->
+                            selectedLang = newLang
+                            scope.launch { AsrModels.saveSelectedLang(context, newLang) }
                         },
                     )
                     DispState.Loading -> LoadingPulse()
@@ -578,6 +588,17 @@ private fun TranscribingBody(progress: Float, status: String, onCancel: () -> Un
     }
 }
 
+private val WHISPER_LANGUAGES = listOf(
+    "" to "Auto",
+    "fa" to "Persian",
+    "en" to "English",
+    "ar" to "Arabic",
+    "tr" to "Turkish",
+    "ru" to "Russian",
+    "de" to "German",
+    "fr" to "French",
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EditForm(
@@ -593,6 +614,8 @@ private fun EditForm(
     onPaste: () -> Unit,
     onTranscribe30s: () -> Unit,
     onTranscribeFull: () -> Unit,
+    selectedLang: String,
+    onLangChange: (String) -> Unit,
 ) {
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.White,
@@ -679,6 +702,45 @@ private fun EditForm(
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.bodyMedium,
             )
+        }
+
+        if (hasAsrModel) {
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "Whisper language",
+                color = Color.White.copy(alpha = 0.55f),
+                style = MaterialTheme.typography.labelMedium,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "Used only when a Whisper model is selected",
+                color = Color.White.copy(alpha = 0.35f),
+                style = MaterialTheme.typography.labelSmall,
+            )
+            Spacer(Modifier.height(8.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                items(WHISPER_LANGUAGES) { (code, label) ->
+                    val isSel = selectedLang == code
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isSel) Color.White.copy(alpha = 0.22f)
+                                else Color.White.copy(alpha = 0.08f),
+                        modifier = Modifier.clickable { onLangChange(code) },
+                    ) {
+                        Text(
+                            label,
+                            color = if (isSel) Color.White
+                                    else Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
+            }
         }
 
         if (!hasAsrModel) {

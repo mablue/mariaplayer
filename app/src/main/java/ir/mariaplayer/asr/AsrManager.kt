@@ -37,6 +37,7 @@ object AsrManager {
     suspend fun transcribeFull(
         context: Context, uri: Uri, modelDir: File,
         totalMs: Long, startMs: Long = 0L,
+        language: String = "",
         onProgress: (Float, String) -> Unit = { _, _ -> },
     ): List<AsrChunk> = withContext(Dispatchers.Default) {
         require(modelDir.isDirectory) { "model dir missing: $modelDir" }
@@ -51,7 +52,7 @@ object AsrManager {
         val chunkSamples = (CHUNK_MS * 16000 / 1000L).toInt()
         val stepSamples  = (STEP_MS  * 16000 / 1000L).toInt()
 
-        val eng = SherpaEngine(modelDir)
+        val eng = SherpaEngine(modelDir, whisperLanguage = language)
         val startedAt = System.currentTimeMillis()
         val raw = ArrayList<AsrChunk>()
         try {

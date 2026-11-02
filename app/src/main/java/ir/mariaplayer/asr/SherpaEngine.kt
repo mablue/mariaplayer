@@ -10,14 +10,13 @@ import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig
 import java.io.File
 
 /**
- * PR-L20: architecture-aware sherpa engine.
- *
- *   CTC    -> model.onnx + tokens.txt
- *   RNNT   -> encoder + decoder + joiner + tokens.txt
- *   Whisper-> encoder + decoder + tokens.txt (no joiner)
+ * PR-L23: whisperLanguage accepted as constructor param.
+ * Empty string = auto detect. "fa", "en", "ar", "tr", etc = forced language.
+ * Non-Whisper models ignore it.
  */
 class SherpaEngine(
     private val modelDir: File,
+    private val whisperLanguage: String = "",
     numThreads: Int = 4,
 ) {
     private sealed interface Arch {
@@ -31,8 +30,12 @@ class SherpaEngine(
 
     init {
         require(modelDir.isDirectory) { "model dir missing: $modelDir" }
-        architecture = detect(modelDir)
-            ?: throw IllegalArgumentException("no recognizable model in $modelDir")
+        architecture = detect(modelDir) ?: run {
+            val files = modelDir.listFiles()?.joinToString(", ") { it.name } ?: "empty"
+            throw IllegalArgumentException(
+                "no recognizable model in $modelDir. Files: [$files]"
+            )
+        }
         val feat = FeatureConfig(sampleRate = 16000, featureDim = 80)
         val mc = when (val a = architecture) {
             is Arch.Ctc -> OfflineModelConfig(
@@ -56,10 +59,12 @@ class SherpaEngine(
                 whisper = OfflineWhisperModelConfig(
                     encoder = a.encoder.absolutePath,
                     decoder = a.decoder.absolutePath,
+                    language = whisperLanguage,
                 ),
                 tokens = a.tokens.absolutePath,
                 numThreads = numThreads,
                 debug = false,
+                modelType = "whisper",
             )
         }
         recognizer = OfflineRecognizer(
@@ -85,19 +90,20 @@ class SherpaEngine(
     fun close() = recognizer.release()
 
     private fun detect(dir: File): Arch? {
-        val tokens = File(dir, "tokens.txt").takeIf { it.exists() } ?: return null
-        val enc = pick(dir, "encoder")
-        val dec = pick(dir, "decoder")
-        val join = pick(dir, "joiner")
-        val model = pick(dir, "model")
+        val files = dir.listFiles() ?: return null
+        val tokens = files.firstOrNull { it.isFile && it.name.endsWith("tokens.txt") }
+            ?: return null
+        val enc = pick(files, "encoder")
+        val dec = pick(files, "decoder")
+        val join = pick(files, "joiner")
+        val model = pick(files, "model")
         if (enc != null && dec != null && join != null) return Arch.Rnnt(enc, dec, join, tokens)
         if (enc != null && dec != null) return Arch.Whisper(enc, dec, tokens)
         if (model != null) return Arch.Ctc(model, tokens)
         return null
     }
 
-    private fun pick(dir: File, base: String): File? {
-        val files = dir.listFiles() ?: return null
+    private fun pick(files: Array<File>, base: String): File? {
         return files.firstOrNull { it.isFile && it.name.endsWith("$base.int8.onnx") }
             ?: files.firstOrNull { it.isFile && it.name.endsWith("$base.onnx") }
     }

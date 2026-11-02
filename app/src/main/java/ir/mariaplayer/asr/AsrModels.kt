@@ -19,17 +19,17 @@ object AsrModels {
     )
 
     private val KEY = stringPreferencesKey("selected_model")
+    private val LANG_KEY = stringPreferencesKey("whisper_language")
 
     fun list(context: Context): List<AvailableAsr> {
         val root = File(context.filesDir, "models")
         if (!root.exists()) return emptyList()
         return root.listFiles()?.mapNotNull { d ->
             if (!d.isDirectory) return@mapNotNull null
-            val files = d.listFiles()?.filter { it.isFile }?.map { it.name }
-                ?: return@mapNotNull null
+            val files = d.listFiles()?.filter { it.isFile } ?: return@mapNotNull null
             if (files.isEmpty()) return@mapNotNull null
 
-            fun has(suffix: String) = files.any { it.endsWith(suffix) }
+            fun has(suffix: String) = files.any { it.name.endsWith(suffix) }
 
             if (!has("tokens.txt")) return@mapNotNull null
 
@@ -60,6 +60,13 @@ object AsrModels {
 
     suspend fun saveSelected(context: Context, id: String) {
         context.asrStore.edit { it[KEY] = id }
+    }
+
+    suspend fun selectedLang(context: Context): String =
+        context.asrStore.data.first()[LANG_KEY] ?: "fa"
+
+    suspend fun saveSelectedLang(context: Context, lang: String) {
+        context.asrStore.edit { it[LANG_KEY] = lang }
     }
 
     private fun friendlyName(id: String): String = when {
