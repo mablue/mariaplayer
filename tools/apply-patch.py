@@ -21,7 +21,12 @@ def main():
     for i, (search, replace) in enumerate(blocks, 1):
         cnt = s.count(search)
         if cnt == 0:
-            print(f'[{i}] FAIL: SEARCH not found'); return 1
+            # If REPLACE text is already present and non-trivial, treat as
+            # already applied (safe re-run after a mid-flight failure).
+            if replace.strip() and replace in s:
+                print(f'[{i}] SKIP: already applied')
+                continue
+            print(f'[{i}] FAIL: SEARCH not found and REPLACE not present'); return 1
         if cnt > 1:
             print(f'[{i}] FAIL: appears {cnt} times'); return 1
         s = s.replace(search, replace, 1)
