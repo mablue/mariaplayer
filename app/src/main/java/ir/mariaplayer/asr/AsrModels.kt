@@ -25,16 +25,18 @@ object AsrModels {
         if (!root.exists()) return emptyList()
         return root.listFiles()?.mapNotNull { d ->
             if (!d.isDirectory) return@mapNotNull null
-            if (!File(d, "tokens.txt").exists()) return@mapNotNull null
+            val files = d.listFiles()?.filter { it.isFile }?.map { it.name }
+                ?: return@mapNotNull null
+            if (files.isEmpty()) return@mapNotNull null
 
-            val hasEncoder = File(d, "encoder.int8.onnx").exists() ||
-                             File(d, "encoder.onnx").exists()
-            val hasDecoder = File(d, "decoder.int8.onnx").exists() ||
-                             File(d, "decoder.onnx").exists()
-            val hasJoiner  = File(d, "joiner.int8.onnx").exists() ||
-                             File(d, "joiner.onnx").exists()
-            val hasCtc     = File(d, "model.int8.onnx").exists() ||
-                             File(d, "model.onnx").exists()
+            fun has(suffix: String) = files.any { it.endsWith(suffix) }
+
+            if (!has("tokens.txt")) return@mapNotNull null
+
+            val hasEncoder = has("encoder.int8.onnx") || has("encoder.onnx")
+            val hasDecoder = has("decoder.int8.onnx") || has("decoder.onnx")
+            val hasJoiner  = has("joiner.int8.onnx")  || has("joiner.onnx")
+            val hasCtc     = has("model.int8.onnx")   || has("model.onnx")
 
             val arch = when {
                 hasEncoder && hasDecoder && hasJoiner -> "rnnt"
@@ -75,7 +77,6 @@ object AsrModels {
     }
 
     private fun priority(id: String): Int = when {
-        // Persian-first: Koochik best, then Rizeh, then Whisper (EN-oriented)
         id.contains("koochik") -> 0
         id.contains("rizeh") && !id.contains("rizeh-pizeh") -> 1
         id.contains("rizeh-pizeh") -> 2

@@ -96,8 +96,9 @@ class SherpaEngine(
         return null
     }
 
-    private fun pick(dir: File, base: String): File? = listOf(
-        File(dir, "$base.int8.onnx"),
-        File(dir, "$base.onnx"),
-    ).firstOrNull { it.exists() }
+    private fun pick(dir: File, base: String): File? {
+        val files = dir.listFiles() ?: return null
+        return files.firstOrNull { it.isFile && it.name.endsWith("$base.int8.onnx") }
+            ?: files.firstOrNull { it.isFile && it.name.endsWith("$base.onnx") }
+    }
 }

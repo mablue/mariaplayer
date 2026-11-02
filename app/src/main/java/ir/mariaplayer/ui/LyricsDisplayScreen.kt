@@ -140,17 +140,11 @@ fun LyricsDisplayScreen(
     var editTitle by remember(mediaId) { mutableStateOf(rawTitle) }
     var editArtist by remember(mediaId) { mutableStateOf(rawArtist) }
 
-    var availableModels by remember { mutableStateOf<List<AsrModels.AvailableAsr>>(emptyList()) }
-    var selectedModelId by remember { mutableStateOf("") }
+    var hasAsrModel by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         prefs = LyricsDisplayPrefs.read(context)
-        availableModels = AsrModels.list(context)
-        val saved = AsrModels.selected(context)
-        selectedModelId = if (saved.isNotBlank() && availableModels.any { it.id == saved })
-            saved
-        else
-            availableModels.firstOrNull()?.id.orEmpty()
+        hasAsrModel = AsrModels.list(context).isNotEmpty()
     }
 
     LaunchedEffect(mediaId, contentUri) {
@@ -221,12 +215,16 @@ fun LyricsDisplayScreen(
             state = DispState.Error("No audio URI")
             return@LaunchedEffect
         }
-        val model = availableModels.firstOrNull { it.id == selectedModelId }
-            ?: availableModels.firstOrNull()
-            ?: run {
-                state = DispState.Error("No ASR model downloaded")
-                return@LaunchedEffect
-            }
+        // PR-L21: read the model fresh from disk each time. The user may
+        // have changed the default in ModelManagerScreen while we were on
+        // this screen, so cached state would be stale.
+        val fresh = AsrModels.list(context)
+        if (fresh.isEmpty()) {
+            state = DispState.Error("Download an ASR model in Models screen")
+            return@LaunchedEffect
+        }
+        val selectedId = AsrModels.selected(context)
+        val model = fresh.firstOrNull { it.id == selectedId } ?: fresh.first()
         // PR-L15c: cap at 3 min for heap headroom on 256 MB devices.
         val totalMs = if (transcribeFullMode)
             (durationMs.takeIf { it > 0 } ?: 180_000L).coerceAtMost(180_000L)
@@ -389,8 +387,7 @@ fun LyricsDisplayScreen(
                         filename = filename,
                         folder = folder,
                         durationMs = durationMs,
-                        availableModels = availableModels,
-                        selectedModelId = selectedModelId,
+                        hasAsrModel = hasAsrModel,
                         onTitleChange = { editTitle = it },
                         onArtistChange = { editArtist = it },
                         onSearch = { trigger += 1 },
@@ -402,10 +399,6 @@ fun LyricsDisplayScreen(
                         onTranscribeFull = {
                             transcribeFullMode = true
                             transcribeTrigger += 1
-                        },
-                        onModelSelect = { newId ->
-                            selectedModelId = newId
-                            scope.launch { AsrModels.saveSelected(context, newId) }
                         },
                     )
                     DispState.Loading -> LoadingPulse()
@@ -593,15 +586,13 @@ private fun EditForm(
     filename: String,
     folder: String,
     durationMs: Long,
-    availableModels: List<AsrModels.AvailableAsr>,
-    selectedModelId: String,
+    hasAsrModel: Boolean,
     onTitleChange: (String) -> Unit,
     onArtistChange: (String) -> Unit,
     onSearch: () -> Unit,
     onPaste: () -> Unit,
     onTranscribe30s: () -> Unit,
     onTranscribeFull: () -> Unit,
-    onModelSelect: (String) -> Unit,
 ) {
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.White,
@@ -690,47 +681,16 @@ private fun EditForm(
             )
         }
 
-        if (availableModels.isNotEmpty()) {
+        if (!hasAsrModel) {
             Spacer(Modifier.height(20.dp))
-            if (availableModels.size > 1) {
-                Text(
-                    "Model",
-                    color = Color.White.copy(alpha = 0.55f),
-                    style = MaterialTheme.typography.labelMedium,
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    availableModels.forEach { m ->
-                        val isSel = m.id == selectedModelId
-                        Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            color = if (isSel) Color.White.copy(alpha = 0.22f)
-                                    else Color.White.copy(alpha = 0.08f),
-                            modifier = Modifier.clickable { onModelSelect(m.id) },
-                        ) {
-                            Column(
-                                Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                Text(
-                                    m.displayName,
-                                    color = if (isSel) Color.White
-                                            else Color.White.copy(alpha = 0.7f),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = if (isSel) FontWeight.Bold
-                                                 else FontWeight.Normal,
-                                )
-                                Text(
-                                    m.arch.uppercase(),
-                                    color = Color.White.copy(alpha = 0.4f),
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            }
-                        }
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-            }
+            Text(
+                "Download an ASR model in the Models screen to transcribe offline.",
+                color = Color.White.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+            )
+        } else {
+            Spacer(Modifier.height(20.dp))
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = Color.White.copy(alpha = 0.10f),
