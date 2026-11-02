@@ -65,8 +65,8 @@ jobs:
           echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
           echo "size=$SIZE" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-      continue-on-error: true
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: mariaplayer-release
           path: ${{ steps.meta.outputs.apk }}
