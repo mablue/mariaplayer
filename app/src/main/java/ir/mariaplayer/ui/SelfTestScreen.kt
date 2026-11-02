@@ -473,6 +473,18 @@ private suspend fun runAllTests(
         "ok"
     }
 
+    // 19i) AudioDecoder 3min decode (regression: OOM)
+    test("AudioDecoder 3min decode") {
+        val tracks = LibraryScanner.scan(context)
+        if (tracks.isEmpty()) throw IllegalStateException("no tracks")
+        val t = tracks.first()
+        val samples = ir.mariaplayer.asr.AudioDecoder.decodeFull(
+            context, android.net.Uri.parse(t.contentUri), 180_000L,
+        )
+        if (samples.isEmpty()) throw IllegalStateException("empty")
+        "${samples.size} samples from ${t.title.take(20)}"
+    }
+
     // 20) Sherpa engine: Shenava Rizeh model on disk + load test
     test("Sherpa Shenava load") {
         val dl = ModelDownloader(context)

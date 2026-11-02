@@ -56,10 +56,14 @@ object AsrManager {
         onProgress(0f, "Decoding audio…")
         val all = AudioDecoder.decodeFull(context, uri, startMs + totalMs + 5_000L)
 
-        // Slice from startMs
-        val startSamples = (startMs * 16000 / 1000L).toInt().coerceAtLeast(0)
-        val samples = if (startSamples < all.size) all.copyOfRange(startSamples, all.size)
-                      else FloatArray(0)
+        // PR-L15c: only copy when startMs > 0.
+        val samples = if (startMs > 0L) {
+            val startSamples = (startMs * 16000 / 1000L).toInt().coerceAtLeast(0)
+            if (startSamples < all.size) all.copyOfRange(startSamples, all.size)
+            else FloatArray(0)
+        } else {
+            all
+        }
 
         if (samples.isEmpty()) return@withContext emptyList()
 

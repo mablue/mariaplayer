@@ -226,8 +226,9 @@ fun LyricsDisplayScreen(
                 state = DispState.Error("No ASR model downloaded")
                 return@LaunchedEffect
             }
+        // PR-L15c: cap at 3 min for heap headroom on 256 MB devices.
         val totalMs = if (transcribeFullMode)
-            durationMs.takeIf { it > 0 } ?: 180_000L
+            (durationMs.takeIf { it > 0 } ?: 180_000L).coerceAtMost(180_000L)
         else
             30_000L
         state = DispState.Transcribing(0f, "Loading ${model.displayName}…")
