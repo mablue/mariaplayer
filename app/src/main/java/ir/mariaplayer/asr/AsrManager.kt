@@ -7,47 +7,36 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
-import kotlin.math.sqrt
 
 /**
- * PR-L15b: full-track transcribe with silence-based chunk boundaries.
+ * PR-L20: 30 s chunks with 3 s overlap. No VAD.
  *
- * Root cause of PR-L15 truncation: fixed 10s chunks cut inside words,
- * and RNNT (Koochik) needs longer context than CTC (Rizeh) to fill the
- * decoder state. Each chunk therefore ends at the local energy minimum
- * within ±1.5s of the target boundary, producing natural sentence breaks.
- *
- * Also decodes the whole file ONCE (via AudioDecoder.decodeFull) instead
- * of re-seeking MediaExtractor per chunk.
+ * Silero VAD on music strips vocals as noise (see LESSONS.md), so we
+ * deliberately avoid it. Larger chunks (30 s vs 15 s) halve the number
+ * of boundaries, and 3 s overlap guarantees every boundary word appears
+ * fully in at least one chunk. smartMerge dedups the overlap using
+ * longest word n-gram matching.
  */
 object AsrManager {
 
     data class AsrChunk(val startMs: Long, val text: String)
 
+    private const val CHUNK_MS = 30_000L
+    private const val OVERLAP_MS = 3_000L
+    private const val STEP_MS = CHUNK_MS - OVERLAP_MS
+
     suspend fun transcribe(
-        context: Context,
-        uri: Uri,
-        modelDir: File,
-        startMs: Long = 0L,
-        totalMs: Long = 30_000L,
-        chunkMs: Long = 5_000L,
-        onProgress: (Float) -> Unit = {},
+        context: Context, uri: Uri, modelDir: File,
+        startMs: Long = 0L, totalMs: Long = 30_000L,
+        chunkMs: Long = 5_000L, onProgress: (Float) -> Unit = {},
     ): String = withContext(Dispatchers.Default) {
-        val chunks = transcribeFull(
-            context, uri, modelDir, totalMs, chunkMs,
-            startMs = startMs,
-            onProgress = { p, _ -> onProgress(p) },
-        )
+        val chunks = transcribeFull(context, uri, modelDir, totalMs, startMs) { p, _ -> onProgress(p) }
         chunks.map { it.text }.filter { it.isNotBlank() }.joinToString(" ")
     }
 
     suspend fun transcribeFull(
-        context: Context,
-        uri: Uri,
-        modelDir: File,
-        totalMs: Long,
-        chunkMs: Long = 15_000L,
-        startMs: Long = 0L,
+        context: Context, uri: Uri, modelDir: File,
+        totalMs: Long, startMs: Long = 0L,
         onProgress: (Float, String) -> Unit = { _, _ -> },
     ): List<AsrChunk> = withContext(Dispatchers.Default) {
         require(modelDir.isDirectory) { "model dir missing: $modelDir" }
@@ -55,88 +44,78 @@ object AsrManager {
 
         onProgress(0f, "Decoding audio…")
         val all = AudioDecoder.decodeFull(context, uri, startMs + totalMs + 5_000L)
-
-        // PR-L15c: only copy when startMs > 0.
-        val samples = if (startMs > 0L) {
-            val startSamples = (startMs * 16000 / 1000L).toInt().coerceAtLeast(0)
-            if (startSamples < all.size) all.copyOfRange(startSamples, all.size)
-            else FloatArray(0)
-        } else {
-            all
-        }
-
+        val s0 = (startMs * 16000 / 1000L).toInt().coerceAtLeast(0)
+        val samples = if (s0 < all.size) all.copyOfRange(s0, all.size) else FloatArray(0)
         if (samples.isEmpty()) return@withContext emptyList()
 
-        val chunkSamples = (chunkMs * 16000 / 1000L).toInt()
-        val minChunkSamples = (5_000 * 16000 / 1000L).toInt()
+        val chunkSamples = (CHUNK_MS * 16000 / 1000L).toInt()
+        val stepSamples  = (STEP_MS  * 16000 / 1000L).toInt()
 
         val eng = SherpaEngine(modelDir)
         val startedAt = System.currentTimeMillis()
-        val result = ArrayList<AsrChunk>()
+        val raw = ArrayList<AsrChunk>()
         try {
             var pos = 0
-            while (pos < samples.size) {
+            var idx = 0
+            while (true) {
                 currentCoroutineContext().ensureActive()
-                val targetEnd = (pos + chunkSamples).coerceAtMost(samples.size)
-                val end = if (targetEnd < samples.size)
-                    findSilenceNear(samples, targetEnd, 1500, minChunkSamples)
-                else samples.size
-
+                val end = (pos + chunkSamples).coerceAtMost(samples.size)
                 val slice = samples.copyOfRange(pos, end)
-                if (slice.size >= 1000) {
+                if (slice.size >= 2000) {
                     val text = runCatching { eng.transcribe(slice).trim() }
                         .getOrDefault("")
-                    result.add(AsrChunk(pos * 1000L / 16000L, text))
+                    raw.add(AsrChunk(pos * 1000L / 16000L, text))
                 }
-                pos = end
+                idx++
+                if (end >= samples.size) break
+                pos += stepSamples
 
                 val progress = pos.toFloat() / samples.size
                 val elapsed = System.currentTimeMillis() - startedAt
                 val eta = if (progress > 0.05f)
                     (elapsed / progress - elapsed).toLong() else -1L
-                val etaStr = if (eta > 1000) " · ${formatEta(eta)} left" else ""
-                onProgress(progress, "${(progress * 100).toInt()}%$etaStr")
+                val etaStr = if (eta > 1000) " · ${fmtEta(eta)} left" else ""
+                onProgress(progress.coerceAtMost(1f), "Chunk $idx · ${(progress*100).toInt()}%$etaStr")
             }
         } finally {
             runCatching { eng.close() }
         }
-        result
+
+        // Merge overlapping chunks
+        val merged = ArrayList<AsrChunk>()
+        for (c in raw) {
+            if (c.text.isBlank()) continue
+            if (merged.isEmpty()) merged.add(c)
+            else {
+                val prev = merged.last()
+                merged[merged.lastIndex] = AsrChunk(
+                    prev.startMs, smartMerge(prev.text, c.text),
+                )
+            }
+        }
+        merged
     }
 
     /**
-     * Find the local energy minimum within ±windowMs of [target].
-     * Returns the sample index of that minimum, biased toward [target]
-     * if no silence stands out (energy is flat).
+     * PR-L20: longest word n-gram boundary dedup.
+     * Find longest k (>=2) such that last k words of [a] == first k of [b].
+     * Drop that overlap from [b] and append the rest.
      */
-    private fun findSilenceNear(
-        samples: FloatArray,
-        target: Int,
-        windowMs: Int = 1500,
-        minChunk: Int = 80_000,
-    ): Int {
-        val window = 16000 * windowMs / 1000
-        val lo = (target - window).coerceAtLeast(minChunk)
-        val hi = (target + window).coerceAtMost(samples.size - 1)
-        if (hi - lo < 2000) return target
-
-        val step = 800 // 50 ms analysis frame
-        var bestPos = target
-        var bestRms = Float.MAX_VALUE
-        var p = lo
-        while (p + step <= hi) {
-            var sum = 0.0
-            for (i in 0 until step) {
-                val v = samples[p + i].toDouble()
-                sum += v * v
+    private fun smartMerge(a: String, b: String): String {
+        if (a.isBlank()) return b
+        if (b.isBlank()) return a
+        val aw = a.trim().split(Regex("\\s+"))
+        val bw = b.trim().split(Regex("\\s+"))
+        val maxK = minOf(aw.size, bw.size)
+        for (k in maxK downTo 2) {
+            val aTail = aw.takeLast(k).joinToString(" ")
+            val bHead = bw.take(k).joinToString(" ")
+            if (aTail == bHead) {
+                val tail = bw.drop(k).joinToString(" ")
+                return if (tail.isBlank()) a else "$a $tail"
             }
-            val rms = sqrt(sum / step).toFloat()
-            if (rms < bestRms) {
-                bestRms = rms
-                bestPos = p
-            }
-            p += step / 2 // 50% overlap for finer resolution
         }
-        return bestPos.coerceIn(lo, hi)
+        return "$a $b"
     }
 
     fun toLrc(chunks: List<AsrChunk>): String {
@@ -153,8 +132,21 @@ object AsrManager {
         return sb.toString()
     }
 
-    private fun formatEta(ms: Long): String {
+    private fun fmtEta(ms: Long): String {
         val sec = (ms / 1000).coerceAtLeast(0)
         return if (sec < 60) "${sec}s" else "${sec / 60}m ${sec % 60}s"
+    }
+
+    /** Test-visible wrapper for the merge logic. */
+    fun mergeForTest(chunks: List<AsrChunk>): List<AsrChunk> {
+        val merged = ArrayList<AsrChunk>()
+        for (c in chunks) {
+            if (c.text.isBlank()) continue
+            if (merged.isEmpty()) merged.add(c)
+            else merged[merged.lastIndex] = AsrChunk(
+                merged.last().startMs, smartMerge(merged.last().text, c.text),
+            )
+        }
+        return merged
     }
 }

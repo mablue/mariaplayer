@@ -3,101 +3,6 @@
   "updated": "2026-10-31",
   "models": [
     {
-      "id": "whisper-tiny-q5_1",
-      "name": "Whisper Tiny (q5_1)",
-      "language": [
-        "en",
-        "multi"
-      ],
-      "sizeBytes": 32000000,
-      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny-q5_1.bin",
-      "format": "ggml",
-      "engine": "whisper.cpp",
-      "license": "MIT",
-      "musicRating": "Limited"
-    },
-    {
-      "id": "whisper-tiny-en-q5_1",
-      "name": "Whisper Tiny EN (q5_1)",
-      "language": [
-        "en"
-      ],
-      "sizeBytes": 32000000,
-      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en-q5_1.bin",
-      "format": "ggml",
-      "engine": "whisper.cpp",
-      "license": "MIT",
-      "musicRating": "Good"
-    },
-    {
-      "id": "whisper-base-q5_1",
-      "name": "Whisper Base (q5_1)",
-      "language": [
-        "en",
-        "multi"
-      ],
-      "sizeBytes": 60000000,
-      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin",
-      "format": "ggml",
-      "engine": "whisper.cpp",
-      "license": "MIT",
-      "musicRating": "Limited"
-    },
-    {
-      "id": "whisper-base-en-q5_1",
-      "name": "Whisper Base EN (q5_1)",
-      "language": [
-        "en"
-      ],
-      "sizeBytes": 60000000,
-      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en-q5_1.bin",
-      "format": "ggml",
-      "engine": "whisper.cpp",
-      "license": "MIT",
-      "musicRating": "Good"
-    },
-    {
-      "id": "whisper-small-q5_1",
-      "name": "Whisper Small (q5_1)",
-      "language": [
-        "en",
-        "multi"
-      ],
-      "sizeBytes": 190000000,
-      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin",
-      "format": "ggml",
-      "engine": "whisper.cpp",
-      "license": "MIT",
-      "musicRating": "Limited"
-    },
-    {
-      "id": "whisper-small-en-q5_1",
-      "name": "Whisper Small EN (q5_1)",
-      "language": [
-        "en"
-      ],
-      "sizeBytes": 190000000,
-      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en-q5_1.bin",
-      "format": "ggml",
-      "engine": "whisper.cpp",
-      "license": "MIT",
-      "musicRating": "Good"
-    },
-    {
-      "id": "whisper-large-v3-turbo-q5_0",
-      "name": "Whisper Large v3 Turbo (q5_0)",
-      "language": [
-        "en",
-        "multi"
-      ],
-      "sizeBytes": 574000000,
-      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
-      "format": "ggml",
-      "engine": "whisper.cpp",
-      "license": "MIT",
-      "musicRating": "Limited"
-    },
-    {
       "id": "moonshine-tiny-q4_k",
       "name": "Moonshine Tiny (Q4_K)",
       "language": [
@@ -393,6 +298,90 @@
       "engine": "sherpa-onnx",
       "license": "Apache-2.0",
       "musicRating": "Limited"
+    },
+    {
+      "id": "whisper-tiny-sherpa",
+      "name": "Whisper tiny (sherpa-onnx)",
+      "language": [
+        "en",
+        "multi"
+      ],
+      "sizeBytes": 40000000,
+      "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main/tiny-encoder.int8.onnx",
+      "format": "onnx",
+      "engine": "sherpa-onnx",
+      "license": "MIT",
+      "musicRating": "Limited",
+      "files": [
+        {
+          "name": "tiny-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main/tiny-encoder.int8.onnx"
+        },
+        {
+          "name": "tiny-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main/tiny-decoder.int8.onnx"
+        },
+        {
+          "name": "tiny-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main/tiny-tokens.txt"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base-sherpa",
+      "name": "Whisper base (sherpa-onnx)",
+      "language": [
+        "en",
+        "multi"
+      ],
+      "sizeBytes": 80000000,
+      "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-encoder.int8.onnx",
+      "format": "onnx",
+      "engine": "sherpa-onnx",
+      "license": "MIT",
+      "musicRating": "Limited",
+      "files": [
+        {
+          "name": "base-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-encoder.int8.onnx"
+        },
+        {
+          "name": "base-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-decoder.int8.onnx"
+        },
+        {
+          "name": "base-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-tokens.txt"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small-sherpa",
+      "name": "Whisper small (sherpa-onnx)",
+      "language": [
+        "en",
+        "multi"
+      ],
+      "sizeBytes": 250000000,
+      "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-encoder.int8.onnx",
+      "format": "onnx",
+      "engine": "sherpa-onnx",
+      "license": "MIT",
+      "musicRating": "Limited",
+      "files": [
+        {
+          "name": "small-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-encoder.int8.onnx"
+        },
+        {
+          "name": "small-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-decoder.int8.onnx"
+        },
+        {
+          "name": "small-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-tokens.txt"
+        }
+      ]
     }
   ]
 }

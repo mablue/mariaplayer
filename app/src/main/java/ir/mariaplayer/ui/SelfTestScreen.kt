@@ -495,6 +495,17 @@ private suspend fun runAllTests(
         "ok"
     }
 
+    // 19k) Smart merge boundary dedup
+    test("Smart merge dedup") {
+        val a = ir.mariaplayer.asr.AsrManager.AsrChunk(0L, "one two three four five")
+        val b = ir.mariaplayer.asr.AsrManager.AsrChunk(30000L, "four five six seven")
+        val m = ir.mariaplayer.asr.AsrManager.mergeForTest(listOf(a, b))
+        val txt = m.joinToString(" ") { it.text }
+        if (txt != "one two three four five six seven")
+            throw IllegalStateException("got: $txt")
+        "ok"
+    }
+
     // 20) Sherpa engine: Shenava Rizeh model on disk + load test
     test("Sherpa Shenava load") {
         val dl = ModelDownloader(context)

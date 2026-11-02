@@ -9,15 +9,6 @@ import java.io.File
 
 private val Context.asrStore by preferencesDataStore("asr")
 
-/**
- * PR-L14b: model discovery + selection.
- *
- * Scans each subdirectory of filesDir/models for a valid layout:
- *   CTC  - model.onnx or model.int8.onnx + tokens.txt
- *   RNNT - encoder + decoder + joiner (.onnx or .int8.onnx) + tokens.txt
- * The user's chosen model id is stored in the "asr" DataStore so it
- * survives app restarts and per-track invocations.
- */
 object AsrModels {
 
     data class AvailableAsr(
@@ -35,16 +26,23 @@ object AsrModels {
         return root.listFiles()?.mapNotNull { d ->
             if (!d.isDirectory) return@mapNotNull null
             if (!File(d, "tokens.txt").exists()) return@mapNotNull null
-            val hasRnnt = listOf("encoder", "decoder", "joiner").all { base ->
-                File(d, "$base.int8.onnx").exists() || File(d, "$base.onnx").exists()
-            }
-            val hasCtc = File(d, "model.int8.onnx").exists() ||
-                File(d, "model.onnx").exists()
+
+            val hasEncoder = File(d, "encoder.int8.onnx").exists() ||
+                             File(d, "encoder.onnx").exists()
+            val hasDecoder = File(d, "decoder.int8.onnx").exists() ||
+                             File(d, "decoder.onnx").exists()
+            val hasJoiner  = File(d, "joiner.int8.onnx").exists() ||
+                             File(d, "joiner.onnx").exists()
+            val hasCtc     = File(d, "model.int8.onnx").exists() ||
+                             File(d, "model.onnx").exists()
+
             val arch = when {
-                hasRnnt -> "rnnt"
-                hasCtc -> "ctc"
+                hasEncoder && hasDecoder && hasJoiner -> "rnnt"
+                hasEncoder && hasDecoder              -> "whisper"
+                hasCtc                                -> "ctc"
                 else -> return@mapNotNull null
             }
+
             AvailableAsr(
                 id = d.name,
                 displayName = friendlyName(d.name),
@@ -66,18 +64,27 @@ object AsrModels {
         id.contains("koochik") -> "Koochik v1.5"
         id.contains("rizeh-pizeh") -> "Rizeh-Pizeh"
         id.contains("rizeh") -> "Rizeh v1.0"
+        id.contains("whisper-tiny") -> "Whisper Tiny"
+        id.contains("whisper-base") -> "Whisper Base"
+        id.contains("whisper-small") -> "Whisper Small"
+        id.contains("whisper-medium") -> "Whisper Medium"
+        id.contains("whisper-large-v3-turbo") -> "Whisper Large Turbo"
+        id.contains("whisper-large-v3") -> "Whisper Large v3"
+        id.contains("whisper") -> "Whisper"
         else -> id.substringBefore("-int8")
     }
 
     private fun priority(id: String): Int = when {
-        // PR-L14c: Koochik (RNNT, 114M) empirically wins on Persian music
-        // vs Rizeh (CTC, 32M) — smaller model, worse accuracy. Default to
-        // the biggest, highest-quality model the user has downloaded.
+        // Persian-first: Koochik best, then Rizeh, then Whisper (EN-oriented)
         id.contains("koochik") -> 0
         id.contains("rizeh") && !id.contains("rizeh-pizeh") -> 1
         id.contains("rizeh-pizeh") -> 2
+        id.contains("whisper-tiny") -> 3
+        id.contains("whisper-base") -> 4
+        id.contains("whisper-small") -> 5
+        id.contains("whisper-medium") -> 6
+        id.contains("whisper-large") -> 7
+        id.contains("whisper") -> 8
         else -> 9
     }
 }
-
-
