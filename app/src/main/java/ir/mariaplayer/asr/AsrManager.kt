@@ -10,15 +10,15 @@ import java.io.File
 import kotlin.math.sqrt
 
 /**
- * PR-L17: transcribe with bounded memory AND silence-aware chunk boundaries.
+ * PR-L15b: full-track transcribe with silence-based chunk boundaries.
  *
- * Peak memory is one probe window (~chunkMs + 3s), not the whole track.
- * For each iteration:
- *   - decode [posMs, posMs + chunkMs + marginMs)  ← the "probe"
- *   - find the local energy minimum near chunkSamples
- *   - keep only [0, silenceAt), feed to sherpa, advance posMs to silenceAt
- * This preserves the sentence-aligned chunk boundaries that PR-L15b added,
- * without ever holding the entire file in a FloatArray.
+ * Root cause of PR-L15 truncation: fixed 10s chunks cut inside words,
+ * and RNNT (Koochik) needs longer context than CTC (Rizeh) to fill the
+ * decoder state. Each chunk therefore ends at the local energy minimum
+ * within ±1.5s of the target boundary, producing natural sentence breaks.
+ *
+ * Also decodes the whole file ONCE (via AudioDecoder.decodeFull) instead
+ * of re-seeking MediaExtractor per chunk.
  */
 object AsrManager {
 
@@ -53,49 +53,40 @@ object AsrManager {
         require(modelDir.isDirectory) { "model dir missing: $modelDir" }
         require(totalMs > 0) { "totalMs must be > 0" }
 
-        val chunkSamples = (chunkMs * 16000L / 1000L).toInt()
-        val minChunkSamples = (5_000L * 16000L / 1000L).toInt()
-        val probeMarginMs = 3_000L
+        onProgress(0f, "Decoding audio…")
+        val all = AudioDecoder.decodeFull(context, uri, startMs + totalMs + 5_000L)
+
+        // Slice from startMs
+        val startSamples = (startMs * 16000 / 1000L).toInt().coerceAtLeast(0)
+        val samples = if (startSamples < all.size) all.copyOfRange(startSamples, all.size)
+                      else FloatArray(0)
+
+        if (samples.isEmpty()) return@withContext emptyList()
+
+        val chunkSamples = (chunkMs * 16000 / 1000L).toInt()
+        val minChunkSamples = (5_000 * 16000 / 1000L).toInt()
 
         val eng = SherpaEngine(modelDir)
         val startedAt = System.currentTimeMillis()
         val result = ArrayList<AsrChunk>()
-
         try {
-            var posMs = startMs
-            val endMs = startMs + totalMs
-
-            while (posMs < endMs - 500L) {
+            var pos = 0
+            while (pos < samples.size) {
                 currentCoroutineContext().ensureActive()
-                val remainingMs = endMs - posMs
-                val probeMs = minOf(chunkMs + probeMarginMs, remainingMs)
+                val targetEnd = (pos + chunkSamples).coerceAtMost(samples.size)
+                val end = if (targetEnd < samples.size)
+                    findSilenceNear(samples, targetEnd, 1500, minChunkSamples)
+                else samples.size
 
-                val probe = try {
-                    AudioDecoder.decodeToFloat(context, uri, posMs, probeMs)
-                } catch (_: Throwable) {
-                    FloatArray(0)
+                val slice = samples.copyOfRange(pos, end)
+                if (slice.size >= 1000) {
+                    val text = runCatching { eng.transcribe(slice).trim() }
+                        .getOrDefault("")
+                    result.add(AsrChunk(pos * 1000L / 16000L, text))
                 }
+                pos = end
 
-                if (probe.isEmpty()) {
-                    // Decode failure on this region — skip forward
-                    posMs += chunkMs
-                    continue
-                }
-
-                val (slice, advanceMs) = if (probe.size <= chunkSamples) {
-                    probe to remainingMs
-                } else {
-                    val silenceAt = findSilenceNear(
-                        probe, chunkSamples, windowMs = 1500, minChunk = minChunkSamples,
-                    )
-                    probe.copyOfRange(0, silenceAt) to (silenceAt * 1000L / 16000L)
-                }
-
-                val text = runCatching { eng.transcribe(slice).trim() }.getOrDefault("")
-                result.add(AsrChunk(posMs, text))
-                posMs += advanceMs
-
-                val progress = ((posMs - startMs).toFloat() / totalMs).coerceIn(0f, 1f)
+                val progress = pos.toFloat() / samples.size
                 val elapsed = System.currentTimeMillis() - startedAt
                 val eta = if (progress > 0.05f)
                     (elapsed / progress - elapsed).toLong() else -1L
@@ -108,18 +99,23 @@ object AsrManager {
         result
     }
 
+    /**
+     * Find the local energy minimum within ±windowMs of [target].
+     * Returns the sample index of that minimum, biased toward [target]
+     * if no silence stands out (energy is flat).
+     */
     private fun findSilenceNear(
         samples: FloatArray,
         target: Int,
-        windowMs: Int,
-        minChunk: Int,
+        windowMs: Int = 1500,
+        minChunk: Int = 80_000,
     ): Int {
         val window = 16000 * windowMs / 1000
         val lo = (target - window).coerceAtLeast(minChunk)
         val hi = (target + window).coerceAtMost(samples.size - 1)
         if (hi - lo < 2000) return target
 
-        val step = 800  // 50 ms analysis frame
+        val step = 800 // 50 ms analysis frame
         var bestPos = target
         var bestRms = Float.MAX_VALUE
         var p = lo
@@ -134,7 +130,7 @@ object AsrManager {
                 bestRms = rms
                 bestPos = p
             }
-            p += step / 2
+            p += step / 2 // 50% overlap for finer resolution
         }
         return bestPos.coerceIn(lo, hi)
     }
