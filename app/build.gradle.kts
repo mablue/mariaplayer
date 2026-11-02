@@ -44,6 +44,17 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+
+    // PR-L25: copy the root models.json into assets at build time.
+    // The update-models workflow regenerates it every 6 hours; every APK
+    // ships the latest snapshot. Root file is the single source of truth.
+    tasks.register<Copy>("syncModelCatalog") {
+        from(rootProject.file("models.json"))
+        into(layout.projectDirectory.dir("src/main/assets"))
+        rename { "models.json" }
+    }
+    tasks.named("preBuild") { dependsOn("syncModelCatalog") }
+
 }
 configurations.all {
     exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")

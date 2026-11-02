@@ -9,3 +9,4 @@ keystore/
 *.keystore
 keystore.properties
 .bak/
+app/src/main/assets/models.json
