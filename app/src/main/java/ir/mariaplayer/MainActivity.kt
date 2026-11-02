@@ -13,6 +13,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -162,6 +163,16 @@ private fun AppRoot() {
     var lyricsSheetOpen by remember { mutableStateOf(false) }
     var screen by rememberSaveable { mutableStateOf("library") }
     var pendingTrackForPlaylist by remember { mutableStateOf<Track?>(null) }
+
+    // PR-L20-fix: system back button returns to library instead of
+    // exiting the app. Handles every non-library screen here so
+    // individual screens don't need their own BackHandler.
+    BackHandler(enabled = screen != "library") {
+        screen = when {
+            screen.startsWith("playlist:") -> "playlists"
+            else -> "library"
+        }
+    }
 
     var sortMode by remember { mutableStateOf(SortMode.TITLE) }
     var prefsLoaded by remember { mutableStateOf(false) }

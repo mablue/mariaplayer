@@ -239,7 +239,6 @@ fun LyricsDisplayScreen(
                 uri = uri,
                 modelDir = model.dir,
                 totalMs = totalMs,
-                chunkMs = 15_000L,
             ) { p, status ->
                 state = DispState.Transcribing(p, status)
             }

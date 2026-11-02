@@ -63,7 +63,7 @@ class SherpaEngine(
             )
         }
         recognizer = OfflineRecognizer(
-            OfflineRecognizerConfig(featConfig = feat, modelConfig = mc)
+            config = OfflineRecognizerConfig(featConfig = feat, modelConfig = mc)
         )
     }
 
