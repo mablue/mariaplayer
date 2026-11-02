@@ -47,7 +47,6 @@ import ir.mariaplayer.R
 import ir.mariaplayer.models.ModelCatalog
 import ir.mariaplayer.models.ModelDownloader
 import ir.mariaplayer.asr.AsrModels
-import ir.mariaplayer.asr.AsrModels
 import ir.mariaplayer.models.ModelEntry
 import kotlinx.coroutines.launch
 
@@ -72,8 +71,6 @@ fun ModelManagerScreen(onBack: () -> Unit) {
     var selectedAsrId by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { selectedAsrId = AsrModels.selected(context) }
 
-    var selectedAsrId by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) { selectedAsrId = AsrModels.selected(context) }
 
     val states = remember { mutableStateMapOf<String, ModelUiState>() }
     LaunchedEffect(catalog) {
