@@ -802,6 +802,27 @@ private suspend fun runAllTests(
         }
     }
 
+    // PR-L37: AudioDecoder.streamDecode — bounded-memory decode
+    test("Stream decode 2min") {
+        val tracks = LibraryScanner.scan(context)
+        if (tracks.isEmpty()) return@test "no tracks"
+        val t = tracks.first()
+        var chunkCount = 0
+        var totalSamples = 0L
+        var lastStartMs = 0L
+        ir.mariaplayer.asr.AudioDecoder.streamDecode(
+            context, android.net.Uri.parse(t.contentUri),
+            chunkMs = 30_000L, maxMs = 120_000L,
+        ) { samples, startMs ->
+            chunkCount++
+            totalSamples += samples.size
+            lastStartMs = startMs
+        }
+        if (chunkCount < 3) throw IllegalStateException("only $chunkCount chunks")
+        if (totalSamples < 1_500_000) throw IllegalStateException("$totalSamples samples")
+        "${chunkCount} chunks, ${totalSamples} samples, last@${lastStartMs}ms"
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
