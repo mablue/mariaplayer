@@ -269,10 +269,28 @@ class ModelDownloader(private val context: Context) {
             else
                 ArchiveExtractor.extractZip(archive, targetDir)
 
-            if (result.files.isEmpty())
-                throw IOException("Archive contains no ASR files")
-            if (result.files.none { it == "tokens.txt" })
-                throw IOException("Archive missing tokens.txt")
+            if (result.files.isEmpty()) {
+                throw IOException(
+                    "This archive has no sherpa-onnx ASR files. " +
+                    "Expected model.onnx or encoder/decoder(+joiner) + tokens.txt. " +
+                    "This model is likely for a different engine (Vosk, Piper, etc.) " +
+                    "and cannot run in MariaPlayer."
+                )
+            }
+            if (result.files.none { it == "tokens.txt" }) {
+                throw IOException(
+                    "Archive missing tokens.txt — not a valid sherpa-onnx model."
+                )
+            }
+            val hasMain = result.files.any {
+                it == "model.onnx" || it == "model.int8.onnx" || it == "encoder.onnx" || it == "encoder.int8.onnx"
+            }
+            if (!hasMain) {
+                throw IOException(
+                    "Archive has files but no model.onnx or encoder.onnx — " +
+                    "cannot load. Extracted: ${result.files.joinToString()}"
+                )
+            }
 
             onProgress(DownloadProgress(1L, 1L, done = true))
         } finally {

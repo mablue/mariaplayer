@@ -100,17 +100,29 @@ object ArchiveExtractor {
         val lower = original.lowercase()
         if (NON_ASR_MARKERS.any { lower.contains(it) }) return null
         val isInt8 = lower.contains("int8")
+
+        // PR-L33b: strict whitelist. Previous version mapped every unknown
+        // .onnx to model.onnx, so Moonshine's 4 files (preprocess, encode,
+        // uncached_decode, cached_decode) overwrote each other — only one
+        // survived, and the resulting model couldn't load. We now accept
+        // only files we can positively identify as the CTC / RNNT / Whisper
+        // parts, or a plain model.onnx / model.int8.onnx exactly.
+        if (lower.endsWith("tokens.txt")) return "tokens.txt"
+        if (!lower.endsWith(".onnx")) return null
+
+        val name = lower.substringAfterLast('/')
         return when {
-            lower.endsWith("tokens.txt") -> "tokens.txt"
-            lower.endsWith(".onnx") && lower.contains("encoder") ->
+            name.startsWith("encoder") || name.contains("-encoder") ->
                 if (isInt8) "encoder.int8.onnx" else "encoder.onnx"
-            lower.endsWith(".onnx") && lower.contains("decoder") ->
+            name.startsWith("decoder") || name.contains("-decoder") ->
                 if (isInt8) "decoder.int8.onnx" else "decoder.onnx"
-            lower.endsWith(".onnx") && lower.contains("joiner") ->
+            name.startsWith("joiner") || name.contains("-joiner") ->
                 if (isInt8) "joiner.int8.onnx" else "joiner.onnx"
-            lower.endsWith(".onnx") ->
+            name == "model.onnx" || name == "model.int8.onnx" ->
                 if (isInt8) "model.int8.onnx" else "model.onnx"
-            else -> null
+            name.startsWith("model-") || name.startsWith("model_") ->
+                if (isInt8) "model.int8.onnx" else "model.onnx"
+            else -> null   // reject unknown .onnx (Moonshine, preprocess, etc.)
         }
     }
 }

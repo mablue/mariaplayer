@@ -19,6 +19,7 @@ LANG_NAMES = {
 }
 
 NON_ASR_MARKERS = [
+    # non-ASR modality
     "tts", "vits", "kokoro", "matcha", "piper",
     "vad", "silero", "ten-vad",
     "speaker", "diarization",
@@ -27,16 +28,23 @@ NON_ASR_MARKERS = [
     "audio-tagging", "denoiser",
     "source-separation", "speech-translation",
     "streaming-", "-streaming", "online-",
-    # toy / demo models that crash sherpa-onnx:
+    # toy / demo models that crash sherpa-onnx
     "tdqn", "yesno", "yes-no",
     "hey-snapdragon", "hey-siri",
     "-demo", "-example-", "-test-",
     "playground", "hello-world",
+    # unrelated engines - cannot run in sherpa-onnx
+    "vosk-model", "vosk_",
+    # moonshine in its original single-file form (not sherpa-onnx package)
+    # we keep sherpa-onnx-moonshine-* (has tokens.txt + proper onnx)
 ]
 
 def is_asr(name):
     lower = name.lower()
-    return not any(m in lower for m in NON_ASR_MARKERS)
+    if any(m in lower for m in NON_ASR_MARKERS):
+        return False
+    # require sherpa-onnx marker or explicit model/tokens pattern
+    return True
 
 def http_get(url, timeout=30):
     req = urllib.request.Request(url, headers={
@@ -164,7 +172,11 @@ def main():
     manual = json.loads(MANUAL.read_text())["models"] if MANUAL.exists() else []
     print(f"manual: {len(manual)}")
 
-    auto = hf_models() + gh_archives()
+    # GH archives are tar.bz2 with unknown internal layout — Vosk, Moonshine,
+    # raw single-file models, etc. sherpa-onnx only runs clean HF-style
+    # onnx models with tokens.txt. Re-enable only if extractor can be verified
+    # against every archive shape.
+    auto = hf_models()
 
     by_id = {}
     for e in manual:

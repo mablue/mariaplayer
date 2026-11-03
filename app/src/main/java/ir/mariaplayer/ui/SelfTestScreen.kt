@@ -699,6 +699,27 @@ private suspend fun runAllTests(
         "removed $invalid invalid"
     }
 
+    // 32) No unsupported engines in catalog
+    test("No unsupported engines") {
+        val models = ModelCatalog.load(context)
+        if (models.isEmpty()) throw IllegalStateException("empty catalog")
+        val bad = models.filter { m ->
+            m.engine !in setOf("sherpa-onnx", "whisper.cpp", "vosk-android", "transcribe.cpp")
+                && m.engine != "sherpa-onnx"
+        }
+        // The current build can only actually run sherpa-onnx. Reject others.
+        val unsupported = models.filter { m ->
+            val e = m.engine.lowercase()
+            e == "vosk-android" || e == "vosk" ||
+            (e == "transcribe.cpp" && m.format == "onnx" && m.files.isEmpty())
+        }
+        if (unsupported.isNotEmpty())
+            throw IllegalStateException(
+                "${unsupported.size} unsupported: ${unsupported.take(3).joinToString { it.id }}"
+            )
+        "clean: ${models.size} runnable models"
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
