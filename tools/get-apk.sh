@@ -135,5 +135,15 @@ if [ "$SZ" -lt 100000 ]; then
 fi
 ls -lh "$DEST_DIR/$APK_NAME"
 notify success "Build ready — tap Install on screen"
-termux-open-url "https://github.com/$REPO/releases/tag/$TAG"
+# [removed by PR-L29 patch]
 termux-open "$DEST_DIR/$APK_NAME"
+
+# PR-L29-release-page: open release page, not direct asset
+if [ -n "${TAG:-}" ]; then
+    PAGE_URL="https://github.com/mablue/mariaplayer/releases/tag/${TAG}"
+    echo "[browser] $PAGE_URL"
+    echo "$PAGE_URL" > ~/apk_link.txt
+    am start -a android.intent.action.VIEW -d "$PAGE_URL" 2>/dev/null \
+        || termux-open-url "$PAGE_URL" 2>/dev/null \
+        || echo "open manually: $PAGE_URL"
+fi
