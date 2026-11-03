@@ -139,6 +139,7 @@ fun LyricsDisplayScreen(
     var trigger by remember(mediaId) { mutableStateOf(0) }
     var transcribeTrigger by remember(mediaId) { mutableIntStateOf(0) }
     var transcribeFullMode by remember(mediaId) { mutableStateOf(false) }
+    var alignTrigger by remember(mediaId) { mutableIntStateOf(0) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
     var albumArt by remember(mediaId) { mutableStateOf<Bitmap?>(null) }
@@ -278,6 +279,58 @@ fun LyricsDisplayScreen(
             throw e
         } catch (e: Throwable) {
             state = DispState.Error("Transcribe: ${e.message ?: "unknown"}")
+        }
+    }
+
+    // PR-L35d: forced alignment. Text from Plain (web/paste), timing from ASR.
+    // LyricsAligner maps accurate chars to ASR chars (Levenshtein).
+    LaunchedEffect(mediaId, alignTrigger) {
+        if (alignTrigger == 0) return@LaunchedEffect
+        val id = trackId ?: return@LaunchedEffect
+        val uri = contentUri ?: run {
+            state = DispState.Error("No audio URI — play the track once")
+            return@LaunchedEffect
+        }
+        val plainText = (state as? DispState.Plain)?.text ?: return@LaunchedEffect
+        val fresh = AsrModels.list(context)
+        if (fresh.isEmpty()) {
+            state = DispState.Error("Download an ASR model first")
+            return@LaunchedEffect
+        }
+        val selectedId = AsrModels.selected(context)
+        val model = fresh.firstOrNull { it.id == selectedId } ?: fresh.first()
+        val totalMs = (durationMs.takeIf { it > 1000L } ?: 180_000L).coerceAtMost(180_000L)
+        state = DispState.Transcribing(0f, "Loading ${model.displayName}…")
+        try {
+            val timings = AsrManager.transcribeTimings(
+                context = context,
+                uri = uri,
+                modelDir = model.dir,
+                totalMs = totalMs,
+                language = selectedLang,
+            ) { p, status ->
+                state = DispState.Transcribing(p, "Align: $status")
+            }
+            if (timings.isEmpty()) {
+                state = DispState.Plain(plainText)
+                return@LaunchedEffect
+            }
+            val aligned = ir.mariaplayer.lyrics.LyricsAligner.align(plainText, timings)
+            if (aligned.isEmpty()) {
+                state = DispState.Plain(plainText)
+                return@LaunchedEffect
+            }
+            val lrc = ir.mariaplayer.lyrics.LyricsAligner.toLrc(aligned)
+            LyricsCache.writeLyrics(context, id, lrc, plainText)
+            val lines = LrcParser.parse(lrc)
+            state = if (lines.isNotEmpty())
+                DispState.Synced(lines)
+            else
+                DispState.Plain(plainText)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            state = DispState.Error("Align: ${e.message ?: "unknown"}")
         }
     }
 
@@ -444,7 +497,11 @@ fun LyricsDisplayScreen(
                         prefs = prefs,
                         onSeek = { ms -> controller?.seekTo(ms) },
                     )
-                    is DispState.Plain -> PlainBody(s.text)
+                    is DispState.Plain -> PlainBody(
+                        text = s.text,
+                        canAlign = hasAsrModel,
+                        onAlign = { alignTrigger += 1 },
+                    )
                     DispState.NotFound -> NotFoundBody(
                         onEdit = { state = DispState.Editing },
                         onPaste = { state = DispState.PasteSheet },
@@ -970,7 +1027,11 @@ private fun SyncedLine(
 }
 
 @Composable
-private fun PlainBody(text: String) {
+private fun PlainBody(
+    text: String,
+    canAlign: Boolean,
+    onAlign: () -> Unit,
+) {
     Column(
         Modifier
             .fillMaxSize()
@@ -985,6 +1046,36 @@ private fun PlainBody(text: String) {
             lineHeight = 26.sp,
             textAlign = TextAlign.Center,
         )
+        Spacer(Modifier.height(32.dp))
+        if (canAlign) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White.copy(alpha = 0.16f),
+                modifier = Modifier.clickable(onClick = onAlign),
+            ) {
+                Text(
+                    "🎯 Align to audio (fix timing)",
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Uses ASR for timing only — text stays as-is",
+                color = Color.White.copy(alpha = 0.4f),
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+            )
+        } else {
+            Text(
+                "Download an ASR model in Models to enable alignment",
+                color = Color.White.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+            )
+        }
         Spacer(Modifier.height(60.dp))
     }
 }
