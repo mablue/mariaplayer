@@ -79,6 +79,7 @@ import ir.mariaplayer.ui.PlaylistsScreen
 import ir.mariaplayer.ui.SelfTestScreen
 import ir.mariaplayer.ui.ModelManagerScreen
 import ir.mariaplayer.ui.LyricsDisplayScreen
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -116,6 +117,21 @@ private fun AppRoot() {
 
     LaunchedEffect(hasAudio) {
         if (hasAudio) tracks = LibraryScanner.scan(context)
+    }
+
+    // PR-L31: one-shot self-heal. Prior bug created one empty subdirectory
+    // per catalog entry (~346) inside filesDir/models/. Remove them silently.
+    LaunchedEffect(hasAudio) {
+        if (!hasAudio) return@LaunchedEffect
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val removed = ir.mariaplayer.models.ModelDownloader(context)
+                    .cleanupEmptyDirs()
+                if (removed > 0) {
+                    android.util.Log.i("MariaPlayer", "cleaned $removed empty model dirs")
+                }
+            }
+        }
     }
 
     val deleteLauncher = rememberLauncherForActivityResult(

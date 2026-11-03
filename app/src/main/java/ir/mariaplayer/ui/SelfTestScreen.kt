@@ -608,6 +608,18 @@ private suspend fun runAllTests(
             "all ${dirs.size} valid"
     }
 
+    // 25) Empty model dirs cleanup (self-healing regression)
+    test("Empty model dirs") {
+        val root = java.io.File(context.filesDir, "models")
+        if (!root.exists()) return@test "no models dir"
+        val dl = ir.mariaplayer.models.ModelDownloader(context)
+        val before = root.listFiles()?.count { it.isDirectory && it.listFiles()?.isEmpty() != false } ?: 0
+        val removed = dl.cleanupEmptyDirs()
+        val after = root.listFiles()?.count { it.isDirectory && it.listFiles()?.isEmpty() != false } ?: 0
+        if (after > 0) throw IllegalStateException("still $after empty dirs")
+        "removed $removed (was $before)"
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())

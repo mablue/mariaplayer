@@ -47,9 +47,10 @@ class ModelDownloader(private val context: Context) {
     fun modelFile(id: String): File = File(dir, "$id.bin")
     fun partFile(id: String): File  = File(dir, "$id.bin.part")
 
-    // PR-L10a: multi-file models (sherpa-onnx needs model.onnx + tokens.txt).
-    // Everything lives under models/<id>/ for easy engine access.
-    fun modelDir(id: String): File = File(dir, id).apply { mkdirs() }
+    // PR-L31: modelDir is now side-effect-free. Callers that intend to write
+    // must call .mkdirs() explicitly. This prevents isEntryDownloaded() from
+    // silently creating 346 empty directories every time Models screen opens.
+    fun modelDir(id: String): File = File(dir, id)
     fun modelPath(id: String, filename: String): File = File(modelDir(id), filename)
 
     fun isDownloaded(id: String, expectedSha256: String?): Boolean {
@@ -291,7 +292,7 @@ class ModelDownloader(private val context: Context) {
         files: List<Pair<String, String>>,
         onProgress: (DownloadProgress) -> Unit = {},
     ): File = withContext(Dispatchers.IO) {
-        val targetDir = modelDir(id)
+        val targetDir = modelDir(id).apply { mkdirs() }
         var totalBytes = 0L
         var downloaded = 0L
 
@@ -327,6 +328,27 @@ class ModelDownloader(private val context: Context) {
         }
         onProgress(DownloadProgress(downloaded, downloaded, done = true))
         targetDir
+    }
+
+    /**
+     * PR-L31: remove empty subdirectories under models/.
+     * Prior bug: isEntryDownloaded() called modelDir() which auto-mkdir'd,
+     * leaving one empty dir per catalog entry (346 in the current catalog).
+     * Called on app startup to self-heal any existing installation.
+     */
+    fun cleanupEmptyDirs(): Int {
+        val root = dir
+        if (!root.exists()) return 0
+        var removed = 0
+        root.listFiles()?.forEach { d ->
+            if (d.isDirectory) {
+                val inner = d.listFiles()
+                if (inner == null || inner.isEmpty()) {
+                    if (d.delete()) removed++
+                }
+            }
+        }
+        return removed
     }
 
     fun listDownloaded(): List<File> =
