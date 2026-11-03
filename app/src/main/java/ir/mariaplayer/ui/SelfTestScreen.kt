@@ -631,17 +631,14 @@ private suspend fun runAllTests(
         "ok (API ${Build.VERSION.SDK_INT})"
     }
 
-    // 27) Dead LyricsPanel code should not exist
-    test("No dead LyricsPanel") {
-        val f = java.io.File(
-            context.filesDir, "__lyrics_panel_check__"
-        )
-        // We cannot check source files at runtime; instead verify the class
-        // still exists (compiled) but that MainActivity does not use it.
-        // A simple proxy: ensure no runtime crash on MainActivity reflection.
-        val cls = Class.forName("ir.mariaplayer.lyrics.LyricsPanelKt")
-        if (cls == null) throw IllegalStateException("class missing")
-        "class exists (still compiled)"
+    // 27) Dead LyricsPanel class must be deleted
+    test("LyricsPanel removed") {
+        try {
+            Class.forName("ir.mariaplayer.lyrics.LyricsPanelKt")
+            throw IllegalStateException("dead class still present")
+        } catch (_: ClassNotFoundException) {
+            "removed"
+        }
     }
 
     // 28) ModelManager stale-state check

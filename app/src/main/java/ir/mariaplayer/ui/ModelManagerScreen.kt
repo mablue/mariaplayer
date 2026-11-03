@@ -242,7 +242,7 @@ private fun ModelRow(
                 when (state) {
                     is ModelUiState.Downloading -> {
                         Spacer(Modifier.height(6.dp))
-                        if (state.fraction > 0f && state.sizeLabel.contains("/")) {
+                        if (state.phase == "Downloading" && state.fraction > 0f && state.sizeLabel.contains("/")) {
                             LinearProgressIndicator(
                                 progress = { state.fraction },
                                 modifier = Modifier.fillMaxWidth(),

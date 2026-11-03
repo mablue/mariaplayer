@@ -131,7 +131,9 @@ fun LyricsDisplayScreen(
     val filename = item?.mediaMetadata?.extras?.getString("filename").orEmpty()
     val folder = item?.mediaMetadata?.extras?.getString("folder").orEmpty()
     val contentUri = item?.localConfiguration?.uri
-    val durationMs = controller?.duration?.takeIf { it > 0 } ?: 0L
+    val controllerDuration = controller?.duration?.takeIf { it > 0 } ?: 0L
+    val extrasDuration = item?.mediaMetadata?.extras?.getLong("durationMs") ?: 0L
+    val durationMs = if (controllerDuration > 0) controllerDuration else extrasDuration
 
     var prefs by remember { mutableStateOf(DisplayPrefs()) }
     var settingsOpen by remember { mutableStateOf(false) }
@@ -246,11 +248,17 @@ fun LyricsDisplayScreen(
         val model = fresh.firstOrNull { it.id == selectedId } ?: fresh.first()
         // PR-L38: user-chosen duration. Preview stays small; "full" uses
         // actual track length (streaming decode keeps memory bounded).
-        val realDuration = durationMs.takeIf { it > 1000L } ?: 180_000L
+        if (transcribeDurationMode == "full" && durationMs < 1000L) {
+            state = DispState.Error(
+                "Track duration unknown — MediaStore may be stale. " +
+                "Re-scan the library, or pick preview10m."
+            )
+            return@LaunchedEffect
+        }
         val totalMs = when (transcribeDurationMode) {
-            "preview10m" -> 600_000L.coerceAtMost(realDuration)
-            "full"       -> realDuration.coerceAtLeast(1000L)
-            else         -> 30_000L.coerceAtMost(realDuration)
+            "preview10m" -> 600_000L.coerceAtMost(durationMs.takeIf { it > 0 } ?: 600_000L)
+            "full"       -> durationMs
+            else         -> 30_000L
         }
         state = DispState.Transcribing(0f, "Loading ${model.displayName}…")
         try {

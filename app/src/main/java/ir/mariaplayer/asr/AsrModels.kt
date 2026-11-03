@@ -66,7 +66,7 @@ object AsrModels {
     }
 
     suspend fun selectedLang(context: Context): String =
-        context.asrStore.data.first()[LANG_KEY] ?: "fa"
+        context.asrStore.data.first()[LANG_KEY] ?: ""
 
     suspend fun saveSelectedLang(context: Context, lang: String) {
         context.asrStore.edit { it[LANG_KEY] = lang }

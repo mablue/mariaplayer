@@ -408,6 +408,7 @@ private fun playQueue(
                     .setExtras(Bundle().apply {
                         putString("filename", t.filename)
                         putString("folder", t.folder)
+                        putLong("durationMs", t.durationMs)
                     })
                     .build()
             )
