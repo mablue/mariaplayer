@@ -52,7 +52,8 @@ jobs:
         id: meta
         run: |
           set -euo pipefail
-          VER=$(grep -m1 -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          # versionName uses Kotlin interpolation; use VERSION_CODE env
+          VER="0.1.${VERSION_CODE:-1}"
           SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           TAG="v${VER}-build.${{ github.run_number }}-${SHA}"
           APK="mariaplayer-${VER}-${SHA}.apk"
