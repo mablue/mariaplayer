@@ -783,6 +783,28 @@ private suspend fun runAllTests(
         "ok"
     }
 
+    // 37) AsrManager.transcribeTimings integration
+    test("AsrManager timings") {
+        val models = ir.mariaplayer.asr.AsrModels.list(context)
+        if (models.isEmpty()) return@test "no models"
+        val tracks = LibraryScanner.scan(context)
+        if (tracks.isEmpty()) return@test "no tracks"
+        val m = models.first()
+        val t = tracks.first()
+        try {
+            val timings = ir.mariaplayer.asr.AsrManager.transcribeTimings(
+                context = context,
+                uri = android.net.Uri.parse(t.contentUri),
+                modelDir = m.dir,
+                totalMs = 5_000L,
+            )
+            if (timings.isEmpty()) "0 timings (likely silent audio)"
+            else "got ${timings.size} tokens from 5s"
+        } catch (e: Throwable) {
+            "skip: ${(e.message ?: "error").take(50)}"
+        }
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())

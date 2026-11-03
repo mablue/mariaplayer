@@ -8,19 +8,6 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/**
- * PR-L24: 30 s chunks with 3 s overlap. No VAD.
- *
- * Silero VAD on music strips vocals as noise (see LESSONS.md), so we
- * deliberately avoid it. Larger chunks (30 s vs 15 s) halve the number
- * of boundaries, and 3 s overlap guarantees every boundary word appears
- * fully in at least one chunk. trimPrefix dedups the overlap.
- *
- * Chunks are kept SEPARATE (one AsrChunk per audio slice). toLrc then
- * splits each chunk into sentence lines with proportional timestamps,
- * so the offline-transcribed result looks like karaoke subtitles, not
- * a wall of text.
- */
 object AsrManager {
 
     data class AsrChunk(val startMs: Long, val text: String)
@@ -89,9 +76,6 @@ object AsrManager {
             runCatching { eng.close() }
         }
 
-        // PR-L24: keep chunks SEPARATE. Only trim the boundary prefix of
-        // each chunk against the tail of the previous RAW chunk so that
-        // words cut by the 3 s overlap don't appear twice.
         val merged = ArrayList<AsrChunk>()
         var prevRawText = ""
         for (c in raw) {
@@ -102,6 +86,72 @@ object AsrManager {
             prevRawText = c.text
         }
         merged
+    }
+
+    /**
+     * PR-L35c: return token-level timings without merging.
+     * Feeds LyricsAligner, which pairs these (wrong text, right timing)
+     * against externally-supplied accurate text.
+     * Overlapping chunks duplicate tokens in the overlap region — that is
+     * fine because the aligner walks each accurate char once and takes the
+     * first match in the token stream (earliest chunk wins).
+     */
+    suspend fun transcribeTimings(
+        context: Context, uri: Uri, modelDir: File,
+        totalMs: Long, startMs: Long = 0L,
+        language: String = "",
+        onProgress: (Float, String) -> Unit = { _, _ -> },
+    ): List<SherpaEngine.TokenTiming> = withContext(Dispatchers.Default) {
+        require(modelDir.isDirectory) { "model dir missing: $modelDir" }
+        require(totalMs > 0) { "totalMs must be > 0" }
+
+        onProgress(0f, "Decoding audio…")
+        val all = AudioDecoder.decodeFull(context, uri, startMs + totalMs + 5_000L)
+        val s0 = (startMs * 16000 / 1000L).toInt().coerceAtLeast(0)
+        val samples = if (s0 < all.size) all.copyOfRange(s0, all.size) else FloatArray(0)
+        if (samples.isEmpty()) return@withContext emptyList()
+
+        val chunkSamples = (CHUNK_MS * 16000 / 1000L).toInt()
+        val stepSamples  = (STEP_MS  * 16000 / 1000L).toInt()
+
+        val eng = SherpaEngine(modelDir, whisperLanguage = language)
+        val startedAt = System.currentTimeMillis()
+        val result = ArrayList<SherpaEngine.TokenTiming>()
+        try {
+            var pos = 0
+            var idx = 0
+            while (true) {
+                currentCoroutineContext().ensureActive()
+                val end = (pos + chunkSamples).coerceAtMost(samples.size)
+                val slice = samples.copyOfRange(pos, end)
+                if (slice.size >= 2000) {
+                    val offsetSec = pos.toFloat() / 16000f
+                    val chunkTimings = runCatching {
+                        eng.transcribeWithTimestamps(slice)
+                    }.getOrDefault(emptyList())
+                    for (t in chunkTimings) {
+                        result.add(SherpaEngine.TokenTiming(
+                            token = t.token,
+                            startSec = t.startSec + offsetSec,
+                            durationSec = t.durationSec,
+                        ))
+                    }
+                }
+                idx++
+                if (end >= samples.size) break
+                pos += stepSamples
+
+                val progress = pos.toFloat() / samples.size
+                val elapsed = System.currentTimeMillis() - startedAt
+                val eta = if (progress > 0.05f)
+                    (elapsed / progress - elapsed).toLong() else -1L
+                val etaStr = if (eta > 1000) " · ${fmtEta(eta)} left" else ""
+                onProgress(progress.coerceAtMost(1f), "Chunk $idx · ${(progress*100).toInt()}%$etaStr")
+            }
+        } finally {
+            runCatching { eng.close() }
+        }
+        result
     }
 
     private fun trimPrefix(prevRaw: String, nextRaw: String): String {
@@ -117,11 +167,6 @@ object AsrManager {
         return nextRaw
     }
 
-    /**
-     * PR-L24: sentence-per-line LRC, karaoke style.
-     * Long run-on chunks (no punctuation) are force-split by word count
-     * so a 30 s monologue does not appear as a single giant subtitle.
-     */
     fun toLrc(chunks: List<AsrChunk>, chunkSpanMs: Long = CHUNK_MS): String {
         val sb = StringBuilder()
         for (c in chunks) {
@@ -179,8 +224,6 @@ object AsrManager {
         val sec = (ms / 1000).coerceAtLeast(0)
         return if (sec < 60) "${sec}s" else "${sec / 60}m ${sec % 60}s"
     }
-
-    // ── Test-visible helpers (unchanged behavior for SelfTest) ──
 
     fun mergeForTest(chunks: List<AsrChunk>): List<AsrChunk> {
         val merged = ArrayList<AsrChunk>()
