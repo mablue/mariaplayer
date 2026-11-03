@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "generated": "2026-11-03T03:01:59.375533Z",
-  "count": 17,
+  "generated": "2026-11-03T03:06:31.492141Z",
+  "count": 347,
   "models": [
     {
       "id": "moonshine-base-q4_k",
@@ -331,6 +331,5062 @@
           "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main/tiny-tokens.txt"
         }
       ]
+    },
+    {
+      "id": "gh-ascend-310p3-cann-8.0-paraformer-zh-2023-03-28",
+      "name": "ascend-310P3-cann-8.0-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 831830339,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-cann-8.0-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-cann-8.0-paraformer-zh-2025-10-07",
+      "name": "ascend-310P3-cann-8.0-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 832114026,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-cann-8.0-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-310P3-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 854126310,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-310P3-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 857547960,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-cann-8.2-paraformer-zh-2023-03-28",
+      "name": "ascend-310P3-cann-8.2-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 853580868,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-cann-8.2-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-cann-8.2-paraformer-zh-2025-10-07",
+      "name": "ascend-310P3-cann-8.2-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 853976747,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-cann-8.2-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-310P3-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 861356723,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-310P3-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 864496201,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-paraformer-zh-2023-03-28",
+      "name": "ascend-310P3-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 853582744,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-paraformer-zh-2025-10-07",
+      "name": "ascend-310P3-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 853973616,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-310P3-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 854123014,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-310p3-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-310P3-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 857553644,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-310P3-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-cann-8.0-paraformer-zh-2023-03-28",
+      "name": "ascend-910B-cann-8.0-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 831865972,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-cann-8.0-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-cann-8.0-paraformer-zh-2025-10-07",
+      "name": "ascend-910B-cann-8.0-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 831937485,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-cann-8.0-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-910B-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 854796412,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-910B-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 858040383,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-cann-8.2-paraformer-zh-2023-03-28",
+      "name": "ascend-910B-cann-8.2-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 853795364,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-cann-8.2-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-cann-8.2-paraformer-zh-2025-10-07",
+      "name": "ascend-910B-cann-8.2-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 854238977,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-cann-8.2-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-910B-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 861834217,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-910B-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 865090428,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-paraformer-zh-2023-03-28",
+      "name": "ascend-910B-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 853803074,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-paraformer-zh-2025-10-07",
+      "name": "ascend-910B-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 854242237,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-910B-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 854787708,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-910B-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 858044009,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-cann-8.0-paraformer-zh-2023-03-28",
+      "name": "ascend-910B2-cann-8.0-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 438338164,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-cann-8.0-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-cann-8.0-paraformer-zh-2025-10-07",
+      "name": "ascend-910B2-cann-8.0-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 439192006,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-cann-8.0-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-910B2-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 434668945,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-cann-8.0-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-910B2-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 438042694,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-cann-8.0-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-cann-8.2-paraformer-zh-2023-03-28",
+      "name": "ascend-910B2-cann-8.2-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 460031414,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-cann-8.2-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-cann-8.2-paraformer-zh-2025-10-07",
+      "name": "ascend-910B2-cann-8.2-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 461132829,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-cann-8.2-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-910B2-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 441466709,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-cann-8.2-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-910B2-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 445024099,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-cann-8.2-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-paraformer-zh-2023-03-28",
+      "name": "ascend-910B2-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 460031093,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-paraformer-zh-2025-10-07",
+      "name": "ascend-910B2-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 439220129,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "ascend-910B2-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 434668171,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-ascend-910b2-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "ascend-910B2-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 438044769,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-ascend-910B2-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-cohere-transcribe-14-lang-int8-2026-04-01",
+      "name": "cohere-transcribe-14-lang-int8-2026-04-01",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1699791751,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-conformer-en-2023-03-18",
+      "name": "conformer-en-2023-03-18",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 425360617,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-conformer-en-2023-03-18.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-conformer-zh-2023-05-23",
+      "name": "conformer-zh-2023-05-23",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 497332649,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-conformer-zh-2023-05-23.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-conformer-zh-stateless2-2023-05-23",
+      "name": "conformer-zh-stateless2-2023-05-23",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 456480884,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-conformer-zh-stateless2-2023-05-23.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-dolphin-base-ctc-multi-lang-2025-04-02",
+      "name": "dolphin-base-ctc-multi-lang-2025-04-02",
+      "language": [
+        "multi"
+      ],
+      "sizeBytes": 299947395,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-dolphin-base-ctc-multi-lang-2025-04-02.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-dolphin-base-ctc-multi-lang-int8-2025-04-02",
+      "name": "dolphin-base-ctc-multi-lang-int8-2025-04-02",
+      "language": [
+        "multi"
+      ],
+      "sizeBytes": 80671385,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-dolphin-small-ctc-multi-lang-2025-04-02",
+      "name": "dolphin-small-ctc-multi-lang-2025-04-02",
+      "language": [
+        "multi"
+      ],
+      "sizeBytes": 775077198,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-dolphin-small-ctc-multi-lang-2025-04-02.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-dolphin-small-ctc-multi-lang-int8-2025-04-02",
+      "name": "dolphin-small-ctc-multi-lang-int8-2025-04-02",
+      "language": [
+        "multi"
+      ],
+      "sizeBytes": 191534345,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-dolphin-small-ctc-multi-lang-int8-2025-04-02.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-en-wenet-gigaspeech",
+      "name": "en-wenet-gigaspeech",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 933151114,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-en-wenet-gigaspeech.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-en-wenet-librispeech",
+      "name": "en-wenet-librispeech",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 357301262,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-en-wenet-librispeech.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-fire-red-asr-large-zh_en-2025-02-16",
+      "name": "fire-red-asr-large-zh_en-2025-02-16",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 1469513701,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-fire-red-asr-large-zh_en-fp16-2025-02-16",
+      "name": "fire-red-asr-large-zh_en-fp16-2025-02-16",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 2072964047,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-fire-red-asr-large-zh_en-fp16-2025-02-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-fire-red-asr2-ctc-zh_en-int8-2026-02-25",
+      "name": "fire-red-asr2-ctc-zh_en-int8-2026-02-25",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 520516278,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-fire-red-asr2-ctc-zh_en-int8-2026-02-25.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-fire-red-asr2-zh_en-int8-2026-02-26",
+      "name": "fire-red-asr2-zh_en-int8-2026-02-26",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 838589068,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-fire-red-asr2-zh_en-int8-2026-02-26.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-funasr-nano-2025-12-30",
+      "name": "funasr-nano-2025-12-30",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1317656544,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-funasr-nano-2025-12-30.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-funasr-nano-fp16-2025-12-30",
+      "name": "funasr-nano-fp16-2025-12-30",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1030076153,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-funasr-nano-fp16-2025-12-30.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-funasr-nano-int8-2025-12-30",
+      "name": "funasr-nano-int8-2025-12-30",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 841730611,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-funasr-nano-int8-2025-12-30.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-icefall-asr-cv-corpus-13.0-2023-03-09-en-pruned-transducer-stateless7-2023-04-17",
+      "name": "icefall-asr-cv-corpus-13.0-2023-03-09-en-pruned-transducer-stateless7-2023-04-17",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 401716549,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/icefall-asr-cv-corpus-13.0-2023-03-09-en-pruned-transducer-stateless7-2023-04-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-icefall-asr-multidataset-pruned_transducer_stateless7-2023-05-04",
+      "name": "icefall-asr-multidataset-pruned_transducer_stateless7-2023-05-04",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 399988468,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/icefall-asr-multidataset-pruned_transducer_stateless7-2023-05-04.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-icefall-asr-zipformer-wenetspeech-20230615",
+      "name": "icefall-asr-zipformer-wenetspeech-20230615",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 340291239,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/icefall-asr-zipformer-wenetspeech-20230615.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-librknnrt-android",
+      "name": "librknnrt-android",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 15420791,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/librknnrt-android.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-lstm-en-2023-02-17",
+      "name": "lstm-en-2023-02-17",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 384245724,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-lstm-en-2023-02-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-lstm-zh-2023-02-20",
+      "name": "lstm-zh-2023-02-20",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 417007347,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-lstm-zh-2023-02-20.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-medasr-ctc-en-2025-12-25",
+      "name": "medasr-ctc-en-2025-12-25",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 403195234,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-medasr-ctc-en-2025-12-25.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-medasr-ctc-en-int8-2025-12-25",
+      "name": "medasr-ctc-en-int8-2025-12-25",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 131831040,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-medasr-ctc-en-int8-2025-12-25.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-base-ar-quantized-2026-02-27",
+      "name": "moonshine-base-ar-quantized-2026-02-27",
+      "language": [
+        "ar"
+      ],
+      "sizeBytes": 119143068,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-ar-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-base-en-int8",
+      "name": "moonshine-base-en-int8",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 250807309,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-base-en-quantized-2026-02-27",
+      "name": "moonshine-base-en-quantized-2026-02-27",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 111266225,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-base-es-quantized-2026-02-27",
+      "name": "moonshine-base-es-quantized-2026-02-27",
+      "language": [
+        "es"
+      ],
+      "sizeBytes": 50846902,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-es-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-base-ja-quantized-2026-02-27",
+      "name": "moonshine-base-ja-quantized-2026-02-27",
+      "language": [
+        "ja"
+      ],
+      "sizeBytes": 104162109,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-ja-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-base-uk-quantized-2026-02-27",
+      "name": "moonshine-base-uk-quantized-2026-02-27",
+      "language": [
+        "uk"
+      ],
+      "sizeBytes": 111037143,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-uk-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-base-vi-quantized-2026-02-27",
+      "name": "moonshine-base-vi-quantized-2026-02-27",
+      "language": [
+        "vi"
+      ],
+      "sizeBytes": 106719129,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-vi-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-base-zh-quantized-2026-02-27",
+      "name": "moonshine-base-zh-quantized-2026-02-27",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 99905420,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-zh-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-tiny-en-int8",
+      "name": "moonshine-tiny-en-int8",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 107600538,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-tiny-en-quantized-2026-02-27",
+      "name": "moonshine-tiny-en-quantized-2026-02-27",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 29858559,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-tiny-ja-quantized-2026-02-27",
+      "name": "moonshine-tiny-ja-quantized-2026-02-27",
+      "language": [
+        "ja"
+      ],
+      "sizeBytes": 47889565,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-ja-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-moonshine-tiny-ko-quantized-2026-02-27",
+      "name": "moonshine-tiny-ko-quantized-2026-02-27",
+      "language": [
+        "ko"
+      ],
+      "sizeBytes": 49153415,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-canary-180m-flash-en-es-de-fr",
+      "name": "nemo-canary-180m-flash-en-es-de-fr",
+      "language": [
+        "en",
+        "de"
+      ],
+      "sizeBytes": 717064890,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-canary-180m-flash-en-es-de-fr.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-canary-180m-flash-en-es-de-fr-int8",
+      "name": "nemo-canary-180m-flash-en-es-de-fr-int8",
+      "language": [
+        "en",
+        "de"
+      ],
+      "sizeBytes": 153692328,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-canary-180m-flash-en-es-de-fr-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-ctc-en-citrinet-512",
+      "name": "nemo-ctc-en-citrinet-512",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 164307491,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-en-citrinet-512.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-ctc-en-conformer-large",
+      "name": "nemo-ctc-en-conformer-large",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 610719312,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-en-conformer-large.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-ctc-en-conformer-medium",
+      "name": "nemo-ctc-en-conformer-medium",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 165685608,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-en-conformer-medium.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-ctc-en-conformer-small",
+      "name": "nemo-ctc-en-conformer-small",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 76482338,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-en-conformer-small.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-ctc-giga-am-russian-2024-10-24",
+      "name": "nemo-ctc-giga-am-russian-2024-10-24",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 200460845,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-giga-am-russian-2024-10-24.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-ctc-giga-am-v2-russian-2025-04-19",
+      "name": "nemo-ctc-giga-am-v2-russian-2025-04-19",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 166917722,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-giga-am-v2-russian-2025-04-19.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-ctc-giga-am-v3-russian-2025-12-16",
+      "name": "nemo-ctc-giga-am-v3-russian-2025-12-16",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 163286197,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-giga-am-v3-russian-2025-12-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-ctc-punct-giga-am-v3-russian-2025-12-16",
+      "name": "nemo-ctc-punct-giga-am-v3-russian-2025-12-16",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 163282594,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-ctc-be-de-en-es-fr-hr-it-pl-ru-uk-20k",
+      "name": "nemo-fast-conformer-ctc-be-de-en-es-fr-hr-it-pl-ru-uk-20k",
+      "language": [
+        "en",
+        "fr",
+        "it",
+        "ru"
+      ],
+      "sizeBytes": 434978386,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-ctc-be-de-en-es-fr-hr-it-pl-ru-uk-20k.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-ctc-be-de-en-es-fr-hr-it-pl-ru-uk-20k-int8",
+      "name": "nemo-fast-conformer-ctc-be-de-en-es-fr-hr-it-pl-ru-uk-20k-int8",
+      "language": [
+        "en",
+        "fr",
+        "it",
+        "ru"
+      ],
+      "sizeBytes": 102261698,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-ctc-be-de-en-es-fr-hr-it-pl-ru-uk-20k-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-ctc-en-24500",
+      "name": "nemo-fast-conformer-ctc-en-24500",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 431106517,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-ctc-en-24500.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-ctc-en-24500-int8",
+      "name": "nemo-fast-conformer-ctc-en-24500-int8",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 104402565,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-ctc-en-24500-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-ctc-en-de-es-fr-14288",
+      "name": "nemo-fast-conformer-ctc-en-de-es-fr-14288",
+      "language": [
+        "en",
+        "es"
+      ],
+      "sizeBytes": 434219034,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-ctc-en-de-es-fr-14288.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-ctc-en-de-es-fr-14288-int8",
+      "name": "nemo-fast-conformer-ctc-en-de-es-fr-14288-int8",
+      "language": [
+        "en",
+        "es"
+      ],
+      "sizeBytes": 102875642,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-ctc-en-de-es-fr-14288-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-ctc-es-1424",
+      "name": "nemo-fast-conformer-ctc-es-1424",
+      "language": [
+        "es"
+      ],
+      "sizeBytes": 430895387,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-ctc-es-1424.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-ctc-es-1424-int8",
+      "name": "nemo-fast-conformer-ctc-es-1424-int8",
+      "language": [
+        "es"
+      ],
+      "sizeBytes": 103489263,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-ctc-es-1424-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-transducer-be-de-en-es-fr-hr-it-pl-ru-uk-20k",
+      "name": "nemo-fast-conformer-transducer-be-de-en-es-fr-hr-it-pl-ru-uk-20k",
+      "language": [
+        "en",
+        "fr",
+        "it",
+        "ru"
+      ],
+      "sizeBytes": 457512388,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-transducer-be-de-en-es-fr-hr-it-pl-ru-uk-20k.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-transducer-be-de-en-es-fr-hr-it-pl-ru-uk-20k-int8",
+      "name": "nemo-fast-conformer-transducer-be-de-en-es-fr-hr-it-pl-ru-uk-20k-int8",
+      "language": [
+        "en",
+        "fr",
+        "it",
+        "ru"
+      ],
+      "sizeBytes": 106546673,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-transducer-be-de-en-es-fr-hr-it-pl-ru-uk-20k-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-transducer-en-24500",
+      "name": "nemo-fast-conformer-transducer-en-24500",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 449359325,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-transducer-en-24500.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-transducer-en-24500-int8",
+      "name": "nemo-fast-conformer-transducer-en-24500-int8",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 107976970,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-transducer-en-24500-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-transducer-en-de-es-fr-14288",
+      "name": "nemo-fast-conformer-transducer-en-de-es-fr-14288",
+      "language": [
+        "en",
+        "es"
+      ],
+      "sizeBytes": 456510869,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-transducer-en-de-es-fr-14288.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-transducer-en-de-es-fr-14288-int8",
+      "name": "nemo-fast-conformer-transducer-en-de-es-fr-14288-int8",
+      "language": [
+        "en",
+        "es"
+      ],
+      "sizeBytes": 106902947,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-transducer-en-de-es-fr-14288-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-transducer-es-1424",
+      "name": "nemo-fast-conformer-transducer-es-1424",
+      "language": [
+        "es"
+      ],
+      "sizeBytes": 449123825,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-transducer-es-1424.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-fast-conformer-transducer-es-1424-int8",
+      "name": "nemo-fast-conformer-transducer-es-1424-int8",
+      "language": [
+        "es"
+      ],
+      "sizeBytes": 107246685,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-fast-conformer-transducer-es-1424-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-parakeet-tdt-0.6b-v2-fp16",
+      "name": "nemo-parakeet-tdt-0.6b-v2-fp16",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1120982957,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-fp16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-parakeet-tdt-0.6b-v2-int8",
+      "name": "nemo-parakeet-tdt-0.6b-v2-int8",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 482468385,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-parakeet-tdt-0.6b-v3-int8",
+      "name": "nemo-parakeet-tdt-0.6b-v3-int8",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 487170055,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-parakeet-tdt_ctc-0.6b-ja-35000-int8",
+      "name": "nemo-parakeet-tdt_ctc-0.6b-ja-35000-int8",
+      "language": [
+        "ja"
+      ],
+      "sizeBytes": 489389564,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt_ctc-0.6b-ja-35000-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-parakeet_tdt_ctc_110m-en-36000",
+      "name": "nemo-parakeet_tdt_ctc_110m-en-36000",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 434206949,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-parakeet_tdt_ctc_110m-en-36000-int8",
+      "name": "nemo-parakeet_tdt_ctc_110m-en-36000-int8",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 104337827,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet_tdt_ctc_110m-en-36000-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-parakeet_tdt_transducer_110m-en-36000",
+      "name": "nemo-parakeet_tdt_transducer_110m-en-36000",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 452588825,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet_tdt_transducer_110m-en-36000.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-parakeet_tdt_transducer_110m-en-36000-int8",
+      "name": "nemo-parakeet_tdt_transducer_110m-en-36000-int8",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 108035095,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet_tdt_transducer_110m-en-36000-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-stt_de_fastconformer_hybrid_large_pc",
+      "name": "nemo-stt_de_fastconformer_hybrid_large_pc",
+      "language": [
+        "de"
+      ],
+      "sizeBytes": 430887716,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-stt_de_fastconformer_hybrid_large_pc.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-stt_de_fastconformer_hybrid_large_pc-int8",
+      "name": "nemo-stt_de_fastconformer_hybrid_large_pc-int8",
+      "language": [
+        "de"
+      ],
+      "sizeBytes": 104563862,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-stt_de_fastconformer_hybrid_large_pc-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-stt_pt_fastconformer_hybrid_large_pc",
+      "name": "nemo-stt_pt_fastconformer_hybrid_large_pc",
+      "language": [
+        "pt"
+      ],
+      "sizeBytes": 432538743,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-stt_pt_fastconformer_hybrid_large_pc-int8",
+      "name": "nemo-stt_pt_fastconformer_hybrid_large_pc-int8",
+      "language": [
+        "pt"
+      ],
+      "sizeBytes": 103316407,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-transducer-giga-am-russian-2024-10-24",
+      "name": "nemo-transducer-giga-am-russian-2024-10-24",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 205384624,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-giga-am-russian-2024-10-24.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-transducer-giga-am-v2-russian-2025-04-19",
+      "name": "nemo-transducer-giga-am-v2-russian-2025-04-19",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 172422327,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-giga-am-v2-russian-2025-04-19.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-transducer-giga-am-v3-russian-2025-12-16",
+      "name": "nemo-transducer-giga-am-v3-russian-2025-12-16",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 167388020,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-giga-am-v3-russian-2025-12-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-transducer-punct-giga-am-v3-russian-2025-12-16",
+      "name": "nemo-transducer-punct-giga-am-v3-russian-2025-12-16",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 170197019,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-punct-giga-am-v3-russian-2025-12-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-transducer-stt_de_fastconformer_hybrid_large_pc",
+      "name": "nemo-transducer-stt_de_fastconformer_hybrid_large_pc",
+      "language": [
+        "de"
+      ],
+      "sizeBytes": 449137707,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-stt_de_fastconformer_hybrid_large_pc.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-transducer-stt_de_fastconformer_hybrid_large_pc-int8",
+      "name": "nemo-transducer-stt_de_fastconformer_hybrid_large_pc-int8",
+      "language": [
+        "de"
+      ],
+      "sizeBytes": 108124747,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-stt_de_fastconformer_hybrid_large_pc-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-transducer-stt_pt_fastconformer_hybrid_large_pc",
+      "name": "nemo-transducer-stt_pt_fastconformer_hybrid_large_pc",
+      "language": [
+        "pt"
+      ],
+      "sizeBytes": 448333891,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-stt_pt_fastconformer_hybrid_large_pc.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-nemo-transducer-stt_pt_fastconformer_hybrid_large_pc-int8",
+      "name": "nemo-transducer-stt_pt_fastconformer_hybrid_large_pc-int8",
+      "language": [
+        "pt"
+      ],
+      "sizeBytes": 106541116,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-transducer-stt_pt_fastconformer_hybrid_large_pc-int8.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-omnilingual-asr-1600-languages-1b-ctc-int8-2025-11-12",
+      "name": "omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 786404815,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-int8-2025-11-12.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-omnilingual-asr-1600-languages-1b-ctc-v2-int8-2026-02-05",
+      "name": "omnilingual-asr-1600-languages-1B-ctc-v2-int8-2026-02-05",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 787296506,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-1B-ctc-v2-int8-2026-02-05.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-omnilingual-asr-1600-languages-300m-ctc-2025-11-12",
+      "name": "omnilingual-asr-1600-languages-300M-ctc-2025-11-12",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1236221582,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-2025-11-12.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-omnilingual-asr-1600-languages-300m-ctc-int8-2025-11-12",
+      "name": "omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 292571207,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-omnilingual-asr-1600-languages-300m-ctc-v2-2026-02-05",
+      "name": "omnilingual-asr-1600-languages-300M-ctc-v2-2026-02-05",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1238065723,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-2026-02-05.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-omnilingual-asr-1600-languages-300m-ctc-v2-int8-2026-02-05",
+      "name": "omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 292313120,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-paraformer-en-2024-03-09",
+      "name": "paraformer-en-2024-03-09",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1021641665,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-en-2024-03-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-paraformer-trilingual-zh-cantonese-en",
+      "name": "paraformer-trilingual-zh-cantonese-en",
+      "language": [
+        "multi",
+        "zh",
+        "en"
+      ],
+      "sizeBytes": 1059453702,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-trilingual-zh-cantonese-en.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-paraformer-zh-2023-03-28",
+      "name": "paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 1035472389,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-paraformer-zh-2023-09-14",
+      "name": "paraformer-zh-2023-09-14",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 234051698,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-2023-09-14.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-paraformer-zh-2024-03-09",
+      "name": "paraformer-zh-2024-03-09",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 996591364,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-2024-03-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-paraformer-zh-2025-10-07",
+      "name": "paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 822554565,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-paraformer-zh-int8-2025-10-07",
+      "name": "paraformer-zh-int8-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 228262632,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-int8-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-paraformer-zh-small-2024-03-09",
+      "name": "paraformer-zh-small-2024-03-09",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 77920048,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-small-2024-03-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17-int8-android-aarch64",
+      "name": "qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17-int8-android-aarch64",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 161673529,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17-int8-android-aarch64.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17-int8-linux-x64",
+      "name": "qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17-int8-linux-x64",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 161551759,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17-int8-linux-x64.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09-int8-android-aarch64",
+      "name": "qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09-int8-android-aarch64",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 165529860,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09-int8-android-aarch64.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09-int8-linux-x64",
+      "name": "qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09-int8-linux-x64",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 165401155,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qnn-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09-int8-linux-x64.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-qwen3-asr-0.6b-int8-2026-03-25",
+      "name": "qwen3-asr-0.6B-int8-2026-03-25",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 878702423,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-10-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3562-10-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390656264,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-10-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-10-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3562-10-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390340138,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-10-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3562-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418751587,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3562-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422568017,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-15-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3562-15-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390711821,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-15-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-15-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3562-15-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390489501,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-15-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3562-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418875585,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3562-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422646730,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-20-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3562-20-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390589396,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-20-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-20-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3562-20-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390678620,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-20-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3562-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418997030,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3562-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422779598,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-25-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3562-25-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391032801,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-25-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-25-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3562-25-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390745998,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-25-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3562-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418984083,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3562-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422794400,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-30-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3562-30-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391116141,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-30-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-30-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3562-30-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391186933,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-30-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3562-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419304847,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3562-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423075795,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-5-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3562-5-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390653175,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-5-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-5-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3562-5-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390545816,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-5-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3562-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418700618,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3562-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3562-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422431613,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3562-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-10-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3566-10-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391259839,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-10-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-10-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3566-10-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391283175,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-10-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3566-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419292422,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3566-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423128117,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-15-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3566-15-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391212843,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-15-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-15-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3566-15-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391383916,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-15-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3566-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419609039,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3566-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423307183,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-20-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3566-20-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391781121,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-20-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-20-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3566-20-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391739154,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-20-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3566-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 420114221,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3566-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423883099,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-25-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3566-25-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392025973,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-25-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-25-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3566-25-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392062544,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-25-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3566-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 420335473,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3566-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 424281825,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-30-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3566-30-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392363715,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-30-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-30-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3566-30-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392506405,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-30-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3566-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 420789654,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3566-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 424505863,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-5-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3566-5-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390969233,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-5-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-5-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3566-5-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391048721,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-5-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3566-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418981738,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3566-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3566-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422856659,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3566-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-10-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3568-10-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391259846,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-10-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-10-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3568-10-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391283224,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-10-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3568-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419292432,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3568-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423128030,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-15-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3568-15-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391212761,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-15-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-15-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3568-15-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391383904,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-15-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3568-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419609398,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3568-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423306925,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-20-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3568-20-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391781006,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-20-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-20-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3568-20-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391739454,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-20-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3568-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 420114211,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3568-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423883072,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-25-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3568-25-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392026142,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-25-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-25-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3568-25-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392062673,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-25-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3568-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 420335614,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3568-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 424281844,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-30-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3568-30-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392363689,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-30-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-30-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3568-30-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392506533,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-30-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3568-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 420789716,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3568-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 424505440,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-5-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3568-5-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390968855,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-5-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-5-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3568-5-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391048802,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-5-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3568-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418981248,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3568-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3568-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422856634,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3568-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-10-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3576-10-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391728454,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-10-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-10-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3576-10-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391558521,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-10-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3576-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419753383,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3576-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423433744,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-15-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3576-15-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391979626,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-15-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-15-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3576-15-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391891383,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-15-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3576-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419900820,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3576-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423576520,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-20-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3576-20-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392500712,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-20-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-20-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3576-20-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392178591,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-20-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3576-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 420312306,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3576-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 424065688,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-25-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3576-25-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392723585,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-25-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-25-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3576-25-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392487383,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-25-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3576-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 420701360,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3576-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 424577286,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-30-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3576-30-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 393290908,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-30-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-30-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3576-30-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 392990441,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-30-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3576-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 421295454,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3576-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 425174461,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-5-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3576-5-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391843168,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-5-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-5-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3576-5-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391523811,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-5-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3576-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419497964,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3576-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3576-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423366871,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3576-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-10-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3588-10-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390769747,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-10-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-10-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3588-10-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390641597,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-10-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3588-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418907998,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-10-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3588-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422694406,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-10-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-15-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3588-15-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391116427,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-15-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-15-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3588-15-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391041224,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-15-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3588-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418977170,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-15-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3588-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422832787,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-15-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-20-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3588-20-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391268890,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-20-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-20-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3588-20-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391032334,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-20-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3588-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419216334,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-20-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3588-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422970792,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-20-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-25-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3588-25-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391472780,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-25-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-25-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3588-25-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391225813,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-25-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3588-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419387100,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-25-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3588-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423183779,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-25-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-30-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3588-30-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391208359,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-30-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-30-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3588-30-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 391263915,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-30-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3588-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 419498837,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-30-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3588-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 423263118,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-30-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-5-seconds-paraformer-zh-2023-03-28",
+      "name": "rk3588-5-seconds-paraformer-zh-2023-03-28",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390631338,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-5-seconds-paraformer-zh-2023-03-28.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-5-seconds-paraformer-zh-2025-10-07",
+      "name": "rk3588-5-seconds-paraformer-zh-2025-10-07",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 390338311,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-5-seconds-paraformer-zh-2025-10-07.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "rk3588-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 418800845,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-5-seconds-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-rk3588-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "rk3588-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 422509349,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-rk3588-5-seconds-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-sense-voice-funasr-nano-2025-12-17",
+      "name": "sense-voice-funasr-nano-2025-12-17",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 452562911,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-funasr-nano-2025-12-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-sense-voice-funasr-nano-int8-2025-12-17",
+      "name": "sense-voice-funasr-nano-int8-2025-12-17",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 187693225,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-funasr-nano-int8-2025-12-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "name": "sense-voice-zh-en-ja-ko-yue-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 1047870769,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "name": "sense-voice-zh-en-ja-ko-yue-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 886547748,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17",
+      "name": "sense-voice-zh-en-ja-ko-yue-int8-2024-07-17",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 163002883,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
+      "name": "sense-voice-zh-en-ja-ko-yue-int8-2025-09-09",
+      "language": [
+        "zh",
+        "ja"
+      ],
+      "sizeBytes": 165783878,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-small-zipformer-ru-2024-09-18",
+      "name": "small-zipformer-ru-2024-09-18",
+      "language": [
+        "ru"
+      ],
+      "sizeBytes": 109906654,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-small-zipformer-ru-2024-09-18.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-tdnn-yesno",
+      "name": "tdnn-yesno",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 480960,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-tdnn-yesno.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-telespeech-ctc-int8-zh-2024-06-04",
+      "name": "telespeech-ctc-int8-zh-2024-06-04",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 183168450,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-telespeech-ctc-int8-zh-2024-06-04.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-telespeech-ctc-zh-2024-06-04",
+      "name": "telespeech-ctc-zh-2024-06-04",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 569846066,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-telespeech-ctc-zh-2024-06-04.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-wenetspeech-wu-u2pp-conformer-ctc-zh-2026-02-03",
+      "name": "wenetspeech-wu-u2pp-conformer-ctc-zh-2026-02-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 337995253,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-wenetspeech-wu-u2pp-conformer-ctc-zh-2026-02-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-wenetspeech-wu-u2pp-conformer-ctc-zh-int8-2026-02-03",
+      "name": "wenetspeech-wu-u2pp-conformer-ctc-zh-int8-2026-02-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 116168264,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-wenetspeech-wu-u2pp-conformer-ctc-zh-int8-2026-02-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-wenetspeech-yue-u2pp-conformer-ctc-zh-en-cantonese-2025-09-10",
+      "name": "wenetspeech-yue-u2pp-conformer-ctc-zh-en-cantonese-2025-09-10",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 344911539,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-wenetspeech-yue-u2pp-conformer-ctc-zh-en-cantonese-2025-09-10.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-wenetspeech-yue-u2pp-conformer-ctc-zh-en-cantonese-int8-2025-09-10",
+      "name": "wenetspeech-yue-u2pp-conformer-ctc-zh-en-cantonese-int8-2025-09-10",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 117203117,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-wenetspeech-yue-u2pp-conformer-ctc-zh-en-cantonese-int8-2025-09-10.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-base",
+      "name": "whisper-base",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 207557382,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-base.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-base.en",
+      "name": "whisper-base.en",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 208576005,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-base.en.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-distil-large-v2",
+      "name": "whisper-distil-large-v2",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 576607838,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-distil-large-v2.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-distil-large-v3",
+      "name": "whisper-distil-large-v3",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 529350808,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-distil-large-v3.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-distil-large-v3.5",
+      "name": "whisper-distil-large-v3.5",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 528659059,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-distil-large-v3.5.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-distil-medium.en",
+      "name": "whisper-distil-medium.en",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1007278599,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-distil-medium.en.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-distil-small.en",
+      "name": "whisper-distil-small.en",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 453710017,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-distil-small.en.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-large-v1",
+      "name": "whisper-large-v1",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1066424971,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-large-v1.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-large-v2",
+      "name": "whisper-large-v2",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1134475725,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-large-v2.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-large-v3",
+      "name": "whisper-large-v3",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1068482488,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-large-v3.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-medium",
+      "name": "whisper-medium",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1931372882,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-medium.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-medium-aishell",
+      "name": "whisper-medium-aishell",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 686537184,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-medium-aishell.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-medium.en",
+      "name": "whisper-medium.en",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 1905872689,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-medium.en.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-small",
+      "name": "whisper-small",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 639387718,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-small.en",
+      "name": "whisper-small.en",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 635693775,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.en.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-tiny",
+      "name": "whisper-tiny",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 116204861,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-tiny.en",
+      "name": "whisper-tiny.en",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 118071777,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.en.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-whisper-turbo",
+      "name": "whisper-turbo",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 563790207,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-turbo.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-x-asr-zipformer-transducer-zh-en-2026-06-03",
+      "name": "x-asr-zipformer-transducer-zh-en-2026-06-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 583033390,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-x-asr-zipformer-transducer-zh-en-2026-06-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-x-asr-zipformer-transducer-zh-en-int8-2026-06-03",
+      "name": "x-asr-zipformer-transducer-zh-en-int8-2026-06-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 136902463,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-x-asr-zipformer-transducer-zh-en-int8-2026-06-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-x-asr-zipformer-transducer-zh-en-punct-2026-06-03",
+      "name": "x-asr-zipformer-transducer-zh-en-punct-2026-06-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 586715772,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-x-asr-zipformer-transducer-zh-en-punct-2026-06-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-x-asr-zipformer-transducer-zh-en-punct-int8-2026-06-03",
+      "name": "x-asr-zipformer-transducer-zh-en-punct-int8-2026-06-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 136396739,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-x-asr-zipformer-transducer-zh-en-punct-int8-2026-06-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zh-wenet-aishell",
+      "name": "zh-wenet-aishell",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 355342084,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zh-wenet-aishell.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zh-wenet-aishell2",
+      "name": "zh-wenet-aishell2",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 355984004,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zh-wenet-aishell2.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zh-wenet-wenetspeech",
+      "name": "zh-wenet-wenetspeech",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 889448244,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zh-wenet-wenetspeech.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-cantonese-2024-03-13",
+      "name": "zipformer-cantonese-2024-03-13",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 329964914,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-cantonese-2024-03-13.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ctc-en-2023-10-02",
+      "name": "zipformer-ctc-en-2023-10-02",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 383165059,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ctc-en-2023-10-02.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ctc-small-zh-2025-07-16",
+      "name": "zipformer-ctc-small-zh-2025-07-16",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 181218985,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ctc-small-zh-2025-07-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ctc-small-zh-fp16-2025-07-16",
+      "name": "zipformer-ctc-small-zh-fp16-2025-07-16",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 90130351,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ctc-small-zh-fp16-2025-07-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ctc-small-zh-int8-2025-07-16",
+      "name": "zipformer-ctc-small-zh-int8-2025-07-16",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 50536402,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ctc-small-zh-int8-2025-07-16.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ctc-zh-2025-07-03",
+      "name": "zipformer-ctc-zh-2025-07-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 1211201471,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ctc-zh-2025-07-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ctc-zh-fp16-2025-07-03",
+      "name": "zipformer-ctc-zh-fp16-2025-07-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 574653936,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ctc-zh-fp16-2025-07-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ctc-zh-int8-2025-07-03",
+      "name": "zipformer-ctc-zh-int8-2025-07-03",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 301377906,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ctc-zh-int8-2025-07-03.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-2023-03-30",
+      "name": "zipformer-en-2023-03-30",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 509679958,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-2023-03-30.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-2023-04-01",
+      "name": "zipformer-en-2023-04-01",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 507298088,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-2023-04-01.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-2023-06-26",
+      "name": "zipformer-en-2023-06-26",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 307666046,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-2023-06-26.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-libriheavy-20230830-large-punct-case",
+      "name": "zipformer-en-libriheavy-20230830-large-punct-case",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 306893541,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-libriheavy-20230830-large-punct-case.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-libriheavy-20230830-medium-punct-case",
+      "name": "zipformer-en-libriheavy-20230830-medium-punct-case",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 306891038,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-libriheavy-20230830-medium-punct-case.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-libriheavy-20230830-small-punct-case",
+      "name": "zipformer-en-libriheavy-20230830-small-punct-case",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 309964940,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-libriheavy-20230830-small-punct-case.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-libriheavy-20230926-large",
+      "name": "zipformer-en-libriheavy-20230926-large",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 305316263,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-libriheavy-20230926-large.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-libriheavy-20230926-medium",
+      "name": "zipformer-en-libriheavy-20230926-medium",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 306674407,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-libriheavy-20230926-medium.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-en-libriheavy-20230926-small",
+      "name": "zipformer-en-libriheavy-20230926-small",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 307822974,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-en-libriheavy-20230926-small.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-gigaspeech-2023-12-12",
+      "name": "zipformer-gigaspeech-2023-12-12",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 310667160,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-gigaspeech-2023-12-12.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ja-en-reazonspeech-2025-01-17",
+      "name": "zipformer-ja-en-reazonspeech-2025-01-17",
+      "language": [
+        "ja"
+      ],
+      "sizeBytes": 437969761,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ja-en-reazonspeech-2025-01-17.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ja-reazonspeech-2024-08-01",
+      "name": "zipformer-ja-reazonspeech-2024-08-01",
+      "language": [
+        "ja"
+      ],
+      "sizeBytes": 713097333,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-korean-2024-06-24",
+      "name": "zipformer-korean-2024-06-24",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 329740690,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-korean-2024-06-24.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-large-en-2023-06-26",
+      "name": "zipformer-large-en-2023-06-26",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 688420438,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-large-en-2023-06-26.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-multi-zh-hans-2023-9-2",
+      "name": "zipformer-multi-zh-hans-2023-9-2",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 309195644,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-multi-zh-hans-2023-9-2.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ru-2024-09-18",
+      "name": "zipformer-ru-2024-09-18",
+      "language": [
+        "ru"
+      ],
+      "sizeBytes": 297360353,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ru-2024-09-18.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ru-2025-04-20",
+      "name": "zipformer-ru-2025-04-20",
+      "language": [
+        "ru"
+      ],
+      "sizeBytes": 248548768,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ru-2025-04-20.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-ru-int8-2025-04-20",
+      "name": "zipformer-ru-int8-2025-04-20",
+      "language": [
+        "ru"
+      ],
+      "sizeBytes": 60239942,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-ru-int8-2025-04-20.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-small-en-2023-06-26",
+      "name": "zipformer-small-en-2023-06-26",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 112232184,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-small-en-2023-06-26.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-thai-2024-06-20",
+      "name": "zipformer-thai-2024-06-20",
+      "language": [
+        "en"
+      ],
+      "sizeBytes": 695605000,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-thai-2024-06-20.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-vi-2025-04-20",
+      "name": "zipformer-vi-2025-04-20",
+      "language": [
+        "vi"
+      ],
+      "sizeBytes": 256226028,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-vi-2025-04-20.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-vi-30m-2026-02-09",
+      "name": "zipformer-vi-30M-2026-02-09",
+      "language": [
+        "vi"
+      ],
+      "sizeBytes": 95081562,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-vi-30M-2026-02-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-vi-30m-int8-2026-02-09",
+      "name": "zipformer-vi-30M-int8-2026-02-09",
+      "language": [
+        "vi"
+      ],
+      "sizeBytes": 26442384,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-vi-int8-2025-04-20",
+      "name": "zipformer-vi-int8-2025-04-20",
+      "language": [
+        "vi"
+      ],
+      "sizeBytes": 60181038,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-vi-int8-2025-04-20.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
+    },
+    {
+      "id": "gh-zipformer-zh-en-2023-11-22",
+      "name": "zipformer-zh-en-2023-11-22",
+      "language": [
+        "zh"
+      ],
+      "sizeBytes": 312398028,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-zipformer-zh-en-2023-11-22.tar.bz2",
+      "format": "tar.bz2",
+      "engine": "sherpa-onnx",
+      "arch": "unknown",
+      "license": "Apache-2.0",
+      "musicRating": "Unknown",
+      "files": []
     }
   ]
 }

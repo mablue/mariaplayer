@@ -178,13 +178,27 @@ class ModelDownloader(private val context: Context) {
     // PR-L10a-fix: entry-based API. Handles both legacy single-file
     // (Whisper .bin) and multi-file (Shenava, koochik).
     fun isEntryDownloaded(entry: ModelEntry): Boolean {
-        return if (entry.files.isNotEmpty()) {
-            entry.files.all { (name, _) ->
-                val f = File(dir, "${entry.id}/$name")
-                f.exists() && f.length() > 0
+        return when (entry.format) {
+            "tar.bz2", "zip" -> {
+                val d = modelDir(entry.id)
+                val files = d.listFiles() ?: return false
+                val hasModel = files.any {
+                    it.name.endsWith(".onnx") &&
+                    (it.name.startsWith("model") || it.name.startsWith("encoder"))
+                }
+                val hasTokens = files.any { it.name == "tokens.txt" }
+                hasModel && hasTokens
             }
-        } else {
-            isDownloaded(entry.id, entry.sha256)
+            else -> {
+                if (entry.files.isNotEmpty()) {
+                    entry.files.all { (name, _) ->
+                        val f = File(dir, "${entry.id}/$name")
+                        f.exists() && f.length() > 0
+                    }
+                } else {
+                    isDownloaded(entry.id, entry.sha256)
+                }
+            }
         }
     }
 
@@ -192,14 +206,78 @@ class ModelDownloader(private val context: Context) {
         entry: ModelEntry,
         onProgress: (DownloadProgress) -> Unit = {},
     ): File = withContext(Dispatchers.IO) {
-        if (entry.files.isNotEmpty()) {
-            // Cleanup legacy single-file .bin from PR-L10a
-            modelFile(entry.id).delete()
-            partFile(entry.id).delete()
-            downloadFiles(entry.id, entry.files, onProgress)
-        } else {
-            download(entry.id, entry.url, entry.sha256, onProgress)
+        when (entry.format) {
+            "tar.bz2" -> return@withContext downloadAndExtract(entry, "tar.bz2", onProgress)
+            "zip"     -> return@withContext downloadAndExtract(entry, "zip", onProgress)
+            else -> {
+                if (entry.files.isNotEmpty()) {
+                    modelFile(entry.id).delete()
+                    partFile(entry.id).delete()
+                    downloadFiles(entry.id, entry.files, onProgress)
+                } else {
+                    download(entry.id, entry.url, entry.sha256, onProgress)
+                }
+            }
         }
+    }
+
+    /**
+     * PR-L27: download an archive, extract to models/<id>/, delete the archive.
+     * Extraction maps filenames to canonical (encoder/decoder/joiner/model/tokens).
+     * If the archive contains no usable ASR files, throw — user sees a clear error.
+     */
+    private suspend fun downloadAndExtract(
+        entry: ModelEntry,
+        format: String,
+        onProgress: (DownloadProgress) -> Unit,
+    ): File = withContext(Dispatchers.IO) {
+        val targetDir = modelDir(entry.id)
+        targetDir.listFiles()?.forEach { runCatching { it.delete() } }
+        targetDir.mkdirs()
+
+        val ext = if (format == "tar.bz2") "tar.bz2" else "zip"
+        val archive = File(dir, "${entry.id}.$ext")
+        val part = File(dir, "${entry.id}.$ext.part")
+
+        var lastErr: String? = null
+        var ok = false
+        repeat(3) { attempt ->
+            try {
+                val resumeFrom = if (part.exists()) part.length() else 0L
+                downloadOnce(entry.url, part, resumeFrom, onProgress)
+                if (archive.exists()) archive.delete()
+                if (!part.renameTo(archive)) {
+                    part.copyTo(archive, overwrite = true)
+                    part.delete()
+                }
+                ok = true
+                return@repeat
+            } catch (e: Exception) {
+                lastErr = e.message ?: "IO"
+                if (attempt < 2) delay(1_000L * (attempt + 1))
+            }
+        }
+        if (!ok) throw IOException("Download failed: $lastErr")
+        if (archive.length() < 1000L)
+            throw IOException("Archive too small: ${archive.length()} bytes")
+
+        try {
+            onProgress(DownloadProgress(archive.length(), archive.length(), done = false))
+            val result = if (format == "tar.bz2")
+                ArchiveExtractor.extractTarBz2(archive, targetDir)
+            else
+                ArchiveExtractor.extractZip(archive, targetDir)
+
+            if (result.files.isEmpty())
+                throw IOException("Archive contains no ASR files")
+            if (result.files.none { it == "tokens.txt" })
+                throw IOException("Archive missing tokens.txt")
+
+            onProgress(DownloadProgress(1L, 1L, done = true))
+        } finally {
+            runCatching { archive.delete() }
+        }
+        targetDir
     }
 
     /**

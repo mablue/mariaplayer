@@ -18,6 +18,21 @@ LANG_NAMES = {
     "tl":"Tagalog","my":"Burmese","km":"Khmer","lo":"Lao","si":"Sinhala",
 }
 
+NON_ASR_MARKERS = [
+    "tts", "vits", "kokoro", "matcha", "piper",
+    "vad", "silero", "ten-vad",
+    "speaker", "diarization",
+    "language-id", "punctuation",
+    "keyword-spotting", "kws",
+    "audio-tagging", "denoiser",
+    "source-separation", "speech-translation",
+    "streaming-", "-streaming", "online-",
+]
+
+def is_asr(name):
+    lower = name.lower()
+    return not any(m in lower for m in NON_ASR_MARKERS)
+
 def http_get(url, timeout=30):
     req = urllib.request.Request(url, headers={
         "User-Agent": "mariaplayer-catalog/2.0",
@@ -85,6 +100,9 @@ def hf_models():
             tags = m.get("tags", [])
             if any(t in tags for t in ["text-to-speech","tts","vad","voice-activity-detection"]):
                 continue
+            short_for_filter = mid.split("/")[-1]
+            if not is_asr(short_for_filter):
+                continue
             files = [s["rfilename"] for s in m.get("siblings", [])]
             if not files: continue
             arch = classify_arch(files)
@@ -120,6 +138,7 @@ def gh_archives():
         name = a.get("name","")
         if not name.endswith(".tar.bz2"): continue
         short = name.replace("sherpa-onnx-","").replace(".tar.bz2","")
+        if not is_asr(short): continue
         out.append({
             "id": f"gh-{short}".lower(),
             "name": short,
@@ -140,8 +159,7 @@ def main():
     manual = json.loads(MANUAL.read_text())["models"] if MANUAL.exists() else []
     print(f"manual: {len(manual)}")
 
-    # GH archives are tar.bz2 (app cannot extract yet) - skip
-    auto = hf_models()
+    auto = hf_models() + gh_archives()
 
     by_id = {}
     for e in manual:
