@@ -22,8 +22,12 @@ android {
         applicationId = "ir.mariaplayer"
         minSdk = 26
         targetSdk = 36
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
-        versionName = "0.1.0"
+        // PR-L36: versionName tracks the CI build number so users can tell
+        // which APK they installed (Settings → Apps → MariaPlayer).
+        // Rule: bump minor (0.2.x) on feature lands, patch = CI run number.
+        val vc = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
+        versionCode = vc
+        versionName = "0.1.$vc"
 
         // Ship native libs for one ABI only. sherpa-onnx + onnxruntime + mlkit
         // each carry .so for arm64-v8a, armeabi-v7a, x86, x86_64 → ~150 MB wasted.
@@ -43,7 +47,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     // PR-L25: copy the root models.json into assets at build time.
     // The update-models workflow regenerates it every 6 hours; every APK

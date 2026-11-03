@@ -810,6 +810,7 @@ private suspend fun runAllTests(
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
     val sb = StringBuilder()
     sb.appendLine("MariaPlayer Self-Test")
+    sb.appendLine("Version: ${ir.mariaplayer.BuildConfig.VERSION_NAME} (code ${ir.mariaplayer.BuildConfig.VERSION_CODE})")
     sb.appendLine("Time:    $time")
     sb.appendLine("Device:  ${Build.MANUFACTURER} ${Build.MODEL}")
     sb.appendLine("Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
