@@ -1,0 +1,11 @@
+# PR-L41: keep manifest entry points
+-keep public class ir.mariaplayer.MainActivity { *; }
+-keep public class ir.mariaplayer.DeleteActivity { *; }
+-keep public class ir.mariaplayer.playback.PlaybackService { *; }
+-keepclassmembers class ir.mariaplayer.playback.PlaybackService { public *; }
+-keepclassmembers class androidx.datastore.preferences.core.** { *; }
+-dontwarn okhttp3.**
+-dontwarn javax.annotation.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**

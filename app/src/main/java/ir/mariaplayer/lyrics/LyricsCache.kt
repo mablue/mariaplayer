@@ -62,40 +62,4 @@ object LyricsCache {
             p[longPreferencesKey("lyrics_${trackId}_offset")] = offsetMs.coerceIn(-500L, 500L)
         }
     }
-
-    // ── Translation cache (PR-L9a) ─────────────────────────────────────
-    // Stores one translation per track keyed by target language. Re-fetch
-    // of the same target reuses this; different target overwrites.
-    // "lang" is BCP-47 ("fa", "en", ...). Text is plain UTF-8.
-
-    suspend fun readTranslation(
-        context: Context,
-        trackId: Long,
-    ): Pair<String, String>? {
-        val p = context.lyricsStore.data.first()
-        val lang = p[stringPreferencesKey("lyrics_${trackId}_tr_lang")].orEmpty()
-            .ifBlank { return null }
-        val text = p[stringPreferencesKey("lyrics_${trackId}_tr_text")].orEmpty()
-            .ifBlank { return null }
-        return lang to text
-    }
-
-    suspend fun writeTranslation(
-        context: Context,
-        trackId: Long,
-        lang: String,
-        text: String,
-    ) {
-        context.lyricsStore.edit { p ->
-            p[stringPreferencesKey("lyrics_${trackId}_tr_lang")] = lang
-            p[stringPreferencesKey("lyrics_${trackId}_tr_text")] = text
-        }
-    }
-
-    suspend fun clearTranslation(context: Context, trackId: Long) {
-        context.lyricsStore.edit { p ->
-            p.remove(stringPreferencesKey("lyrics_${trackId}_tr_lang"))
-            p.remove(stringPreferencesKey("lyrics_${trackId}_tr_text"))
-        }
-    }
 }

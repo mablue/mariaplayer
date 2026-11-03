@@ -1,11 +1,9 @@
 package ir.mariaplayer.ui
 
 import android.content.Context
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -19,8 +17,6 @@ data class DisplayPrefs(
     val colorActive: Long = 0xFFE91E63,
     val colorInactive: Long = 0xFFB0B0B0,
     val colorBackground: Long = 0xFF0A0A0F,
-    val showTranslation: Boolean = false,
-    val translationLang: String = "fa",
 )
 
 object LyricsDisplayPrefs {
@@ -29,8 +25,6 @@ object LyricsDisplayPrefs {
     private val KEY_COLOR_A = longPreferencesKey("color_active")
     private val KEY_COLOR_I = longPreferencesKey("color_inactive")
     private val KEY_COLOR_BG = longPreferencesKey("color_background")
-    private val KEY_SHOW_TR = booleanPreferencesKey("show_translation")
-    private val KEY_TR_LANG = stringPreferencesKey("translation_lang")
 
     fun observe(context: Context): Flow<DisplayPrefs> = context.displayStore.data.map { p ->
         DisplayPrefs(
@@ -39,8 +33,6 @@ object LyricsDisplayPrefs {
             colorActive = p[KEY_COLOR_A] ?: 0xFFE91E63,
             colorInactive = p[KEY_COLOR_I] ?: 0xFFB0B0B0,
             colorBackground = p[KEY_COLOR_BG] ?: 0xFF0A0A0F,
-            showTranslation = p[KEY_SHOW_TR] ?: false,
-            translationLang = p[KEY_TR_LANG] ?: "fa",
         )
     }
 
@@ -53,8 +45,6 @@ object LyricsDisplayPrefs {
             p[KEY_COLOR_A] = prefs.colorActive
             p[KEY_COLOR_I] = prefs.colorInactive
             p[KEY_COLOR_BG] = prefs.colorBackground
-            p[KEY_SHOW_TR] = prefs.showTranslation
-            p[KEY_TR_LANG] = prefs.translationLang
         }
     }
 }

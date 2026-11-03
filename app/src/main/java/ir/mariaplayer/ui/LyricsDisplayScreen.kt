@@ -29,8 +29,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -40,7 +38,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -48,14 +45,11 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,34 +73,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.session.MediaController
 import ir.mariaplayer.R
-import ir.mariaplayer.asr.AsrManager
 import ir.mariaplayer.lyrics.LrcLine
 import ir.mariaplayer.lyrics.LrcParser
 import ir.mariaplayer.lyrics.LyricsCache
 import ir.mariaplayer.lyrics.LyricsFetchResult
 import ir.mariaplayer.lyrics.LyricsFetcher
-import ir.mariaplayer.asr.AsrModels
-import ir.mariaplayer.translate.TranslationManager
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.net.URLEncoder
 import java.util.Locale
 import kotlin.math.abs
 
-// PR-L33: MediaMetadataRetriever is NOT thread-safe and can SIGSEGV
-// when two concurrent setDataSource() calls race on the same file.
-// Serialize every extraction through a single-thread dispatcher.
-private val albumArtDispatcher = Dispatchers.IO.limitedParallelism(1)
-
 private sealed interface DispState {
     data object Editing : DispState
     data object Loading : DispState
-    data class Transcribing(val progress: Float, val status: String) : DispState
     data class Synced(val lines: List<LrcLine>) : DispState
     data class Plain(val text: String) : DispState
     data object NotFound : DispState
@@ -131,39 +113,23 @@ fun LyricsDisplayScreen(
     val filename = item?.mediaMetadata?.extras?.getString("filename").orEmpty()
     val folder = item?.mediaMetadata?.extras?.getString("folder").orEmpty()
     val contentUri = item?.localConfiguration?.uri
-    val controllerDuration = controller?.duration?.takeIf { it > 0 } ?: 0L
-    val extrasDuration = item?.mediaMetadata?.extras?.getLong("durationMs") ?: 0L
-    val durationMs = if (controllerDuration > 0) controllerDuration else extrasDuration
+    val durationMs = controller?.duration?.takeIf { it > 0 } ?: 0L
 
     var prefs by remember { mutableStateOf(DisplayPrefs()) }
     var settingsOpen by remember { mutableStateOf(false) }
     var state by remember(mediaId) { mutableStateOf<DispState>(DispState.Editing) }
     var trigger by remember(mediaId) { mutableStateOf(0) }
-    var transcribeTrigger by remember(mediaId) { mutableIntStateOf(0) }
-    var transcribeDurationMode by remember(mediaId) { mutableStateOf("preview30s") }
-    var alignTrigger by remember(mediaId) { mutableIntStateOf(0) }
-    var syncMode by remember(mediaId) { mutableStateOf(false) }
-    var corrections by remember(mediaId) { mutableStateOf<Map<Int, Long>>(emptyMap()) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
     var albumArt by remember(mediaId) { mutableStateOf<Bitmap?>(null) }
-    var translations by remember(mediaId) { mutableStateOf<List<String>?>(null) }
-    var translating by remember(mediaId) { mutableStateOf(false) }
 
     var editTitle by remember(mediaId) { mutableStateOf(rawTitle) }
     var editArtist by remember(mediaId) { mutableStateOf(rawArtist) }
 
-    var hasAsrModel by remember { mutableStateOf(false) }
-    var selectedLang by remember { mutableStateOf("fa") }
-
-    LaunchedEffect(Unit) {
-        prefs = LyricsDisplayPrefs.read(context)
-        hasAsrModel = AsrModels.list(context).isNotEmpty()
-        selectedLang = AsrModels.selectedLang(context)
-    }
+    LaunchedEffect(Unit) { prefs = LyricsDisplayPrefs.read(context) }
 
     LaunchedEffect(mediaId, contentUri) {
-        albumArt = if (contentUri == null) null else withContext(albumArtDispatcher) {
+        albumArt = if (contentUri == null) null else withContext(Dispatchers.IO) {
             runCatching {
                 val mmr = MediaMetadataRetriever()
                 try {
@@ -217,172 +183,6 @@ fun LyricsDisplayScreen(
             LyricsFetchResult.NotFound -> DispState.NotFound
             is LyricsFetchResult.NetworkError -> DispState.Error(r.message)
             LyricsFetchResult.Timeout -> DispState.Error("timeout")
-        }
-    }
-
-    LaunchedEffect(mediaId, transcribeTrigger, transcribeDurationMode, selectedLang) {
-        if (transcribeTrigger == 0) {
-            if (state is DispState.Transcribing) state = DispState.Editing
-            return@LaunchedEffect
-        }
-        val id = trackId ?: return@LaunchedEffect
-        val uri = contentUri ?: run {
-            state = DispState.Error("No audio URI — try playing the track once")
-            return@LaunchedEffect
-        }
-        // PR-L33: if duration is unknown (player not ready), transcribeFull
-        // would fail with a cryptic "totalMs must be > 0". Check first.
-        // PR-L21: read the model fresh from disk each time. The user may
-        // have changed the default in ModelManagerScreen while we were on
-        // this screen, so cached state would be stale.
-        val fresh = AsrModels.list(context)
-        if (fresh.isEmpty()) {
-            state = DispState.Error("Download an ASR model in Models screen")
-            return@LaunchedEffect
-        }
-        val selectedId = AsrModels.selected(context)
-        val model = fresh.firstOrNull { it.id == selectedId } ?: fresh.first()
-        // PR-L38: user-chosen duration. Preview stays small; "full" uses
-        // actual track length (streaming decode keeps memory bounded).
-        if (transcribeDurationMode == "full" && durationMs < 1000L) {
-            state = DispState.Error(
-                "Track duration unknown — MediaStore may be stale. " +
-                "Re-scan the library, or pick preview10m."
-            )
-            return@LaunchedEffect
-        }
-        val totalMs = when (transcribeDurationMode) {
-            "preview10m" -> 600_000L.coerceAtMost(durationMs.takeIf { it > 0 } ?: 600_000L)
-            "full"       -> durationMs
-            else         -> 30_000L
-        }
-        state = DispState.Transcribing(0f, "Loading ${model.displayName}…")
-        try {
-            val chunks = AsrManager.transcribeFull(
-                context = context,
-                uri = uri,
-                modelDir = model.dir,
-                totalMs = totalMs,
-                language = selectedLang,
-            ) { p, status ->
-                state = DispState.Transcribing(p, status)
-            }
-            val allBlank = chunks.all { it.text.isBlank() }
-            if (chunks.isEmpty() || allBlank) {
-                state = DispState.NotFound
-            } else {
-                val lrc = AsrManager.toLrc(chunks)
-                val plain = chunks.map { it.text }
-                    .filter { it.isNotBlank() }
-                    .joinToString("\n")
-                LyricsCache.writeLyrics(context, id, lrc, plain)
-                val lines = LrcParser.parse(lrc)
-                state = if (lines.isNotEmpty())
-                    DispState.Synced(lines)
-                else
-                    DispState.Plain(plain)
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            state = DispState.Error("Transcribe: ${e.message ?: "unknown"}")
-        }
-    }
-
-    // PR-L35d: forced alignment. Text from Plain (web/paste), timing from ASR.
-    // LyricsAligner maps accurate chars to ASR chars (Levenshtein).
-    LaunchedEffect(mediaId, alignTrigger) {
-        if (alignTrigger == 0) return@LaunchedEffect
-        val id = trackId ?: return@LaunchedEffect
-        val uri = contentUri ?: run {
-            state = DispState.Error("No audio URI — play the track once")
-            return@LaunchedEffect
-        }
-        val plainText = (state as? DispState.Plain)?.text ?: return@LaunchedEffect
-        val fresh = AsrModels.list(context)
-        if (fresh.isEmpty()) {
-            state = DispState.Error("Download an ASR model first")
-            return@LaunchedEffect
-        }
-        val selectedId = AsrModels.selected(context)
-        val model = fresh.firstOrNull { it.id == selectedId } ?: fresh.first()
-        val totalMs = (durationMs.takeIf { it > 1000L } ?: 180_000L).coerceAtMost(180_000L)
-        state = DispState.Transcribing(0f, "Loading ${model.displayName}…")
-        try {
-            val timings = AsrManager.transcribeTimings(
-                context = context,
-                uri = uri,
-                modelDir = model.dir,
-                totalMs = totalMs,
-                language = selectedLang,
-            ) { p, status ->
-                state = DispState.Transcribing(p, "Align: $status")
-            }
-            if (timings.isEmpty()) {
-                state = DispState.Plain(plainText)
-                return@LaunchedEffect
-            }
-            val aligned = ir.mariaplayer.lyrics.LyricsAligner.align(plainText, timings)
-            if (aligned.isEmpty()) {
-                state = DispState.Plain(plainText)
-                return@LaunchedEffect
-            }
-            val lrc = ir.mariaplayer.lyrics.LyricsAligner.toLrc(aligned)
-            LyricsCache.writeLyrics(context, id, lrc, plainText)
-            val lines = LrcParser.parse(lrc)
-            state = if (lines.isNotEmpty())
-                DispState.Synced(lines)
-            else
-                DispState.Plain(plainText)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            state = DispState.Error("Align: ${e.message ?: "unknown"}")
-        }
-    }
-
-    LaunchedEffect(mediaId, trackId, state, prefs.showTranslation, prefs.translationLang) {
-        if (!prefs.showTranslation) { translations = null; return@LaunchedEffect }
-        val synced = state as? DispState.Synced ?: return@LaunchedEffect
-        val id = trackId ?: return@LaunchedEffect
-        val lines = synced.lines.map { it.text }
-
-        val cached = LyricsCache.readTranslation(context, id)
-        if (cached != null && cached.first == prefs.translationLang) {
-            val arr = cached.second.split("\n")
-            if (arr.size == lines.size) { translations = arr; return@LaunchedEffect }
-        }
-
-        translating = true
-        try {
-            val src = TranslationManager.detect(lines.firstOrNull().orEmpty())
-            if (src == "und" || src == prefs.translationLang) {
-                translations = emptyList()
-                return@LaunchedEffect
-            }
-            TranslationManager.ensureModel(src, prefs.translationLang)
-            val out = ArrayList<String>(lines.size)
-            for (line in lines) {
-                if (line.isBlank()) { out += ""; continue }
-                val tr = runCatching {
-                    TranslationManager.translate(line, src, prefs.translationLang)
-                }.getOrDefault("")
-                out += tr
-            }
-            translations = out
-            LyricsCache.writeTranslation(
-                context, id, prefs.translationLang, out.joinToString("\n"),
-            )
-        } catch (_: Throwable) {
-            translations = null
-        } finally {
-            // PR-L33: do not clear the spinner if this coroutine was already
-            // cancelled. A newer LaunchedEffect owns "translating" now and
-            // will clear it when it finishes. Clearing here would leave the
-            // spinner off while translation is still running.
-            if (kotlinx.coroutines.currentCoroutineContext().isActive) {
-                translating = false
-            }
         }
     }
 
@@ -444,12 +244,6 @@ fun LyricsDisplayScreen(
                         )
                     }
                 }
-                if (translating) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp).padding(end = 8.dp),
-                        color = Color.White, strokeWidth = 2.dp,
-                    )
-                }
                 IconButton(onClick = { state = DispState.Editing }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_edit),
@@ -471,116 +265,19 @@ fun LyricsDisplayScreen(
                         editArtist = editArtist,
                         filename = filename,
                         folder = folder,
-                        durationMs = durationMs,
-                        hasAsrModel = hasAsrModel,
                         onTitleChange = { editTitle = it },
                         onArtistChange = { editArtist = it },
                         onSearch = { trigger += 1 },
                         onPaste = { state = DispState.PasteSheet },
-                        durationMode = transcribeDurationMode,
-                        onDurationModeChange = { transcribeDurationMode = it },
-                        onTranscribeClick = {
-                            transcribeTrigger += 1
-                        },
-                        selectedLang = selectedLang,
-                        onLangChange = { newLang ->
-                            selectedLang = newLang
-                            scope.launch { AsrModels.saveSelectedLang(context, newLang) }
-                        },
                     )
                     DispState.Loading -> LoadingPulse()
-                    is DispState.Transcribing -> TranscribingBody(
-                        progress = s.progress,
-                        status = s.status,
-                        onCancel = { transcribeTrigger = 0 },
+                    is DispState.Synced -> SyncedBody(
+                        lines = s.lines,
+                        positionMs = positionMs,
+                        prefs = prefs,
+                        onSeek = { ms -> controller?.seekTo(ms) },
                     )
-                    is DispState.Synced -> Box(Modifier.fillMaxSize()) {
-                        if (syncMode) {
-                            SyncModeBody(
-                                lines = s.lines,
-                                corrections = corrections,
-                                controller = controller,
-                                prefs = prefs,
-                                onCorrect = { idx ->
-                                    val t = controller?.currentPosition ?: 0L
-                                    corrections = corrections + (idx to t)
-                                },
-                                onSave = {
-                                    val adjusted = applyCorrections(s.lines, corrections)
-                                    val lrc = linesToLrcUi(adjusted)
-                                    val id = trackId
-                                    if (id != null) {
-                                        scope.launch {
-                                            LyricsCache.writeLyrics(context, id, lrc, null)
-                                            state = DispState.Synced(adjusted)
-                                            syncMode = false
-                                            corrections = emptyMap()
-                                        }
-                                    }
-                                },
-                                onCancel = {
-                                    syncMode = false
-                                    corrections = emptyMap()
-                                },
-                            )
-                        } else {
-                            SyncedBody(
-                                lines = s.lines,
-                                translations = translations,
-                                positionMs = positionMs,
-                                prefs = prefs,
-                                onSeek = { ms -> controller?.seekTo(ms) },
-                            )
-                            FixTimingButton(
-                                onClick = {
-                                    syncMode = true
-                                    corrections = emptyMap()
-                                },
-                            )
-                        }
-                    }
-                    is DispState.Plain -> Box(Modifier.fillMaxSize()) {
-                        if (syncMode) {
-                            val fakeLines = plainToFakeSynced(s.text, durationMs)
-                            SyncModeBody(
-                                lines = fakeLines,
-                                corrections = corrections,
-                                controller = controller,
-                                prefs = prefs,
-                                onCorrect = { idx ->
-                                    val t = controller?.currentPosition ?: 0L
-                                    corrections = corrections + (idx to t)
-                                },
-                                onSave = {
-                                    val adjusted = applyCorrections(fakeLines, corrections)
-                                    val lrc = linesToLrcUi(adjusted)
-                                    val id = trackId
-                                    if (id != null) {
-                                        scope.launch {
-                                            LyricsCache.writeLyrics(context, id, lrc, s.text)
-                                            state = DispState.Synced(adjusted)
-                                            syncMode = false
-                                            corrections = emptyMap()
-                                        }
-                                    }
-                                },
-                                onCancel = {
-                                    syncMode = false
-                                    corrections = emptyMap()
-                                },
-                            )
-                        } else {
-                            PlainBody(
-                                text = s.text,
-                                canAlign = hasAsrModel,
-                                onAlign = { alignTrigger += 1 },
-                                onEnterSync = {
-                                    syncMode = true
-                                    corrections = emptyMap()
-                                },
-                            )
-                        }
-                    }
+                    is DispState.Plain -> PlainBody(s.text)
                     DispState.NotFound -> NotFoundBody(
                         onEdit = { state = DispState.Editing },
                         onPaste = { state = DispState.PasteSheet },
@@ -644,28 +341,23 @@ private fun fallbackBackground(): Brush = Brush.verticalGradient(
 private fun LoadingPulse() {
     val t = rememberInfiniteTransition(label = "loading")
     val scale by t.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.18f,
+        initialValue = 0.85f, targetValue = 1.18f,
         animationSpec = infiniteRepeatable(
             animation = tween(900, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
-        ),
-        label = "scale",
+        ), label = "scale",
     )
     val alpha by t.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1f,
+        initialValue = 0.35f, targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(900, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
-        ),
-        label = "alpha",
+        ), label = "alpha",
     )
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "♪",
-                fontSize = 84.sp,
+                "♪", fontSize = 84.sp,
                 color = Color.White.copy(alpha = alpha),
                 modifier = Modifier.graphicsLayer(scaleX = scale, scaleY = scale),
             )
@@ -675,85 +367,9 @@ private fun LoadingPulse() {
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "Trying multiple tag combinations",
-                color = Color.White.copy(alpha = 0.4f),
-                style = MaterialTheme.typography.bodySmall,
-            )
         }
     }
 }
-
-@Composable
-private fun TranscribingBody(progress: Float, status: String, onCancel: () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(
-            Modifier.padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                "🎤",
-                fontSize = 72.sp,
-                modifier = Modifier.graphicsLayer(
-                    scaleX = 0.9f + progress * 0.2f,
-                    scaleY = 0.9f + progress * 0.2f,
-                ),
-            )
-            Spacer(Modifier.height(20.dp))
-            Text(
-                status,
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(16.dp))
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth().height(4.dp),
-                color = Color.White,
-                trackColor = Color.White.copy(alpha = 0.2f),
-            )
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "${(progress * 100).toInt()}%",
-                color = Color.White.copy(alpha = 0.55f),
-                fontSize = 12.sp,
-            )
-            Spacer(Modifier.height(24.dp))
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.12f),
-                modifier = Modifier.clickable(onClick = onCancel),
-            ) {
-                Text(
-                    "Cancel",
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Tap Cancel to return to edit form.",
-                color = Color.White.copy(alpha = 0.4f),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
-
-private val WHISPER_LANGUAGES = listOf(
-    "" to "Auto",
-    "fa" to "Persian",
-    "en" to "English",
-    "ar" to "Arabic",
-    "tr" to "Turkish",
-    "ru" to "Russian",
-    "de" to "German",
-    "fr" to "French",
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -762,17 +378,10 @@ private fun EditForm(
     editArtist: String,
     filename: String,
     folder: String,
-    durationMs: Long,
-    hasAsrModel: Boolean,
     onTitleChange: (String) -> Unit,
     onArtistChange: (String) -> Unit,
     onSearch: () -> Unit,
     onPaste: () -> Unit,
-    durationMode: String,
-    onDurationModeChange: (String) -> Unit,
-    onTranscribeClick: () -> Unit,
-    selectedLang: String,
-    onLangChange: (String) -> Unit,
 ) {
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.White,
@@ -783,225 +392,77 @@ private fun EditForm(
         unfocusedLabelColor = Color.White.copy(alpha = 0.55f),
         cursorColor = Color.White,
     )
-
     Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            "Lyrics",
-            color = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-        )
+        Text("Lyrics", color = Color.White, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(6.dp))
         Text(
-            "Fix tags if needed, then search online or transcribe offline.",
+            "Fix tags if needed, then search online or paste.",
             color = Color.White.copy(alpha = 0.55f),
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(20.dp))
-
         OutlinedTextField(
-            value = editTitle,
-            onValueChange = onTitleChange,
-            label = { Text("Title") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors,
+            value = editTitle, onValueChange = onTitleChange,
+            label = { Text("Title") }, singleLine = true,
+            modifier = Modifier.fillMaxWidth(), colors = fieldColors,
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
-            value = editArtist,
-            onValueChange = onArtistChange,
-            label = { Text("Artist (optional)") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors,
+            value = editArtist, onValueChange = onArtistChange,
+            label = { Text("Artist (optional)") }, singleLine = true,
+            modifier = Modifier.fillMaxWidth(), colors = fieldColors,
         )
-
         Spacer(Modifier.height(20.dp))
         if (filename.isNotBlank()) {
             FieldBlock("File", filename)
             Spacer(Modifier.height(10.dp))
         }
-        if (folder.isNotBlank()) {
-            FieldBlock("Folder", folder)
-        }
-
+        if (folder.isNotBlank()) FieldBlock("Folder", folder)
         Spacer(Modifier.height(24.dp))
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = Color.White.copy(alpha = 0.18f),
             modifier = Modifier.clickable(onClick = onSearch),
         ) {
-            Text(
-                "Search lyrics",
-                color = Color.White,
+            Text("🔍 Search lyrics", color = Color.White,
                 modifier = Modifier.padding(horizontal = 36.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+                fontWeight = FontWeight.Bold)
         }
-
         Spacer(Modifier.height(12.dp))
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = Color.White.copy(alpha = 0.10f),
             modifier = Modifier.clickable(onClick = onPaste),
         ) {
-            Text(
-                "📋 Paste lyrics",
-                color = Color.White.copy(alpha = 0.85f),
+            Text("📋 Paste lyrics", color = Color.White.copy(alpha = 0.85f),
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                style = MaterialTheme.typography.bodyMedium,
-            )
+                style = MaterialTheme.typography.bodyMedium)
         }
-
-        if (hasAsrModel) {
-            Spacer(Modifier.height(16.dp))
-            Text(
-                "Whisper language",
-                color = Color.White.copy(alpha = 0.55f),
-                style = MaterialTheme.typography.labelMedium,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                "Used only when a Whisper model is selected",
-                color = Color.White.copy(alpha = 0.35f),
-                style = MaterialTheme.typography.labelSmall,
-            )
-            Spacer(Modifier.height(8.dp))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                items(WHISPER_LANGUAGES) { (code, label) ->
-                    val isSel = selectedLang == code
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (isSel) Color.White.copy(alpha = 0.22f)
-                                else Color.White.copy(alpha = 0.08f),
-                        modifier = Modifier.clickable { onLangChange(code) },
-                    ) {
-                        Text(
-                            label,
-                            color = if (isSel) Color.White
-                                    else Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    }
-                }
-            }
-        }
-
-        if (!hasAsrModel) {
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "Download an ASR model in the Models screen to transcribe offline.",
-                color = Color.White.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-            )
-        } else {
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "Duration",
-                color = Color.White.copy(alpha = 0.55f),
-                style = MaterialTheme.typography.labelMedium,
-            )
-            Spacer(Modifier.height(8.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(
-                    listOf(
-                        "preview30s" to "30s sample",
-                        "preview10m" to "First 10 min",
-                        "full" to "Full track",
-                    )
-                ) { (code, label) ->
-                    val isSel = durationMode == code
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (isSel) Color.White.copy(alpha = 0.22f)
-                                else Color.White.copy(alpha = 0.08f),
-                        modifier = Modifier.clickable { onDurationModeChange(code) },
-                    ) {
-                        Text(
-                            label,
-                            color = if (isSel) Color.White
-                                    else Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                when (durationMode) {
-                    "preview10m" -> "Up to 10 min · 3–6 min processing"
-                    "full" -> "Full ${formatMs(durationMs)} · may take hours on CPU. Cancel anytime."
-                    else -> "Just the first 30s · quick test"
-                },
-                color = Color.White.copy(alpha = 0.4f),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-            )
-
-            Spacer(Modifier.height(16.dp))
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.16f),
-                modifier = Modifier.clickable(onClick = onTranscribeClick),
-            ) {
-                Text(
-                    "🎤 Transcribe",
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-        }
-
         Spacer(Modifier.height(40.dp))
     }
 }
 
 @Composable
 private fun FieldBlock(label: String, value: String) {
-    Column(
-        Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            label,
-            color = Color.White.copy(alpha = 0.45f),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-        )
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, color = Color.White.copy(alpha = 0.45f),
+            style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(2.dp))
-        Text(
-            value,
-            color = Color.White.copy(alpha = 0.8f),
+        Text(value, color = Color.White.copy(alpha = 0.8f),
             style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-        )
+            textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
 private fun SyncedBody(
     lines: List<LrcLine>,
-    translations: List<String>?,
     positionMs: Long,
     prefs: DisplayPrefs,
     onSeek: (Long) -> Unit,
@@ -1009,13 +470,10 @@ private fun SyncedBody(
     val listState = rememberLazyListState()
     val rawActive = LrcParser.activeIndex(lines, positionMs)
     val active = if (rawActive < 0) 0 else rawActive
-
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val vp = maxHeight * 0.5f
         LaunchedEffect(active, maxHeight) {
-            try {
-                listState.animateScrollToItem(active)
-            } catch (_: Exception) {}
+            try { listState.animateScrollToItem(active) } catch (_: Exception) {}
         }
         LazyColumn(
             state = listState,
@@ -1026,7 +484,6 @@ private fun SyncedBody(
                 val dist = abs(idx - active)
                 SyncedLine(
                     text = line.text,
-                    translation = translations?.getOrNull(idx),
                     isActive = idx == active,
                     distance = dist,
                     prefs = prefs,
@@ -1034,27 +491,18 @@ private fun SyncedBody(
                 )
             }
         }
-        Box(
-            Modifier.fillMaxWidth().height(70.dp).background(
-                Brush.verticalGradient(
-                    listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent)
-                )
-            )
-        )
-        Box(
-            Modifier.fillMaxWidth().height(110.dp).align(Alignment.BottomCenter).background(
-                Brush.verticalGradient(
-                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))
-                )
-            )
-        )
+        Box(Modifier.fillMaxWidth().height(70.dp).background(
+            Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent))
+        ))
+        Box(Modifier.fillMaxWidth().height(110.dp).align(Alignment.BottomCenter).background(
+            Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))
+        ))
     }
 }
 
 @Composable
 private fun SyncedLine(
     text: String,
-    translation: String?,
     isActive: Boolean,
     distance: Int,
     prefs: DisplayPrefs,
@@ -1083,117 +531,32 @@ private fun SyncedLine(
     val alpha by animateFloatAsState(targetAlpha, label = "lyricAlpha")
     val blurAmt by animateFloatAsState(targetBlur, label = "lyricBlur")
     val scale by animateFloatAsState(targetScale, label = "lyricScale")
-
     val fontSize = if (isActive) prefs.activeFontSize else prefs.fontSize
     val color = if (isActive) Color(prefs.colorActive) else Color.White
-
     val base = Modifier
         .fillMaxWidth()
         .clickable(onClick = onClick)
         .padding(horizontal = 24.dp, vertical = 10.dp)
         .graphicsLayer(alpha = alpha, scaleX = scale, scaleY = scale)
-
     val withBlur = if (blurAmt >= 1f && alpha > 0.05f) base.blur(blurAmt.dp) else base
-
     Column(withBlur, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text.ifBlank { "♪" },
-            color = color,
-            fontSize = fontSize.sp,
+            text.ifBlank { "♪" }, color = color, fontSize = fontSize.sp,
             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-            textAlign = TextAlign.Center,
-            lineHeight = (fontSize * 1.2f).sp,
+            textAlign = TextAlign.Center, lineHeight = (fontSize * 1.2f).sp,
         )
-        if (prefs.showTranslation && !translation.isNullOrBlank()) {
-            Spacer(Modifier.height(6.dp))
-            Text(
-                translation,
-                color = if (isActive)
-                    Color.White.copy(alpha = 0.9f)
-                else
-                    Color.White.copy(alpha = 0.45f),
-                fontSize = (fontSize * 0.58f).sp,
-                fontWeight = FontWeight.Normal,
-                textAlign = TextAlign.Center,
-                lineHeight = (fontSize * 0.72f).sp,
-            )
-        }
     }
 }
 
 @Composable
-private fun PlainBody(
-    text: String,
-    canAlign: Boolean,
-    onAlign: () -> Unit,
-    onEnterSync: () -> Unit = {},
-) {
+private fun PlainBody(text: String) {
     Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White.copy(alpha = 0.22f),
-            modifier = Modifier.clickable(onClick = onEnterSync),
-        ) {
-            Text(
-                "🎯 Sync lines to audio",
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 14.dp),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "Scroll, then tap to match each line to the song",
-            color = Color.White.copy(alpha = 0.5f),
-            style = MaterialTheme.typography.labelSmall,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(24.dp))
-
-        Text(
-            text,
-            color = Color.White.copy(alpha = 0.92f),
-            fontSize = 18.sp,
-            lineHeight = 26.sp,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(32.dp))
-        if (canAlign) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.16f),
-                modifier = Modifier.clickable(onClick = onAlign),
-            ) {
-                Text(
-                    "🎯 Align to audio (fix timing)",
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Uses ASR for timing only — text stays as-is",
-                color = Color.White.copy(alpha = 0.4f),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-            )
-        } else {
-            Text(
-                "Download an ASR model in Models to enable alignment",
-                color = Color.White.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-            )
-        }
+        Text(text, color = Color.White.copy(alpha = 0.92f),
+            fontSize = 18.sp, lineHeight = 26.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(60.dp))
     }
 }
@@ -1209,7 +572,7 @@ private fun NotFoundBody(
             Text("Lyrics not found.", color = Color.White.copy(alpha = 0.75f))
             Spacer(Modifier.height(6.dp))
             Text(
-                "Try editing tags, paste lyrics, or search externally.",
+                "Edit tags, paste lyrics, or search Google.",
                 color = Color.White.copy(alpha = 0.5f),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
@@ -1231,8 +594,7 @@ private fun PasteSheetBody(
 ) {
     var text by remember { mutableStateOf("") }
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
+        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
         focusedBorderColor = Color.White.copy(alpha = 0.65f),
         unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
         focusedLabelColor = Color.White,
@@ -1240,17 +602,11 @@ private fun PasteSheetBody(
         cursorColor = Color.White,
     )
     Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            "Paste lyrics",
-            color = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-        )
+        Text("Paste lyrics", color = Color.White, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(6.dp))
         Text(
             "Stored locally in the app. Does not modify the audio file.",
@@ -1260,44 +616,27 @@ private fun PasteSheetBody(
         )
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            label = { Text("Lyrics text") },
-            minLines = 8,
-            maxLines = 20,
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors,
+            value = text, onValueChange = { text = it },
+            label = { Text("Lyrics text") }, minLines = 8, maxLines = 20,
+            modifier = Modifier.fillMaxWidth(), colors = fieldColors,
         )
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
+            Surface(shape = RoundedCornerShape(20.dp),
                 color = Color.White.copy(alpha = 0.10f),
-                modifier = Modifier.clickable(onClick = onCancel),
-            ) {
-                Text(
-                    "Cancel",
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
-                )
+                modifier = Modifier.clickable(onClick = onCancel)) {
+                Text("Cancel", color = Color.White,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp))
             }
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = if (text.isNotBlank())
-                    Color.White.copy(alpha = 0.22f)
-                else
-                    Color.White.copy(alpha = 0.08f),
-                modifier = Modifier.clickable(enabled = text.isNotBlank()) {
-                    onSave(text)
-                },
-            ) {
-                Text(
-                    "Save",
+            Surface(shape = RoundedCornerShape(20.dp),
+                color = if (text.isNotBlank()) Color.White.copy(alpha = 0.22f)
+                        else Color.White.copy(alpha = 0.08f),
+                modifier = Modifier.clickable(enabled = text.isNotBlank()) { onSave(text) }) {
+                Text("Save",
                     color = if (text.isNotBlank()) Color.White
                             else Color.White.copy(alpha = 0.4f),
                     modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp),
-                    fontWeight = FontWeight.Bold,
-                )
+                    fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -1321,16 +660,11 @@ private fun ErrorBody(msg: String, onRetry: () -> Unit, onEdit: () -> Unit) {
 
 @Composable
 private fun ChipButton(label: String, onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
+    Surface(shape = RoundedCornerShape(20.dp),
         color = Color.White.copy(alpha = 0.12f),
-        modifier = Modifier.clickable(onClick = onClick),
-    ) {
-        Text(
-            label,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
-        )
+        modifier = Modifier.clickable(onClick = onClick)) {
+        Text(label, color = Color.White,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp))
     }
 }
 
@@ -1349,77 +683,45 @@ private fun GlassControls(
     ) {
         Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    formatMs(positionMs),
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 11.sp,
-                )
+                Text(formatMs(positionMs), color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
                 Slider(
                     value = if (durationMs > 0)
                         (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f,
-                    onValueChange = {
-                        if (durationMs > 0) controller.seekTo((it * durationMs).toLong())
-                    },
+                    onValueChange = { if (durationMs > 0) controller.seekTo((it * durationMs).toLong()) },
                     modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                     colors = SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = Color.White,
+                        thumbColor = Color.White, activeTrackColor = Color.White,
                         inactiveTrackColor = Color.White.copy(alpha = 0.2f),
                     ),
                 )
-                Text(
-                    formatMs(durationMs),
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 11.sp,
-                )
+                Text(formatMs(durationMs), color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
             }
             Spacer(Modifier.height(6.dp))
-            Row(
-                Modifier.fillMaxWidth(),
+            Row(Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
-                    onClick = { controller.seekToPreviousMediaItem() },
-                    enabled = controller.hasPreviousMediaItem(),
-                ) {
-                    Icon(
-                        painterResource(R.drawable.ic_skip_previous),
-                        "Previous",
+                verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { controller.seekToPreviousMediaItem() },
+                    enabled = controller.hasPreviousMediaItem()) {
+                    Icon(painterResource(R.drawable.ic_skip_previous), "Previous",
                         tint = Color.White.copy(alpha =
                             if (controller.hasPreviousMediaItem()) 1f else 0.3f),
-                        modifier = Modifier.size(34.dp),
-                    )
+                        modifier = Modifier.size(34.dp))
                 }
-                Box(
-                    Modifier.size(64.dp)
-                        .clip(RoundedCornerShape(50))
+                Box(Modifier.size(64.dp).clip(RoundedCornerShape(50))
                         .background(Color.White.copy(alpha = 0.16f))
-                        .clickable {
-                            if (playing) controller.pause() else controller.play()
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painterResource(
-                            if (playing) R.drawable.ic_pause else R.drawable.ic_play_arrow
-                        ),
+                        .clickable { if (playing) controller.pause() else controller.play() },
+                    contentAlignment = Alignment.Center) {
+                    Icon(painterResource(
+                            if (playing) R.drawable.ic_pause else R.drawable.ic_play_arrow),
                         if (playing) "Pause" else "Play",
-                        tint = Color.White,
-                        modifier = Modifier.size(38.dp),
-                    )
+                        tint = Color.White, modifier = Modifier.size(38.dp))
                 }
-                IconButton(
-                    onClick = { controller.seekToNextMediaItem() },
-                    enabled = controller.hasNextMediaItem(),
-                ) {
-                    Icon(
-                        painterResource(R.drawable.ic_skip_next),
-                        "Next",
+                IconButton(onClick = { controller.seekToNextMediaItem() },
+                    enabled = controller.hasNextMediaItem()) {
+                    Icon(painterResource(R.drawable.ic_skip_next), "Next",
                         tint = Color.White.copy(alpha =
                             if (controller.hasNextMediaItem()) 1f else 0.3f),
-                        modifier = Modifier.size(34.dp),
-                    )
+                        modifier = Modifier.size(34.dp))
                 }
             }
         }
@@ -1440,23 +742,17 @@ private fun DisplaySettingsSheet(
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
             Text("Subtitle size", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
-            Text(
-                "Inactive: ${prefs.fontSize}sp  •  Active: ${prefs.activeFontSize}sp",
+            Text("Inactive: ${prefs.fontSize}sp  •  Active: ${prefs.activeFontSize}sp",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             Slider(
                 value = prefs.fontSize.toFloat(),
-                onValueChange = {
-                    onChange(prefs.copy(fontSize = it.toInt().coerceIn(14, 40)))
-                },
+                onValueChange = { onChange(prefs.copy(fontSize = it.toInt().coerceIn(14, 40))) },
                 valueRange = 14f..40f,
             )
             Slider(
                 value = prefs.activeFontSize.toFloat(),
-                onValueChange = {
-                    onChange(prefs.copy(activeFontSize = it.toInt().coerceIn(20, 64)))
-                },
+                onValueChange = { onChange(prefs.copy(activeFontSize = it.toInt().coerceIn(20, 64))) },
                 valueRange = 20f..64f,
             )
             Spacer(Modifier.height(16.dp))
@@ -1467,60 +763,9 @@ private fun DisplaySettingsSheet(
                     0xFFE91E63L, 0xFFFF5722L, 0xFF2196F3L,
                     0xFF00BCD4L, 0xFF4CAF50L, 0xFFFFC107L, 0xFFFFFFFFL,
                 ).forEach { argb ->
-                    Box(
-                        Modifier.size(34.dp)
-                            .clip(RoundedCornerShape(50))
+                    Box(Modifier.size(34.dp).clip(RoundedCornerShape(50))
                             .background(Color(argb))
-                            .clickable { onChange(prefs.copy(colorActive = argb)) },
-                    )
-                }
-            }
-            Spacer(Modifier.height(20.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Show translation", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Under each line via ML Kit (~30MB one-time download)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = prefs.showTranslation,
-                    onCheckedChange = { onChange(prefs.copy(showTranslation = it)) },
-                )
-            }
-            if (prefs.showTranslation) {
-                Spacer(Modifier.height(8.dp))
-                Text("Target language", style = MaterialTheme.typography.labelLarge)
-                Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(
-                        "fa" to "Persian", "en" to "English",
-                        "ar" to "Arabic", "tr" to "Turkish",
-                    ).forEach { (code, label) ->
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (prefs.translationLang == code)
-                                MaterialTheme.colorScheme.primaryContainer
-                            else
-                                MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.clickable {
-                                onChange(prefs.copy(translationLang = code))
-                            },
-                        ) {
-                            Text(
-                                label,
-                                modifier = Modifier.padding(
-                                    horizontal = 14.dp, vertical = 6.dp,
-                                ),
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        }
-                    }
+                            .clickable { onChange(prefs.copy(colorActive = argb)) })
                 }
             }
             Spacer(Modifier.height(24.dp))
@@ -1531,160 +776,4 @@ private fun DisplaySettingsSheet(
 private fun formatMs(ms: Long): String {
     val total = (ms / 1000).coerceAtLeast(0)
     return String.format(Locale.US, "%d:%02d", total / 60, total % 60)
-}
-
-
-private fun linesToLrcUi(lines: List<LrcLine>): String {
-    val sb = StringBuilder()
-    for (l in lines) {
-        if (sb.isNotEmpty()) sb.append('\n')
-        val sec = l.timeMs / 1000
-        val min = sec / 60
-        val s = sec % 60
-        val cs = (l.timeMs % 1000) / 10
-        sb.append("[%02d:%02d.%02d]%s".format(min, s, cs, l.text))
-    }
-    return sb.toString()
-}
-
-private fun plainToFakeSynced(text: String, durationMs: Long): List<LrcLine> {
-    val lines = text.split('\n').map { it.trim() }.filter { it.isNotBlank() }
-    if (lines.isEmpty()) return emptyList()
-    val usable = if (durationMs > 1000L) durationMs else lines.size * 3000L
-    val step = (usable / lines.size.toLong()).coerceAtLeast(1000L)
-    return lines.mapIndexed { idx, txt -> LrcLine(idx * step, txt) }
-}
-
-private fun applyCorrections(lines: List<LrcLine>, corrections: Map<Int, Long>): List<LrcLine> {
-    if (corrections.isEmpty()) return lines
-    val keys = corrections.keys.sorted().filter { it in lines.indices }
-    if (keys.isEmpty()) return lines
-    return lines.mapIndexed { idx, line ->
-        line.copy(timeMs = (line.timeMs + interpolatedOffset(idx, lines, corrections, keys)).coerceAtLeast(0L))
-    }
-}
-
-private fun interpolatedOffset(idx: Int, lines: List<LrcLine>, corrections: Map<Int, Long>, keys: List<Int>): Long {
-    val prevKey = keys.lastOrNull { it <= idx }
-    val nextKey = keys.firstOrNull { it > idx }
-    val prevOffset = prevKey?.let { corrections[it]!! - lines[it].timeMs }
-    val nextOffset = nextKey?.let { corrections[it]!! - lines[it].timeMs }
-    return when {
-        prevKey == null -> 0L
-        nextKey == null -> prevOffset!!
-        prevKey == nextKey -> prevOffset!!
-        else -> {
-            val t = (idx - prevKey).toDouble() / (nextKey - prevKey).toDouble()
-            (prevOffset!! + (nextOffset!! - prevOffset!!) * t).toLong()
-        }
-    }
-}
-
-@Composable
-private fun FixTimingButton(onClick: () -> Unit) {
-    Box(Modifier.fillMaxSize()) {
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = Color.Black.copy(alpha = 0.65f),
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).clickable(onClick = onClick),
-        ) {
-            Text("🎯 Fix timing", color = Color.White,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun SyncModeBody(
-    lines: List<LrcLine>,
-    corrections: Map<Int, Long>,
-    controller: MediaController?,
-    prefs: DisplayPrefs,
-    onCorrect: (Int) -> Unit,
-    onSave: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    val listState = rememberLazyListState()
-    var centerIndex by remember { mutableIntStateOf(0) }
-    var positionMs by remember { mutableLongStateOf(controller?.currentPosition ?: 0L) }
-
-    LaunchedEffect(listState, lines.size) {
-        while (true) {
-            val layout = listState.layoutInfo
-            val centerY = layout.viewportSize.height / 2
-            centerIndex = layout.visibleItemsInfo.minByOrNull { item ->
-                kotlin.math.abs((item.offset + item.size / 2) - centerY)
-            }?.index ?: 0
-            delay(100)
-        }
-    }
-    LaunchedEffect(controller) {
-        val c = controller ?: return@LaunchedEffect
-        while (true) { delay(200); positionMs = c.currentPosition }
-    }
-
-    val adjustedLines = remember(lines, corrections) { applyCorrections(lines, corrections) }
-
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val vp = maxHeight * 0.5f
-        LazyColumn(state = listState, modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = vp)) {
-            itemsIndexed(adjustedLines) { idx, line ->
-                val isCenter = idx == centerIndex
-                val isCorrected = idx in corrections
-                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(line.text.ifBlank { "♪" },
-                        color = when {
-                            isCenter -> Color(prefs.colorActive)
-                            isCorrected -> Color.White.copy(alpha = 0.9f)
-                            else -> Color.White.copy(alpha = 0.45f)
-                        },
-                        fontSize = (if (isCenter) 22 else 17).sp,
-                        fontWeight = if (isCenter) FontWeight.Bold else FontWeight.Normal,
-                        textAlign = TextAlign.Center)
-                    if (isCorrected) {
-                        Text("✓ ${formatMs(corrections[idx]!!)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF4CAF50))
-                    }
-                }
-            }
-        }
-        Box(Modifier.align(Alignment.Center).fillMaxWidth().height(2.dp)
-            .background(Color(prefs.colorActive).copy(alpha = 0.35f)))
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.75f)).padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Line ${centerIndex + 1} of ${adjustedLines.size}  ·  ${formatMs(positionMs)}",
-                color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
-            Spacer(Modifier.height(8.dp))
-            Surface(shape = RoundedCornerShape(24.dp),
-                color = Color(0xFFE91E63).copy(alpha = 0.9f),
-                modifier = Modifier.clickable { onCorrect(centerIndex) }) {
-                Text("⚡ Sync this line", color = Color.White,
-                    modifier = Modifier.padding(horizontal = 36.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.12f),
-                    modifier = Modifier.clickable(onClick = onCancel)) {
-                    Text("Cancel", color = Color.White,
-                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp))
-                }
-                Surface(shape = RoundedCornerShape(20.dp),
-                    color = if (corrections.isNotEmpty()) Color.White.copy(alpha = 0.22f)
-                            else Color.White.copy(alpha = 0.08f),
-                    modifier = Modifier.clickable(enabled = corrections.isNotEmpty(), onClick = onSave)) {
-                    Text("💾 Save ${corrections.size} fixes",
-                        color = if (corrections.isNotEmpty()) Color.White
-                                else Color.White.copy(alpha = 0.4f),
-                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp),
-                        fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
 }

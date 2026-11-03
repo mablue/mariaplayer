@@ -76,7 +76,6 @@ import ir.mariaplayer.ui.PermissionScreen
 import ir.mariaplayer.ui.PlaylistDetailScreen
 import ir.mariaplayer.ui.PlaylistsScreen
 import ir.mariaplayer.ui.SelfTestScreen
-import ir.mariaplayer.ui.ModelManagerScreen
 import ir.mariaplayer.ui.LyricsDisplayScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -118,24 +117,6 @@ private fun AppRoot() {
         if (hasAudio) tracks = LibraryScanner.scan(context)
     }
 
-    // PR-L31: one-shot self-heal. Prior bug created one empty subdirectory
-    // per catalog entry (~346) inside filesDir/models/. Remove them silently.
-    LaunchedEffect(hasAudio) {
-        if (!hasAudio) return@LaunchedEffect
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            runCatching {
-                val dl = ir.mariaplayer.models.ModelDownloader(context)
-                val removed = dl.cleanupEmptyDirs()
-                if (removed > 0) {
-                    android.util.Log.i("MariaPlayer", "cleaned $removed empty model dirs")
-                }
-                val invalid = dl.cleanupInvalidModels()
-                if (invalid > 0) {
-                    android.util.Log.i("MariaPlayer", "removed $invalid invalid model dirs")
-                }
-            }
-        }
-    }
 
     val deleteLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -281,9 +262,6 @@ private fun AppRoot() {
                 onLyricsClick = { screen = "lyrics_display" },
             )
         }
-        screen == "models" -> {
-            ModelManagerScreen(onBack = { screen = "library" })
-        }
         screen == "selftest" -> {
             SelfTestScreen(onBack = { screen = "library" })
         }
@@ -341,7 +319,6 @@ private fun AppRoot() {
         onLyricsClick = { screen = "lyrics_display" },
         onPlaylistsClick = { screen = "playlists" },
         onSelfTestClick = { screen = "selftest" },
-        onModelsClick = { screen = "models" },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
             if (Build.VERSION.SDK_INT >= 30) {
@@ -445,7 +422,6 @@ private fun LibraryScreen(
     onLyricsClick: () -> Unit,
     onPlaylistsClick: () -> Unit,
     onSelfTestClick: () -> Unit,
-    onModelsClick: () -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
@@ -462,10 +438,6 @@ private fun LibraryScreen(
                 actions = {
                     val sz = Modifier.size(36.dp)
                     val isz = Modifier.size(22.dp)
-                    IconButton(onClick = { onModelsClick() }, modifier = sz) {
-                        Icon(painter = painterResource(R.drawable.ic_model),
-                            contentDescription = "Models", modifier = isz)
-                    }
                     IconButton(onClick = { onSelfTestClick() }, modifier = sz) {
                         Icon(painter = painterResource(R.drawable.ic_self_test),
                             contentDescription = "Self-test", modifier = isz)
