@@ -336,6 +336,32 @@ class ModelDownloader(private val context: Context) {
      * leaving one empty dir per catalog entry (346 in the current catalog).
      * Called on app startup to self-heal any existing installation.
      */
+    /**
+     * PR-L33: remove subdirectories that exist but fail engine validation
+     * (e.g. toy models like tdnn-yesno that pass the download but cannot
+     * run). Without this, such dirs stay on disk forever — AsrModels.list
+     * filters them out so the user cannot even see them to delete.
+     */
+    fun cleanupInvalidModels(): Int {
+        val root = dir
+        if (!root.exists()) return 0
+        var removed = 0
+        root.listFiles()?.forEach { d ->
+            if (d.isDirectory) {
+                val empty = d.listFiles()?.isEmpty() != false
+                if (empty) return@forEach
+                val invalid = runCatching {
+                    ir.mariaplayer.asr.SherpaEngine.validateOrThrow(d)
+                    false
+                }.getOrDefault(true)
+                if (invalid) {
+                    if (d.deleteRecursively()) removed++
+                }
+            }
+        }
+        return removed
+    }
+
     fun cleanupEmptyDirs(): Int {
         val root = dir
         if (!root.exists()) return 0

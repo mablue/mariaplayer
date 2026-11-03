@@ -124,10 +124,14 @@ private fun AppRoot() {
         if (!hasAudio) return@LaunchedEffect
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
-                val removed = ir.mariaplayer.models.ModelDownloader(context)
-                    .cleanupEmptyDirs()
+                val dl = ir.mariaplayer.models.ModelDownloader(context)
+                val removed = dl.cleanupEmptyDirs()
                 if (removed > 0) {
                     android.util.Log.i("MariaPlayer", "cleaned $removed empty model dirs")
+                }
+                val invalid = dl.cleanupInvalidModels()
+                if (invalid > 0) {
+                    android.util.Log.i("MariaPlayer", "removed $invalid invalid model dirs")
                 }
             }
         }

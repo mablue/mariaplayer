@@ -626,7 +626,7 @@ private suspend fun runAllTests(
         val m = android.provider.MediaStore::class.java
             .getMethod("createDeleteRequest",
                 android.content.ContentResolver::class.java,
-                java.util.List::class.java)
+                java.util.Collection::class.java)
         if (m == null) throw IllegalStateException("method missing on API 30+")
         "ok (API ${Build.VERSION.SDK_INT})"
     }
@@ -678,6 +678,25 @@ private suspend fun runAllTests(
         if (sz.value <= 0f)
             throw IllegalStateException("bodyLarge size unset: ${sz.value}")
         "bodyLarge=${sz.value}sp"
+    }
+
+    // 31) Invalid model dirs are auto-cleaned
+    test("Invalid model dirs") {
+        val root = java.io.File(context.filesDir, "models")
+        if (!root.exists()) return@test "no models dir"
+        val dl = ir.mariaplayer.models.ModelDownloader(context)
+        val invalid = dl.cleanupInvalidModels()
+        val remaining = root.listFiles()?.filter { it.isDirectory }?.mapNotNull { d ->
+            val empty = d.listFiles()?.isEmpty() != false
+            if (empty) null
+            else try {
+                ir.mariaplayer.asr.SherpaEngine.validateOrThrow(d)
+                null
+            } catch (_: IllegalArgumentException) { d.name }
+        } ?: emptyList()
+        if (remaining.isNotEmpty())
+            throw IllegalStateException("still invalid: ${remaining.take(3)}")
+        "removed $invalid invalid"
     }
 
     // ── Build report ──
