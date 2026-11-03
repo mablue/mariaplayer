@@ -138,7 +138,7 @@ fun LyricsDisplayScreen(
     var state by remember(mediaId) { mutableStateOf<DispState>(DispState.Editing) }
     var trigger by remember(mediaId) { mutableStateOf(0) }
     var transcribeTrigger by remember(mediaId) { mutableIntStateOf(0) }
-    var transcribeFullMode by remember(mediaId) { mutableStateOf(false) }
+    var transcribeDurationMode by remember(mediaId) { mutableStateOf("preview30s") }
     var alignTrigger by remember(mediaId) { mutableIntStateOf(0) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
@@ -216,7 +216,7 @@ fun LyricsDisplayScreen(
         }
     }
 
-    LaunchedEffect(mediaId, transcribeTrigger, transcribeFullMode, selectedLang) {
+    LaunchedEffect(mediaId, transcribeTrigger, transcribeDurationMode, selectedLang) {
         if (transcribeTrigger == 0) {
             if (state is DispState.Transcribing) state = DispState.Editing
             return@LaunchedEffect
@@ -244,11 +244,14 @@ fun LyricsDisplayScreen(
         }
         val selectedId = AsrModels.selected(context)
         val model = fresh.firstOrNull { it.id == selectedId } ?: fresh.first()
-        // PR-L15c: cap at 3 min for heap headroom on 256 MB devices.
-        val totalMs = if (transcribeFullMode)
-            (durationMs.takeIf { it > 0 } ?: 180_000L).coerceAtMost(180_000L)
-        else
-            30_000L
+        // PR-L38: user-chosen duration. Preview stays small; "full" uses
+        // actual track length (streaming decode keeps memory bounded).
+        val realDuration = durationMs.takeIf { it > 1000L } ?: 180_000L
+        val totalMs = when (transcribeDurationMode) {
+            "preview10m" -> 600_000L.coerceAtMost(realDuration)
+            "full"       -> realDuration.coerceAtLeast(1000L)
+            else         -> 30_000L.coerceAtMost(realDuration)
+        }
         state = DispState.Transcribing(0f, "Loading ${model.displayName}…")
         try {
             val chunks = AsrManager.transcribeFull(
@@ -470,12 +473,9 @@ fun LyricsDisplayScreen(
                         onArtistChange = { editArtist = it },
                         onSearch = { trigger += 1 },
                         onPaste = { state = DispState.PasteSheet },
-                        onTranscribe30s = {
-                            transcribeFullMode = false
-                            transcribeTrigger += 1
-                        },
-                        onTranscribeFull = {
-                            transcribeFullMode = true
+                        durationMode = transcribeDurationMode,
+                        onDurationModeChange = { transcribeDurationMode = it },
+                        onTranscribeClick = {
                             transcribeTrigger += 1
                         },
                         selectedLang = selectedLang,
@@ -689,8 +689,9 @@ private fun EditForm(
     onArtistChange: (String) -> Unit,
     onSearch: () -> Unit,
     onPaste: () -> Unit,
-    onTranscribe30s: () -> Unit,
-    onTranscribeFull: () -> Unit,
+    durationMode: String,
+    onDurationModeChange: (String) -> Unit,
+    onTranscribeClick: () -> Unit,
     selectedLang: String,
     onLangChange: (String) -> Unit,
 ) {
@@ -830,47 +831,62 @@ private fun EditForm(
             )
         } else {
             Spacer(Modifier.height(20.dp))
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.10f),
-                modifier = Modifier.clickable(onClick = onTranscribe30s),
-            ) {
-                Text(
-                    "🎤 Transcribe 30s (offline)",
-                    color = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            Spacer(Modifier.height(6.dp))
             Text(
-                "Sample only · may take ~1 min",
+                "Duration",
+                color = Color.White.copy(alpha = 0.55f),
+                style = MaterialTheme.typography.labelMedium,
+            )
+            Spacer(Modifier.height(8.dp))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(
+                    listOf(
+                        "preview30s" to "30s sample",
+                        "preview10m" to "First 10 min",
+                        "full" to "Full track",
+                    )
+                ) { (code, label) ->
+                    val isSel = durationMode == code
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isSel) Color.White.copy(alpha = 0.22f)
+                                else Color.White.copy(alpha = 0.08f),
+                        modifier = Modifier.clickable { onDurationModeChange(code) },
+                    ) {
+                        Text(
+                            label,
+                            color = if (isSel) Color.White
+                                    else Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                when (durationMode) {
+                    "preview10m" -> "Up to 10 min · 3–6 min processing"
+                    "full" -> "Full ${formatMs(durationMs)} · may take hours on CPU. Cancel anytime."
+                    else -> "Just the first 30s · quick test"
+                },
                 color = Color.White.copy(alpha = 0.4f),
                 style = MaterialTheme.typography.labelSmall,
                 textAlign = TextAlign.Center,
             )
 
-            if (durationMs > 35_000L) {
-                Spacer(Modifier.height(14.dp))
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White.copy(alpha = 0.16f),
-                    modifier = Modifier.clickable(onClick = onTranscribeFull),
-                ) {
-                    Text(
-                        "🎤 Transcribe full (${formatMs(durationMs)})",
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(16.dp))
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White.copy(alpha = 0.16f),
+                modifier = Modifier.clickable(onClick = onTranscribeClick),
+            ) {
                 Text(
-                    "Produces timed lyrics · may take 5–15 min on CPU",
-                    color = Color.White.copy(alpha = 0.4f),
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Center,
+                    "🎤 Transcribe",
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }

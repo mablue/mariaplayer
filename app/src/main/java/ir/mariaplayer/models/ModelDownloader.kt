@@ -30,12 +30,25 @@ data class DownloadProgress(
     val totalBytes: Long,   // -1 if unknown
     val done: Boolean,
     val error: String? = null,
+    val phase: String = "",
 ) {
     val fraction: Float
         get() = when {
             done -> 1f
             totalBytes > 0 -> (bytesDownloaded.toFloat() / totalBytes).coerceIn(0f, 1f)
             else -> 0f
+        }
+
+    /** User-friendly byte string */
+    val sizeLabel: String
+        get() {
+            if (totalBytes > 0) {
+                val dMb = bytesDownloaded / (1024.0 * 1024.0)
+                val tMb = totalBytes / (1024.0 * 1024.0)
+                return "%.1f / %.1f MB".format(dMb, tMb)
+            }
+            val dMb = bytesDownloaded / (1024.0 * 1024.0)
+            return "%.1f MB".format(dMb)
         }
 }
 
@@ -126,7 +139,7 @@ class ModelDownloader(private val context: Context) {
             val code = conn.responseCode
             val supportsRange = code == HttpURLConnection.HTTP_PARTIAL
             if (code != 200 && code != HttpURLConnection.HTTP_PARTIAL) {
-                throw IOException("HTTP $code")
+                throw IOException(classifyError(IOException(), code))
             }
 
             val startAt = if (supportsRange) resumeFrom else 0L
@@ -154,6 +167,29 @@ class ModelDownloader(private val context: Context) {
             }
         } finally {
             try { conn.disconnect() } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * PR-L38: classify network errors so the user knows WHY the spinner
+     * is stuck. "HTTP 403" alone is useless; "Blocked by server (403)" is not.
+     */
+    private fun classifyError(e: Throwable, code: Int? = null): String {
+        if (code != null) {
+            return when {
+                code == 403 -> "Blocked by server (403) — may need VPN"
+                code == 404 -> "Not found (404) — model may be removed"
+                code in 500..599 -> "Server error ($code) — retry later"
+                code == 401 -> "Auth required (401)"
+                else -> "HTTP $code"
+            }
+        }
+        return when (e) {
+            is java.net.SocketTimeoutException -> "Timeout — connection too slow"
+            is java.net.UnknownHostException -> "No DNS — check internet or VPN"
+            is java.net.ConnectException -> "Connection refused"
+            is javax.net.ssl.SSLException -> "SSL error — try VPN"
+            else -> e.message ?: e.javaClass.simpleName
         }
     }
 
@@ -263,7 +299,10 @@ class ModelDownloader(private val context: Context) {
             throw IOException("Archive too small: ${archive.length()} bytes")
 
         try {
-            onProgress(DownloadProgress(archive.length(), archive.length(), done = false))
+            onProgress(DownloadProgress(
+                archive.length(), archive.length(),
+                done = false, phase = "Extracting",
+            ))
             val result = if (format == "tar.bz2")
                 ArchiveExtractor.extractTarBz2(archive, targetDir)
             else
@@ -311,16 +350,25 @@ class ModelDownloader(private val context: Context) {
         onProgress: (DownloadProgress) -> Unit = {},
     ): File = withContext(Dispatchers.IO) {
         val targetDir = modelDir(id).apply { mkdirs() }
-        var totalBytes = 0L
         var downloaded = 0L
+        var completedBytes = 0L
+
+        // PR-L38: sum bytes already on disk so the very first progress call
+        // shows realistic numbers even on resume.
+        for ((filename, _) in files) {
+            val dst = File(targetDir, filename)
+            if (dst.exists() && dst.length() > 0) completedBytes += dst.length()
+        }
 
         for ((filename, url) in files) {
             val dst = File(targetDir, filename)
             val part = File(targetDir, "$filename.part")
             if (dst.exists() && dst.length() > 0) {
-                totalBytes += dst.length()
                 downloaded += dst.length()
-                onProgress(DownloadProgress(downloaded, totalBytes, done = false))
+                onProgress(DownloadProgress(
+                    downloaded, completedBytes + files.sumOf { 0L },
+                    done = false, phase = "Downloading",
+                ))
                 continue
             }
             var lastErr: String? = null
@@ -329,12 +377,20 @@ class ModelDownloader(private val context: Context) {
                 try {
                     val resumeFrom = if (part.exists()) part.length() else 0L
                     downloadOnce(url, part, resumeFrom) { p ->
-                        onProgress(DownloadProgress(downloaded + p.bytesDownloaded, -1L, false))
+                        // PR-L38: real total = completed-bytes-so-far + current-file-total
+                        val fileTotal = if (p.totalBytes > 0) p.totalBytes else -1L
+                        val overallTotal = if (fileTotal > 0) completedBytes + fileTotal else -1L
+                        onProgress(DownloadProgress(
+                            completedBytes + p.bytesDownloaded,
+                            overallTotal,
+                            done = false,
+                            phase = "Downloading",
+                        ))
                     }
                     if (dst.exists()) dst.delete()
                     if (!part.renameTo(dst)) { part.copyTo(dst, true); part.delete() }
-                    downloaded += dst.length()
-                    totalBytes += dst.length()
+                    completedBytes += dst.length()
+                    downloaded = completedBytes
                     ok = true
                     return@repeat
                 } catch (e: Exception) {
@@ -344,7 +400,7 @@ class ModelDownloader(private val context: Context) {
             }
             if (!ok) throw IOException("Failed $filename: $lastErr")
         }
-        onProgress(DownloadProgress(downloaded, downloaded, done = true))
+        onProgress(DownloadProgress(downloaded, downloaded, done = true, phase = "Done"))
         targetDir
     }
 

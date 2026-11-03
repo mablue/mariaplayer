@@ -52,7 +52,11 @@ import kotlinx.coroutines.launch
 
 private sealed interface ModelUiState {
     data object NotDownloaded : ModelUiState
-    data class Downloading(val fraction: Float) : ModelUiState
+    data class Downloading(
+        val fraction: Float,
+        val sizeLabel: String,
+        val phase: String,
+    ) : ModelUiState
     data object Downloaded : ModelUiState
     data class Error(val msg: String) : ModelUiState
 }
@@ -170,17 +174,28 @@ fun ModelManagerScreen(onBack: () -> Unit) {
                             onDownload = {
                                 if (st is ModelUiState.Downloading) return@ModelRow
                                 scope.launch {
-                                    states[m.id] = ModelUiState.Downloading(0f)
+                                    states[m.id] = ModelUiState.Downloading(
+                                        fraction = 0f,
+                                        sizeLabel = "",
+                                        phase = "Connecting…",
+                                    )
                                     try {
                                         downloader.downloadEntry(m) { p ->
                                             states[m.id] = when {
                                                 p.error != null -> ModelUiState.Error(p.error)
                                                 p.done -> ModelUiState.Downloaded
-                                                else -> ModelUiState.Downloading(p.fraction)
+                                                else -> ModelUiState.Downloading(
+                                                    fraction = p.fraction,
+                                                    sizeLabel = p.sizeLabel,
+                                                    phase = p.phase.ifBlank { "Downloading" },
+                                                )
                                             }
                                         }
                                     } catch (e: Exception) {
-                                        states[m.id] = ModelUiState.Error(e.message ?: "Failed")
+                                        val msg = e.message ?: "Failed"
+                                        states[m.id] = ModelUiState.Error(
+                                            if (msg.length > 120) msg.take(120) + "…" else msg
+                                        )
                                     }
                                 }
                             },
@@ -227,15 +242,28 @@ private fun ModelRow(
                 when (state) {
                     is ModelUiState.Downloading -> {
                         Spacer(Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = { state.fraction },
-                            modifier = Modifier.fillMaxWidth(),
+                        if (state.fraction > 0f && state.sizeLabel.contains("/")) {
+                            LinearProgressIndicator(
+                                progress = { state.fraction },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        } else {
+                            // Total unknown — animate; never show frozen 0%
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            "${state.phase}${if (state.sizeLabel.isNotBlank()) " · ${state.sizeLabel}" else ""}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     is ModelUiState.Error -> {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "Error: ${state.msg}",
+                            state.msg,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
