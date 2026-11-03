@@ -68,7 +68,6 @@ import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.PlaybackPrefs
 import ir.mariaplayer.data.SortMode
 import ir.mariaplayer.data.Track
-import ir.mariaplayer.lyrics.LyricsPanel
 import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
@@ -176,7 +175,6 @@ private fun AppRoot() {
     // tracks populated by LaunchedEffect above; deleted items removed in receiver
     val controller = rememberPlayerController()
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
-    var lyricsSheetOpen by remember { mutableStateOf(false) }
     var screen by rememberSaveable { mutableStateOf("library") }
     var pendingTrackForPlaylist by remember { mutableStateOf<Track?>(null) }
 
@@ -342,7 +340,7 @@ private fun AppRoot() {
         onModelsClick = { screen = "models" },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
-            if (Build.VERSION.SDK_INT >= 29) {
+            if (Build.VERSION.SDK_INT >= 30) {
                 try {
                     val pi = MediaStore.createDeleteRequest(context.contentResolver, listOf(uri))
                     pendingDeleteUri = uri
@@ -380,10 +378,6 @@ private fun AppRoot() {
             }
         },
     )
-    }
-
-    if (lyricsSheetOpen) {
-        LyricsPanel(controller) { lyricsSheetOpen = false }
     }
 
     pendingTrackForPlaylist?.let { pending ->

@@ -209,7 +209,7 @@ fun LyricsDisplayScreen(
         }
     }
 
-    LaunchedEffect(mediaId, transcribeTrigger, transcribeFullMode) {
+    LaunchedEffect(mediaId, transcribeTrigger, transcribeFullMode, selectedLang) {
         if (transcribeTrigger == 0) {
             if (state is DispState.Transcribing) state = DispState.Editing
             return@LaunchedEffect

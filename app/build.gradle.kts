@@ -60,10 +60,6 @@ configurations.all {
     exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")
 }
 
-configurations.all {
-    exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")
-}
-
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.10.01"))
     implementation("androidx.compose.material3:material3")

@@ -74,8 +74,11 @@ fun ModelManagerScreen(onBack: () -> Unit) {
 
     val states = remember { mutableStateMapOf<String, ModelUiState>() }
     LaunchedEffect(catalog) {
+        // PR-L32: always re-check disk state on entry. If the user downloaded
+        // a model, then deleted it from another entry point (or app restart
+        // cleared DataStore but left files), stale "Downloaded" was shown.
         catalog.forEach { m ->
-            if (states[m.id] == null) {
+            if (states[m.id] == null || states[m.id] !is ModelUiState.Downloading) {
                 states[m.id] = if (downloader.isEntryDownloaded(m))
                     ModelUiState.Downloaded else ModelUiState.NotDownloaded
             }
