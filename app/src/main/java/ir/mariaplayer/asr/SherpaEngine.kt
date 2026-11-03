@@ -10,24 +10,23 @@ import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig
 import java.io.File
 
 /**
- * PR-L28: architecture-aware sherpa engine + pre-flight validation.
+ * PR-L35a: architecture-aware sherpa engine + token timestamps.
  *
- * PR-L28 adds validateOrThrow() before any native code runs. A toy or
- * broken model previously crashed the app with SIGSEGV (no catchable
- * exception). Now such models are rejected with a clear IllegalArgumentException
- * BEFORE sherpa-onnx is called.
- *
- *   CTC    -> model.onnx + tokens.txt
- *   RNNT   -> encoder + decoder + joiner + tokens.txt
- *   Whisper-> encoder + decoder + tokens.txt (no joiner)
- *
- * whisperLanguage: "" = auto-detect, or BCP-47 ("fa", "en", "ar", "tr", ...).
+ * Adds transcribeWithTimestamps() which returns per-token start/duration.
+ * This is the foundation for forced alignment: ASR text may be wrong, but
+ * its timing is reliable. We pair this with external lyrics text.
  */
 class SherpaEngine(
     private val modelDir: File,
     private val whisperLanguage: String = "",
     numThreads: Int = 4,
 ) {
+    data class TokenTiming(
+        val token: String,
+        val startSec: Float,
+        val durationSec: Float,
+    )
+
     private sealed interface Arch {
         data class Ctc(val model: File, val tokens: File) : Arch
         data class Rnnt(val encoder: File, val decoder: File, val joiner: File, val tokens: File) : Arch
@@ -97,6 +96,23 @@ class SherpaEngine(
         } finally { s.release() }
     }
 
+    fun transcribeWithTimestamps(samples: FloatArray): List<TokenTiming> {
+        val s = recognizer.createStream()
+        try {
+            s.acceptWaveform(samples, 16000)
+            recognizer.decode(s)
+            val res = recognizer.getResult(s)
+            val timings = mutableListOf<TokenTiming>()
+            for (i in res.tokens.indices) {
+                if (i < res.timestamps.size) {
+                    val dur = if (i < res.durations.size) res.durations[i] else 0f
+                    timings.add(TokenTiming(res.tokens[i], res.timestamps[i], dur))
+                }
+            }
+            return timings
+        } finally { s.release() }
+    }
+
     fun close() = recognizer.release()
 
     private fun detect(dir: File): Arch? {
@@ -119,11 +135,6 @@ class SherpaEngine(
     }
 
     companion object {
-        /**
-         * Rejects tiny, toy, or broken models BEFORE the native sherpa call.
-         * Every real ASR model (Rizeh-Pizeh smallest at 15 MB, Whisper Tiny
-         * at 40 MB) exceeds the thresholds below.
-         */
         fun validateOrThrow(dir: File) {
             val totalSize = dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
             if (totalSize < MIN_TOTAL_BYTES) {

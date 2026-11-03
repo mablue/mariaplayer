@@ -720,6 +720,28 @@ private suspend fun runAllTests(
         "clean: ${models.size} runnable models"
     }
 
+    // 33) Sherpa returns token timestamps (foundation for alignment)
+    test("Asr timestamps") {
+        val models = ir.mariaplayer.asr.AsrModels.list(context)
+        if (models.isEmpty()) return@test "no models"
+        val m = models.first()
+        val tracks = LibraryScanner.scan(context)
+        if (tracks.isEmpty()) return@test "no tracks"
+        val t = tracks.first()
+        val samples = ir.mariaplayer.asr.AudioDecoder.decodeToFloat(
+            context, android.net.Uri.parse(t.contentUri), 0L, 5_000L
+        )
+        if (samples.isEmpty()) return@test "decode empty"
+        val eng = ir.mariaplayer.asr.SherpaEngine(m.dir)
+        try {
+            val timings = eng.transcribeWithTimestamps(samples)
+            if (timings.isEmpty()) throw IllegalStateException("empty timings")
+            val first = timings.first()
+            if (first.startSec < 0) throw IllegalStateException("neg start")
+            "${timings.size} tokens, first at ${first.startSec}s"
+        } finally { eng.close() }
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
