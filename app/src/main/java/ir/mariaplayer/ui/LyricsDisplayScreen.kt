@@ -230,12 +230,6 @@ fun LyricsDisplayScreen(
         }
         // PR-L33: if duration is unknown (player not ready), transcribeFull
         // would fail with a cryptic "totalMs must be > 0". Check first.
-        if (transcribeFullMode && durationMs < 1000L) {
-            state = DispState.Error(
-                "Player not ready — play the track for a second, then retry"
-            )
-            return@LaunchedEffect
-        }
         // PR-L21: read the model fresh from disk each time. The user may
         // have changed the default in ModelManagerScreen while we were on
         // this screen, so cached state would be stale.
