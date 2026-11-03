@@ -742,6 +742,47 @@ private suspend fun runAllTests(
         } finally { eng.close() }
     }
 
+    // 34) LyricsAligner: perfect match
+    test("Aligner perfect") {
+        val tokens = listOf(
+            ir.mariaplayer.asr.SherpaEngine.TokenTiming("hel", 0.5f, 0.2f),
+            ir.mariaplayer.asr.SherpaEngine.TokenTiming("lo", 0.7f, 0.2f),
+            ir.mariaplayer.asr.SherpaEngine.TokenTiming("wor", 1.5f, 0.2f),
+            ir.mariaplayer.asr.SherpaEngine.TokenTiming("ld", 1.7f, 0.2f),
+        )
+        val aligned = ir.mariaplayer.lyrics.LyricsAligner.align("hello\nworld", tokens)
+        if (aligned.size != 2) throw IllegalStateException("size=${aligned.size}")
+        if (aligned[0].timeMs != 500L) throw IllegalStateException("t0=${aligned[0].timeMs}")
+        if (aligned[1].timeMs != 1500L) throw IllegalStateException("t1=${aligned[1].timeMs}")
+        "2 lines, times match"
+    }
+
+    // 35) LyricsAligner: tolerates ASR typos
+    test("Aligner typo") {
+        val tokens = listOf(
+            ir.mariaplayer.asr.SherpaEngine.TokenTiming("hel", 0.5f, 0.2f),
+            ir.mariaplayer.asr.SherpaEngine.TokenTiming("xo", 0.7f, 0.2f),
+            ir.mariaplayer.asr.SherpaEngine.TokenTiming("wor", 1.5f, 0.2f),
+            ir.mariaplayer.asr.SherpaEngine.TokenTiming("lx", 1.7f, 0.2f),
+        )
+        val aligned = ir.mariaplayer.lyrics.LyricsAligner.align("hello\nworld", tokens)
+        if (aligned.size != 2) throw IllegalStateException("size=${aligned.size}")
+        if (aligned[0].timeMs != 500L) throw IllegalStateException("t0=${aligned[0].timeMs}")
+        "typos ignored, times still correct"
+    }
+
+    // 36) LyricsAligner: LRC format
+    test("Aligner toLrc") {
+        val aligned = listOf(
+            ir.mariaplayer.lyrics.LyricsAligner.AlignedLine(65_500L, "line one"),
+            ir.mariaplayer.lyrics.LyricsAligner.AlignedLine(125_000L, "line two"),
+        )
+        val lrc = ir.mariaplayer.lyrics.LyricsAligner.toLrc(aligned)
+        if (!lrc.contains("[01:05.50]line one")) throw IllegalStateException(lrc.take(30))
+        if (!lrc.contains("[02:05.00]line two")) throw IllegalStateException("line2")
+        "ok"
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
