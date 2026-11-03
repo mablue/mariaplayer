@@ -148,6 +148,9 @@ class LyricsFetcher(
             try {
                 val code = conn.responseCode
                 if (code == 404) continue
+                // PR-L33: 5xx is transient. Before this, any 500 was shown
+                // to the user as "lyrics not found" for the whole request.
+                if (code >= 500) throw IOException("HTTP $code")
                 if (code != 200) return null
                 val body = conn.inputStream.bufferedReader().use { it.readText() }
                 val o = JSONObject(body)

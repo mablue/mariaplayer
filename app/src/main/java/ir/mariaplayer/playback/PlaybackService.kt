@@ -41,6 +41,12 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     @Volatile private var favorites: Set<Long> = emptySet()
 
+    // PR-L33: guard against infinite auto-skip when every track in the queue
+    // fails (e.g. user deleted the files from a file manager). Three rapid
+    // errors → pause instead of eating the queue with toasts.
+    private var consecutivePlaybackErrors = 0
+    private var lastPlaybackErrorMs = 0L
+
     private val deleteReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val deletedUri = intent?.getStringExtra(EXTRA_DELETED_URI) ?: return
@@ -114,7 +120,26 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
                 android.widget.Toast.makeText(
                     this@PlaybackService, msg, android.widget.Toast.LENGTH_LONG
                 ).show()
-                if (player.hasNextMediaItem()) player.seekToNextMediaItem() else player.pause()
+
+                val now = android.os.SystemClock.elapsedRealtime()
+                consecutivePlaybackErrors =
+                    if (now - lastPlaybackErrorMs < 3000L) consecutivePlaybackErrors + 1
+                    else 1
+                lastPlaybackErrorMs = now
+
+                if (consecutivePlaybackErrors >= 3) {
+                    consecutivePlaybackErrors = 0
+                    player.pause()
+                    android.widget.Toast.makeText(
+                        this@PlaybackService,
+                        "Multiple tracks failed to play — paused",
+                        android.widget.Toast.LENGTH_LONG,
+                    ).show()
+                } else if (player.hasNextMediaItem()) {
+                    player.seekToNextMediaItem()
+                } else {
+                    player.pause()
+                }
             }
         })
 

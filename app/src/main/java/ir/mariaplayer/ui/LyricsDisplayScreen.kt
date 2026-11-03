@@ -97,6 +97,11 @@ import java.net.URLEncoder
 import java.util.Locale
 import kotlin.math.abs
 
+// PR-L33: MediaMetadataRetriever is NOT thread-safe and can SIGSEGV
+// when two concurrent setDataSource() calls race on the same file.
+// Serialize every extraction through a single-thread dispatcher.
+private val albumArtDispatcher = Dispatchers.IO.limitedParallelism(1)
+
 private sealed interface DispState {
     data object Editing : DispState
     data object Loading : DispState
@@ -152,7 +157,7 @@ fun LyricsDisplayScreen(
     }
 
     LaunchedEffect(mediaId, contentUri) {
-        albumArt = if (contentUri == null) null else withContext(Dispatchers.IO) {
+        albumArt = if (contentUri == null) null else withContext(albumArtDispatcher) {
             runCatching {
                 val mmr = MediaMetadataRetriever()
                 try {
@@ -216,7 +221,15 @@ fun LyricsDisplayScreen(
         }
         val id = trackId ?: return@LaunchedEffect
         val uri = contentUri ?: run {
-            state = DispState.Error("No audio URI")
+            state = DispState.Error("No audio URI — try playing the track once")
+            return@LaunchedEffect
+        }
+        // PR-L33: if duration is unknown (player not ready), transcribeFull
+        // would fail with a cryptic "totalMs must be > 0". Check first.
+        if (transcribeFullMode && durationMs < 1000L) {
+            state = DispState.Error(
+                "Player not ready — play the track for a second, then retry"
+            )
             return@LaunchedEffect
         }
         // PR-L21: read the model fresh from disk each time. The user may
@@ -302,7 +315,13 @@ fun LyricsDisplayScreen(
         } catch (_: Throwable) {
             translations = null
         } finally {
-            translating = false
+            // PR-L33: do not clear the spinner if this coroutine was already
+            // cancelled. A newer LaunchedEffect owns "translating" now and
+            // will clear it when it finishes. Clearing here would leave the
+            // spinner off while translation is still running.
+            if (kotlinx.coroutines.currentCoroutineContext().isActive) {
+                translating = false
+            }
         }
     }
 

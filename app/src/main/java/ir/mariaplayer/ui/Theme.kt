@@ -27,8 +27,14 @@ fun MariaPlayerTheme(content: @Composable () -> Unit) {
         colorScheme = scheme,
         typography = VazirTypography,
         content = {
+            // PR-L33: preserve the inherited TextStyle (bodyLarge from
+            // Material3 typography, which already has VazirFamily set via
+            // VazirTypography). A bare TextStyle(fontFamily = ...) dropped
+            // fontSize/weight defaults → every Text() fell to 14sp.
             CompositionLocalProvider(
-                LocalTextStyle provides TextStyle(fontFamily = VazirFamily),
+                LocalTextStyle provides LocalTextStyle.current.copy(
+                    fontFamily = VazirFamily
+                ),
                 content = content,
             )
         },

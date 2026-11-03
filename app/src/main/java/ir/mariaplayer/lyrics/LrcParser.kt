@@ -9,7 +9,9 @@ data class LrcLine(val timeMs: Long, val text: String)
 
 object LrcParser {
 
-    private val TAG_RE = Regex("""\[(\d{1,3}):(\d{2})(?:\.(\d{1,3}))?]""")
+    // PR-L33: seconds must be 00-59. Before, [00:60.00] or [00:99.99] were
+// parsed and shifted the whole line by a bogus minute.
+private val TAG_RE = Regex("""\[(\d{1,3}):([0-5]\d)(?:\.(\d{1,3}))?]""")
 
     fun parse(raw: String): List<LrcLine> {
         if (raw.isBlank()) return emptyList()

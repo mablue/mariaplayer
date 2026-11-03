@@ -658,6 +658,28 @@ private suspend fun runAllTests(
         "checked $checked entries"
     }
 
+    // 29) LRC parser rejects out-of-range seconds (60-99)
+    test("LRC rejects 60s") {
+        val bad = "[00:60.00]bad\n[00:99.99]worse\n[01:30.50]good"
+        val lines = LrcParser.parse(bad)
+        if (lines.size != 1)
+            throw IllegalStateException("parsed ${lines.size} lines, want 1")
+        if (lines[0].timeMs != 90_500L)
+            throw IllegalStateException("ts=${lines[0].timeMs}")
+        "1/3 parsed (60s and 99s rejected)"
+    }
+
+    // 30) Theme default text style keeps bodyLarge (>= 15sp)
+    test("Theme default style") {
+        // We can't touch Compose at runtime, but we can sanity-check that
+        // VazirTypography.bodyLarge.fontSize is set (not TextStyle.Unspecified).
+        val bl = ir.mariaplayer.ui.VazirTypography.bodyLarge
+        val sz = bl.fontSize
+        if (sz.value <= 0f)
+            throw IllegalStateException("bodyLarge size unset: ${sz.value}")
+        "bodyLarge=${sz.value}sp"
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())

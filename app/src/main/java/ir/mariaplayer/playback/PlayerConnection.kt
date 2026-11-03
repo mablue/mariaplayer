@@ -17,6 +17,7 @@ import com.google.common.util.concurrent.MoreExecutors
 fun rememberPlayerController(): MediaController? {
     val ctx = LocalContext.current
     var controller by remember { mutableStateOf<MediaController?>(null) }
+    var disposed by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val token = SessionToken(
@@ -25,13 +26,23 @@ fun rememberPlayerController(): MediaController? {
         )
         val future = MediaController.Builder(ctx, token).buildAsync()
         future.addListener(
-            { controller = try { future.get() } catch (_: Throwable) { null } },
+            {
+                val c = try { future.get() } catch (_: Throwable) { null }
+                // PR-L33: if the composable was disposed before the async
+                // build finished, release the late-arriving controller so
+                // we don't leak a MediaSession connection.
+                if (disposed) c?.release() else controller = c
+            },
             MoreExecutors.directExecutor(),
         )
     }
 
     DisposableEffect(Unit) {
-        onDispose { controller?.release() }
+        onDispose {
+            disposed = true
+            controller?.release()
+            controller = null
+        }
     }
 
     return controller
