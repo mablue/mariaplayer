@@ -1,149 +1,70 @@
 #!/data/data/com.termux/files/usr/bin/bash
-set -euo pipefail
-cd ~/mariaplayer
+# Listen for CI of the CURRENT HEAD sha, wait for it, then open that
+# release page in the browser. No text files, no stale links.
+set -uo pipefail
+cd ~/mariaplayer || exit 1
 
-OWNER=$(gh api user -q .login)
-REPO="$OWNER/mariaplayer"
-LOCAL_SHA=$(git rev-parse --short HEAD)
-LOGF="$HOME/ci-failed.log"
-
-# ── Sound (silent if Termux:API app missing) ────────────────────────
-HAVE_API=0
-if command -v termux-tts-speak >/dev/null 2>&1; then
-    timeout 3 termux-tts-speak "" >/dev/null 2>&1 && HAVE_API=1 || true
-fi
-notify() {
-    local level="$1" msg="$2" icon
-    case "$level" in success) icon="OK  ";; error) icon="FAIL";; *) icon="--  ";; esac
-    echo
-    echo "[$icon] $msg"
-    echo
-    if [ "$HAVE_API" = "1" ]; then
-        timeout 5 termux-tts-speak "$msg" >/dev/null 2>&1 || true
-        timeout 5 termux-notification --title "MariaPlayer build" \
-            --content "$msg" --priority high >/dev/null 2>&1 || true
-        [ "$level" = "error" ] && timeout 3 termux-vibrate -d 800 -f >/dev/null 2>&1 || true
-    fi
-}
-if [ "$HAVE_API" = "0" ]; then
-    echo "NOTE: Termux:API not reachable — running silent."
-    echo
-fi
-
-# ── Auto error extractor (only errors, no stack frames) ─────────────
-print_ci_errors() {
-    local logf="$1"
-    echo
-    echo "════════ CI ERRORS ONLY ════════"
-    echo
-    echo "── Kotlin/Java (e: file:///…:line:col) ──"
-    grep -E '^e: file:///' "$logf" \
-      | sed -E 's#file:///[^/]+/[^/]+/[^/]+/#file:///#g' \
-      || echo "  (none)"
-    echo
-    echo "── Failed tasks ──"
-    grep -E '^(> Task .* FAILED|FAILURE:)' "$logf" || echo "  (none)"
-    echo
-    echo "── Root causes ──"
-    grep -E '^(Caused by:|Could not resolve|Execution failed|Unresolved|cannot find symbol|Could not find)' "$logf" \
-      | grep -vE '^\s+at ' \
-      || echo "  (none)"
-    echo "════════════════════════════════"
-    echo "full log: $logf"
-    echo
-}
-
-echo "repo: $REPO  head: $LOCAL_SHA"
-
-# ── [1/3] wait for CI run matching local HEAD ────────────────────────
+SHA=$(git rev-parse --short HEAD)
+FULL=$(git rev-parse HEAD)
+echo "repo:    mablue/mariaplayer"
+echo "head:    $SHA"
+echo "full:    $FULL"
 echo
-echo "[1/3] waiting for CI run for $LOCAL_SHA ..."
-FINAL_RUN=""
-for i in $(seq 1 60); do
-  ROW=$(gh run list --workflow=build.yml --repo "$REPO" --limit 15 \
-    --json databaseId,headSha,status,conclusion 2>/dev/null \
-    | python3 -c "
-import json, sys
-sha = '$LOCAL_SHA'
-try: runs = json.load(sys.stdin)
-except Exception: sys.exit(0)
-for r in runs:
-    if r.get('headSha','').startswith(sha):
-        print(r['databaseId'], r['status'], r.get('conclusion') or '-')
+
+echo "[1/3] waiting for CI run for $SHA ..."
+RUN_ID=""
+for i in $(seq 1 240); do
+  ROW=$(gh run list --workflow=build.yml --limit 10 --json databaseId,headSha,status,conclusion 2>/dev/null \
+        | python3 -c "
+import sys, json
+target = '$FULL'
+for r in json.load(sys.stdin):
+    if r.get('headSha') == target:
+        print(f\"{r['databaseId']}|{r['status']}|{r.get('conclusion') or ''}\")
         break
-")
+" 2>/dev/null)
   if [ -n "$ROW" ]; then
-    set -- $ROW
-    RID=$1; RSTAT=$2; RCON=$3
-    if [ "$RSTAT" = "completed" ]; then
-      if [ "$RCON" = "success" ]; then
-        FINAL_RUN=$RID
-        echo "      run $RID: success"
-        notify success "CI build succeeded"
-        break
-      else
-        echo "      run $RID: FAILED — extracting exact error locations"
-        gh run view "$RID" --repo "$REPO" --log-failed 2>&1 \
-          | sed -E 's/^[0-9T:.Z-]+[[:space:]]+//' > "$LOGF"
-        notify error "CI build failed"
-        print_ci_errors "$LOGF"
-        exit 1
-      fi
-    else
-      echo "      run $RID: $RSTAT ... (${i}/60)"
-    fi
+    RUN_ID=$(echo "$ROW" | cut -d'|' -f1)
+    STATUS=$(echo "$ROW" | cut -d'|' -f2)
+    CONCL=$(echo "$ROW" | cut -d'|' -f3)
+    case "$STATUS" in
+      completed)
+        case "$CONCL" in
+          success) echo "      run $RUN_ID: success"; break ;;
+          *)       echo "      run $RUN_ID: $CONCL"
+                   echo "✘ CI FAILED"
+                   gh run view "$RUN_ID" --log-failed 2>&1 | grep -E '^e:|error:|FAILURE|Caused by' | head -20
+                   exit 1 ;;
+        esac ;;
+      *) echo "      run $RUN_ID: $STATUS ... ($i/240)"; sleep 3 ;;
+    esac
   else
-    echo "      no matching run yet (${i}/60)"
+    echo "      no matching run yet ($i/240)"
+    sleep 3
   fi
-  sleep 10
 done
-[ -n "$FINAL_RUN" ] || { notify error "No successful run after 10 min"; exit 1; }
+[ -n "$RUN_ID" ] || { echo "✘ no CI run found after 12 minutes"; exit 1; }
 
-# ── [2/3] find release asset ─────────────────────────────────────────
 echo
-echo "[2/3] locating latest release ..."
-PICK=$(gh api "repos/$REPO/releases?per_page=5" 2>/dev/null | python3 -c "
-import json, sys
-try: rels = json.load(sys.stdin)
-except Exception: sys.exit(0)
-for r in rels:
-    for a in r.get('assets', []):
-        if a['name'].endswith('.apk'):
-            print(r['tag_name'], a['name'], a['size']); sys.exit(0)
-")
-[ -n "$PICK" ] || { notify error "No APK in releases"; exit 1; }
-set -- $PICK; TAG=$1; APK_NAME=$2; APK_SIZE=$3
-echo "      tag:   $TAG"
-echo "      apk:   $APK_NAME ($APK_SIZE bytes)"
-echo "      page:  https://github.com/$REPO/releases/tag/$TAG"
+echo "[2/3] locating release tag for $SHA ..."
+TAG=""
+for i in $(seq 1 40); do
+  TAG=$(gh release list --limit 20 --json tagName --jq ".[] | select(.tagName | contains(\"$SHA\")) | .tagName" 2>/dev/null | head -1)
+  [ -n "$TAG" ] && break
+  echo "      tag not published yet ($i/40)"; sleep 3
+done
+[ -n "$TAG" ] || { echo "✘ release tag for $SHA not found"; exit 1; }
+echo "      tag: $TAG"
 
-# ── [3/3] authenticated download + open ──────────────────────────────
+PAGE="https://github.com/mablue/mariaplayer/releases/tag/$TAG"
+APK_NAME=$(gh release view "$TAG" --json assets --jq '.assets[].name' 2>/dev/null | head -1)
+echo "      page: $PAGE"
+[ -n "$APK_NAME" ] && echo "      apk:  $APK_NAME"
+
 echo
-echo "[3/3] downloading with gh (private repo) ..."
-DEST_DIR="$HOME/storage/downloads"
-rm -f "$DEST_DIR/$APK_NAME"
-if ! gh release download "$TAG" --repo "$REPO" \
-        --pattern "$APK_NAME" --dir "$DEST_DIR" --clobber; then
-    notify error "Download failed"
-    exit 1
-fi
-
-SZ=$(stat -c%s "$DEST_DIR/$APK_NAME")
-if [ "$SZ" -lt 100000 ]; then
-    notify error "Downloaded file too small — not a real APK"
-    exit 1
-fi
-ls -lh "$DEST_DIR/$APK_NAME"
-notify success "Build ready — tap Install on screen"
-# [removed by PR-L29 patch]
-termux-open "$DEST_DIR/$APK_NAME"
-
-# PR-L29-release-page: open release page, not direct asset
-if [ -n "${TAG:-}" ]; then
-    PAGE_URL="https://github.com/mablue/mariaplayer/releases/tag/${TAG}"
-    echo "[browser] $PAGE_URL"
-    echo "$PAGE_URL" > ~/apk_link.txt
-    am start -a android.intent.action.VIEW -d "$PAGE_URL" 2>/dev/null \
-        || termux-open-url "$PAGE_URL" 2>/dev/null \
-        || echo "open manually: $PAGE_URL"
-fi
+echo "[3/3] opening release page in browser ..."
+am start -a android.intent.action.VIEW -d "$PAGE" 2>/dev/null \
+  || termux-open-url "$PAGE" 2>/dev/null \
+  || echo "      open manually: $PAGE"
+echo
+echo "✔ DONE $SHA  →  $PAGE"
