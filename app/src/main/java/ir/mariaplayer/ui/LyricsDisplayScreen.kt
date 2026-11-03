@@ -142,6 +142,8 @@ fun LyricsDisplayScreen(
     var transcribeTrigger by remember(mediaId) { mutableIntStateOf(0) }
     var transcribeDurationMode by remember(mediaId) { mutableStateOf("preview30s") }
     var alignTrigger by remember(mediaId) { mutableIntStateOf(0) }
+    var syncMode by remember(mediaId) { mutableStateOf(false) }
+    var corrections by remember(mediaId) { mutableStateOf<Map<Int, Long>>(emptyMap()) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
     var albumArt by remember(mediaId) { mutableStateOf<Bitmap?>(null) }
@@ -492,18 +494,93 @@ fun LyricsDisplayScreen(
                         status = s.status,
                         onCancel = { transcribeTrigger = 0 },
                     )
-                    is DispState.Synced -> SyncedBody(
-                        lines = s.lines,
-                        translations = translations,
-                        positionMs = positionMs,
-                        prefs = prefs,
-                        onSeek = { ms -> controller?.seekTo(ms) },
-                    )
-                    is DispState.Plain -> PlainBody(
-                        text = s.text,
-                        canAlign = hasAsrModel,
-                        onAlign = { alignTrigger += 1 },
-                    )
+                    is DispState.Synced -> Box(Modifier.fillMaxSize()) {
+                        if (syncMode) {
+                            SyncModeBody(
+                                lines = s.lines,
+                                corrections = corrections,
+                                controller = controller,
+                                prefs = prefs,
+                                onCorrect = { idx ->
+                                    val t = controller?.currentPosition ?: 0L
+                                    corrections = corrections + (idx to t)
+                                },
+                                onSave = {
+                                    val adjusted = applyCorrections(s.lines, corrections)
+                                    val lrc = linesToLrcUi(adjusted)
+                                    val id = trackId
+                                    if (id != null) {
+                                        scope.launch {
+                                            LyricsCache.writeLyrics(context, id, lrc, null)
+                                            state = DispState.Synced(adjusted)
+                                            syncMode = false
+                                            corrections = emptyMap()
+                                        }
+                                    }
+                                },
+                                onCancel = {
+                                    syncMode = false
+                                    corrections = emptyMap()
+                                },
+                            )
+                        } else {
+                            SyncedBody(
+                                lines = s.lines,
+                                translations = translations,
+                                positionMs = positionMs,
+                                prefs = prefs,
+                                onSeek = { ms -> controller?.seekTo(ms) },
+                            )
+                            FixTimingButton(
+                                onClick = {
+                                    syncMode = true
+                                    corrections = emptyMap()
+                                },
+                            )
+                        }
+                    }
+                    is DispState.Plain -> Box(Modifier.fillMaxSize()) {
+                        if (syncMode) {
+                            val fakeLines = plainToFakeSynced(s.text, durationMs)
+                            SyncModeBody(
+                                lines = fakeLines,
+                                corrections = corrections,
+                                controller = controller,
+                                prefs = prefs,
+                                onCorrect = { idx ->
+                                    val t = controller?.currentPosition ?: 0L
+                                    corrections = corrections + (idx to t)
+                                },
+                                onSave = {
+                                    val adjusted = applyCorrections(fakeLines, corrections)
+                                    val lrc = linesToLrcUi(adjusted)
+                                    val id = trackId
+                                    if (id != null) {
+                                        scope.launch {
+                                            LyricsCache.writeLyrics(context, id, lrc, s.text)
+                                            state = DispState.Synced(adjusted)
+                                            syncMode = false
+                                            corrections = emptyMap()
+                                        }
+                                    }
+                                },
+                                onCancel = {
+                                    syncMode = false
+                                    corrections = emptyMap()
+                                },
+                            )
+                        } else {
+                            PlainBody(
+                                text = s.text,
+                                canAlign = hasAsrModel,
+                                onAlign = { alignTrigger += 1 },
+                                onEnterSync = {
+                                    syncMode = true
+                                    corrections = emptyMap()
+                                },
+                            )
+                        }
+                    }
                     DispState.NotFound -> NotFoundBody(
                         onEdit = { state = DispState.Editing },
                         onPaste = { state = DispState.PasteSheet },
@@ -1049,6 +1126,7 @@ private fun PlainBody(
     text: String,
     canAlign: Boolean,
     onAlign: () -> Unit,
+    onEnterSync: () -> Unit = {},
 ) {
     Column(
         Modifier
@@ -1057,6 +1135,28 @@ private fun PlainBody(
             .padding(horizontal = 24.dp, vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White.copy(alpha = 0.22f),
+            modifier = Modifier.clickable(onClick = onEnterSync),
+        ) {
+            Text(
+                "🎯 Sync lines to audio",
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 14.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Scroll, then tap to match each line to the song",
+            color = Color.White.copy(alpha = 0.5f),
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+
         Text(
             text,
             color = Color.White.copy(alpha = 0.92f),
@@ -1431,4 +1531,160 @@ private fun DisplaySettingsSheet(
 private fun formatMs(ms: Long): String {
     val total = (ms / 1000).coerceAtLeast(0)
     return String.format(Locale.US, "%d:%02d", total / 60, total % 60)
+}
+
+
+private fun linesToLrcUi(lines: List<LrcLine>): String {
+    val sb = StringBuilder()
+    for (l in lines) {
+        if (sb.isNotEmpty()) sb.append('\n')
+        val sec = l.timeMs / 1000
+        val min = sec / 60
+        val s = sec % 60
+        val cs = (l.timeMs % 1000) / 10
+        sb.append("[%02d:%02d.%02d]%s".format(min, s, cs, l.text))
+    }
+    return sb.toString()
+}
+
+private fun plainToFakeSynced(text: String, durationMs: Long): List<LrcLine> {
+    val lines = text.split('\n').map { it.trim() }.filter { it.isNotBlank() }
+    if (lines.isEmpty()) return emptyList()
+    val usable = if (durationMs > 1000L) durationMs else lines.size * 3000L
+    val step = (usable / lines.size.toLong()).coerceAtLeast(1000L)
+    return lines.mapIndexed { idx, txt -> LrcLine(idx * step, txt) }
+}
+
+private fun applyCorrections(lines: List<LrcLine>, corrections: Map<Int, Long>): List<LrcLine> {
+    if (corrections.isEmpty()) return lines
+    val keys = corrections.keys.sorted().filter { it in lines.indices }
+    if (keys.isEmpty()) return lines
+    return lines.mapIndexed { idx, line ->
+        line.copy(timeMs = (line.timeMs + interpolatedOffset(idx, lines, corrections, keys)).coerceAtLeast(0L))
+    }
+}
+
+private fun interpolatedOffset(idx: Int, lines: List<LrcLine>, corrections: Map<Int, Long>, keys: List<Int>): Long {
+    val prevKey = keys.lastOrNull { it <= idx }
+    val nextKey = keys.firstOrNull { it > idx }
+    val prevOffset = prevKey?.let { corrections[it]!! - lines[it].timeMs }
+    val nextOffset = nextKey?.let { corrections[it]!! - lines[it].timeMs }
+    return when {
+        prevKey == null -> 0L
+        nextKey == null -> prevOffset!!
+        prevKey == nextKey -> prevOffset!!
+        else -> {
+            val t = (idx - prevKey).toDouble() / (nextKey - prevKey).toDouble()
+            (prevOffset!! + (nextOffset!! - prevOffset!!) * t).toLong()
+        }
+    }
+}
+
+@Composable
+private fun FixTimingButton(onClick: () -> Unit) {
+    Box(Modifier.fillMaxSize()) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = Color.Black.copy(alpha = 0.65f),
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 12.dp).clickable(onClick = onClick),
+        ) {
+            Text("🎯 Fix timing", color = Color.White,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun SyncModeBody(
+    lines: List<LrcLine>,
+    corrections: Map<Int, Long>,
+    controller: MediaController?,
+    prefs: DisplayPrefs,
+    onCorrect: (Int) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val listState = rememberLazyListState()
+    var centerIndex by remember { mutableIntStateOf(0) }
+    var positionMs by remember { mutableLongStateOf(controller?.currentPosition ?: 0L) }
+
+    LaunchedEffect(listState, lines.size) {
+        while (true) {
+            val layout = listState.layoutInfo
+            val centerY = layout.viewportSize.height / 2
+            centerIndex = layout.visibleItemsInfo.minByOrNull { item ->
+                kotlin.math.abs((item.offset + item.size / 2) - centerY)
+            }?.index ?: 0
+            delay(100)
+        }
+    }
+    LaunchedEffect(controller) {
+        val c = controller ?: return@LaunchedEffect
+        while (true) { delay(200); positionMs = c.currentPosition }
+    }
+
+    val adjustedLines = remember(lines, corrections) { applyCorrections(lines, corrections) }
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val vp = maxHeight * 0.5f
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = vp)) {
+            itemsIndexed(adjustedLines) { idx, line ->
+                val isCenter = idx == centerIndex
+                val isCorrected = idx in corrections
+                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(line.text.ifBlank { "♪" },
+                        color = when {
+                            isCenter -> Color(prefs.colorActive)
+                            isCorrected -> Color.White.copy(alpha = 0.9f)
+                            else -> Color.White.copy(alpha = 0.45f)
+                        },
+                        fontSize = (if (isCenter) 22 else 17).sp,
+                        fontWeight = if (isCenter) FontWeight.Bold else FontWeight.Normal,
+                        textAlign = TextAlign.Center)
+                    if (isCorrected) {
+                        Text("✓ ${formatMs(corrections[idx]!!)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF4CAF50))
+                    }
+                }
+            }
+        }
+        Box(Modifier.align(Alignment.Center).fillMaxWidth().height(2.dp)
+            .background(Color(prefs.colorActive).copy(alpha = 0.35f)))
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.75f)).padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Line ${centerIndex + 1} of ${adjustedLines.size}  ·  ${formatMs(positionMs)}",
+                color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
+            Spacer(Modifier.height(8.dp))
+            Surface(shape = RoundedCornerShape(24.dp),
+                color = Color(0xFFE91E63).copy(alpha = 0.9f),
+                modifier = Modifier.clickable { onCorrect(centerIndex) }) {
+                Text("⚡ Sync this line", color = Color.White,
+                    modifier = Modifier.padding(horizontal = 36.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.12f),
+                    modifier = Modifier.clickable(onClick = onCancel)) {
+                    Text("Cancel", color = Color.White,
+                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp))
+                }
+                Surface(shape = RoundedCornerShape(20.dp),
+                    color = if (corrections.isNotEmpty()) Color.White.copy(alpha = 0.22f)
+                            else Color.White.copy(alpha = 0.08f),
+                    modifier = Modifier.clickable(enabled = corrections.isNotEmpty(), onClick = onSave)) {
+                    Text("💾 Save ${corrections.size} fixes",
+                        color = if (corrections.isNotEmpty()) Color.White
+                                else Color.White.copy(alpha = 0.4f),
+                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp),
+                        fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
 }
