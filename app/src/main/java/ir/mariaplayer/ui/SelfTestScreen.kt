@@ -535,6 +535,79 @@ private suspend fun runAllTests(
         }
     }
 
+    // 21) Catalog has no toy/demo models
+    test("Catalog no toys") {
+        val models = ModelCatalog.load(context)
+        val toys = models.filter { m ->
+            val n = (m.id + " " + m.name).lowercase()
+            listOf("tdqn", "yesno", "yes-no", "hey-snapdragon",
+                   "-demo", "-example-", "-test-", "hotword").any { n.contains(it) }
+        }
+        if (toys.isNotEmpty())
+            throw IllegalStateException(
+                "${toys.size} toy models: ${toys.take(3).joinToString { it.id }}"
+            )
+        "clean: ${models.size} models"
+    }
+
+    // 22) Downloaded models pass size sanity
+    test("Downloaded models size") {
+        val root = java.io.File(context.filesDir, "models")
+        if (!root.exists()) return@test "no models dir"
+        val dirs = root.listFiles()?.filter { it.isDirectory } ?: emptyList()
+        if (dirs.isEmpty()) return@test "no models"
+        val bad = dirs.filter { d ->
+            d.walkTopDown().filter { it.isFile }.sumOf { it.length() } <
+                ir.mariaplayer.asr.SherpaEngine.MIN_TOTAL_BYTES
+        }
+        if (bad.isNotEmpty())
+            throw IllegalStateException(
+                "${bad.size} too small: ${bad.joinToString { it.name }}"
+            )
+        "${dirs.size} models ok"
+    }
+
+    // 23) SherpaEngine rejects toy models before native crash
+    test("Engine rejects tiny") {
+        val fake = java.io.File(context.cacheDir, "__fake_toy_model_test__")
+        try {
+            fake.mkdirs()
+            java.io.File(fake, "model.onnx").writeBytes(ByteArray(100))
+            java.io.File(fake, "tokens.txt").writeBytes("a\n".toByteArray())
+            try {
+                ir.mariaplayer.asr.SherpaEngine(fake)
+                throw IllegalStateException("accepted 100-byte model!")
+            } catch (e: IllegalArgumentException) {
+                // expected
+            }
+            "rejected 100-byte model"
+        } finally {
+            fake.deleteRecursively()
+        }
+    }
+
+    // 24) Each downloaded model passes pre-flight validation
+    test("Downloaded models validate") {
+        val root = java.io.File(context.filesDir, "models")
+        if (!root.exists()) return@test "no models dir"
+        val dirs = root.listFiles()?.filter { it.isDirectory } ?: emptyList()
+        if (dirs.isEmpty()) return@test "no models"
+        val results = mutableListOf<String>()
+        for (d in dirs) {
+            try {
+                ir.mariaplayer.asr.SherpaEngine.validateOrThrow(d)
+                results.add("${d.name}:ok")
+            } catch (e: IllegalArgumentException) {
+                results.add("${d.name}:reject")
+            }
+        }
+        val rejected = results.count { it.endsWith(":reject") }
+        if (rejected > 0)
+            "${dirs.size} total, $rejected rejected"
+        else
+            "all ${dirs.size} valid"
+    }
+
     // ── Build report ──
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())

@@ -10,13 +10,18 @@ import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig
 import java.io.File
 
 /**
- * PR-L23a: architecture-aware sherpa engine.
+ * PR-L28: architecture-aware sherpa engine + pre-flight validation.
+ *
+ * PR-L28 adds validateOrThrow() before any native code runs. A toy or
+ * broken model previously crashed the app with SIGSEGV (no catchable
+ * exception). Now such models are rejected with a clear IllegalArgumentException
+ * BEFORE sherpa-onnx is called.
+ *
  *   CTC    -> model.onnx + tokens.txt
  *   RNNT   -> encoder + decoder + joiner + tokens.txt
  *   Whisper-> encoder + decoder + tokens.txt (no joiner)
  *
  * whisperLanguage: "" = auto-detect, or BCP-47 ("fa", "en", "ar", "tr", ...).
- * Ignored by CTC and RNNT models.
  */
 class SherpaEngine(
     private val modelDir: File,
@@ -34,6 +39,7 @@ class SherpaEngine(
 
     init {
         require(modelDir.isDirectory) { "model dir missing: $modelDir" }
+        validateOrThrow(modelDir)
         architecture = detect(modelDir) ?: run {
             val files = modelDir.listFiles()?.joinToString(", ") { it.name } ?: "empty"
             throw IllegalArgumentException(
@@ -95,7 +101,8 @@ class SherpaEngine(
 
     private fun detect(dir: File): Arch? {
         val files = dir.listFiles() ?: return null
-        val tokens = files.firstOrNull { it.isFile && it.name.endsWith("tokens.txt") } ?: return null
+        val tokens = files.firstOrNull { it.isFile && it.name.endsWith("tokens.txt") }
+            ?: return null
         val enc = pick(files, "encoder")
         val dec = pick(files, "decoder")
         val join = pick(files, "joiner")
@@ -109,5 +116,47 @@ class SherpaEngine(
     private fun pick(files: Array<File>, base: String): File? {
         return files.firstOrNull { it.isFile && it.name.endsWith("$base.int8.onnx") }
             ?: files.firstOrNull { it.isFile && it.name.endsWith("$base.onnx") }
+    }
+
+    companion object {
+        /**
+         * Rejects tiny, toy, or broken models BEFORE the native sherpa call.
+         * Every real ASR model (Rizeh-Pizeh smallest at 15 MB, Whisper Tiny
+         * at 40 MB) exceeds the thresholds below.
+         */
+        fun validateOrThrow(dir: File) {
+            val totalSize = dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+            if (totalSize < MIN_TOTAL_BYTES) {
+                throw IllegalArgumentException(
+                    "Model is too small (${totalSize / 1024} KB total). " +
+                    "Real ASR models are >= 5 MB. " +
+                    "This looks like a toy or demo model, not speech recognition. " +
+                    "Pick a different model in the Models screen."
+                )
+            }
+            val tokens = File(dir, "tokens.txt")
+            if (!tokens.exists() || tokens.length() < MIN_TOKENS_BYTES) {
+                throw IllegalArgumentException(
+                    "tokens.txt is missing or too small (${tokens.length()} bytes). " +
+                    "This is not a valid ASR model."
+                )
+            }
+            val onnx = dir.listFiles()?.filter { it.isFile && it.name.endsWith(".onnx") }
+                ?: emptyList()
+            if (onnx.isEmpty()) {
+                throw IllegalArgumentException("No .onnx file found in ${dir.name}.")
+            }
+            val biggest = onnx.maxOf { it.length() }
+            if (biggest < MIN_ONNX_BYTES) {
+                throw IllegalArgumentException(
+                    "Largest .onnx is only ${biggest / 1024} KB. " +
+                    "Real ASR models are >= 500 KB per file."
+                )
+            }
+        }
+
+        const val MIN_TOTAL_BYTES = 5_000_000L
+        const val MIN_TOKENS_BYTES = 100L
+        const val MIN_ONNX_BYTES = 500_000L
     }
 }

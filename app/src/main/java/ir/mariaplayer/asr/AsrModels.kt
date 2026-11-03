@@ -26,6 +26,9 @@ object AsrModels {
         if (!root.exists()) return emptyList()
         return root.listFiles()?.mapNotNull { d ->
             if (!d.isDirectory) return@mapNotNull null
+            val total = d.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+            if (total < SherpaEngine.MIN_TOTAL_BYTES) return@mapNotNull null
+
             val files = d.listFiles()?.filter { it.isFile } ?: return@mapNotNull null
             if (files.isEmpty()) return@mapNotNull null
 

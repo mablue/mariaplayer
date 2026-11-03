@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "generated": "2026-11-03T03:06:31.492141Z",
-  "count": 347,
+  "generated": "2026-11-03T03:20:46.463350Z",
+  "count": 346,
   "models": [
     {
       "id": "moonshine-base-q4_k",
@@ -4406,21 +4406,6 @@
       ],
       "sizeBytes": 109906654,
       "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-small-zipformer-ru-2024-09-18.tar.bz2",
-      "format": "tar.bz2",
-      "engine": "sherpa-onnx",
-      "arch": "unknown",
-      "license": "Apache-2.0",
-      "musicRating": "Unknown",
-      "files": []
-    },
-    {
-      "id": "gh-tdnn-yesno",
-      "name": "tdnn-yesno",
-      "language": [
-        "en"
-      ],
-      "sizeBytes": 480960,
-      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-tdnn-yesno.tar.bz2",
       "format": "tar.bz2",
       "engine": "sherpa-onnx",
       "arch": "unknown",

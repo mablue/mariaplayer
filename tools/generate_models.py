@@ -23,10 +23,15 @@ NON_ASR_MARKERS = [
     "vad", "silero", "ten-vad",
     "speaker", "diarization",
     "language-id", "punctuation",
-    "keyword-spotting", "kws",
+    "keyword-spotting", "kws", "hotword",
     "audio-tagging", "denoiser",
     "source-separation", "speech-translation",
     "streaming-", "-streaming", "online-",
+    # toy / demo models that crash sherpa-onnx:
+    "tdqn", "yesno", "yes-no",
+    "hey-snapdragon", "hey-siri",
+    "-demo", "-example-", "-test-",
+    "playground", "hello-world",
 ]
 
 def is_asr(name):
