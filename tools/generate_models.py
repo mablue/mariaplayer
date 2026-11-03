@@ -75,7 +75,7 @@ def hf_models():
     out = []
     for author in HF_AUTHORS:
         try:
-            data = http_get(f"https://huggingface.co/api/models?author={author}&limit=1000")
+            data = http_get(f"https://huggingface.co/api/models?author={author}&limit=1000&expand[]=siblings&expand[]=tags")
         except Exception as e:
             print(f"HF {author} error: {e}", file=sys.stderr)
             continue
@@ -140,7 +140,8 @@ def main():
     manual = json.loads(MANUAL.read_text())["models"] if MANUAL.exists() else []
     print(f"manual: {len(manual)}")
 
-    auto = hf_models() + gh_archives()
+    # GH archives are tar.bz2 (app cannot extract yet) - skip
+    auto = hf_models()
 
     by_id = {}
     for e in manual:
