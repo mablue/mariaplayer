@@ -31,9 +31,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -431,17 +428,6 @@ private fun LibraryScreen(
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
-    val listState = rememberLazyListState()
-    val currentMediaId = controller?.currentMediaItem?.mediaId?.toLongOrNull()
-    val currentIndex = remember(visible, currentMediaId) {
-        visible?.indexOfFirst { it.id == currentMediaId } ?: -1
-    }
-    LaunchedEffect(currentIndex) {
-        if (currentIndex >= 0) {
-            runCatching { listState.animateScrollToItem(currentIndex) }
-        }
-    }
-    }
 
     val folderList = remember(allTracks) {
         allTracks?.map { it.folder }?.filter { it.isNotEmpty() }?.distinct()?.sorted()
@@ -554,7 +540,6 @@ private fun LibraryScreen(
                     }
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        state = listState,
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
@@ -570,7 +555,6 @@ private fun LibraryScreen(
                                 onDeleteClick = { onDeleteRequest(t) },
                                 onClick = { onTrackClick(t) },
                                 onLongClick = { onTrackLongClick(t) },
-                                isActive = t.id == currentMediaId,
                             )
                         }
                     }
