@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -76,8 +77,8 @@ import ir.mariaplayer.R
 import ir.mariaplayer.lyrics.LrcLine
 import ir.mariaplayer.lyrics.LrcParser
 import ir.mariaplayer.lyrics.LyricsCache
-import ir.mariaplayer.lyrics.LyricsFetchResult
 import ir.mariaplayer.lyrics.LyricsFetcher
+import ir.mariaplayer.lyrics.LyricsResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -89,6 +90,8 @@ import kotlin.math.abs
 private sealed interface DispState {
     data object Editing : DispState
     data object Loading : DispState
+    data class Results(val results: List<LyricsResult>) : DispState
+    data class Preview(val result: LyricsResult, val all: List<LyricsResult>) : DispState
     data class Synced(val lines: List<LrcLine>) : DispState
     data class Plain(val text: String) : DispState
     data object NotFound : DispState
@@ -123,8 +126,13 @@ fun LyricsDisplayScreen(
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
     var albumArt by remember(mediaId) { mutableStateOf<Bitmap?>(null) }
 
-    var editTitle by remember(mediaId) { mutableStateOf(rawTitle) }
-    var editArtist by remember(mediaId) { mutableStateOf(rawArtist) }
+    val fnParsed = remember(filename) { parseFilename(filename) }
+    var editTitle by remember(mediaId) {
+        mutableStateOf(rawTitle.ifBlank { fnParsed?.second ?: "" })
+    }
+    var editArtist by remember(mediaId) {
+        mutableStateOf(rawArtist.ifBlank { fnParsed?.first ?: "" })
+    }
 
     LaunchedEffect(Unit) { prefs = LyricsDisplayPrefs.read(context) }
 
@@ -147,6 +155,7 @@ fun LyricsDisplayScreen(
         }
     }
 
+    // Load cached lyrics on track change
     LaunchedEffect(mediaId, trackId) {
         val id = trackId ?: run {
             state = DispState.Editing
@@ -163,26 +172,23 @@ fun LyricsDisplayScreen(
         }
     }
 
+    // Search
     LaunchedEffect(mediaId, trigger) {
         if (trigger == 0) return@LaunchedEffect
-        val id = trackId ?: run { state = DispState.NotFound; return@LaunchedEffect }
         state = DispState.Loading
-        val r = LyricsFetcher().fetch(editTitle, editArtist, filename, (durationMs / 1000).toInt())
-        state = when (r) {
-            is LyricsFetchResult.Found -> {
-                LyricsCache.writeLyrics(context, id, r.result.syncedLyrics, r.result.plainLyrics)
-                when {
-                    !r.result.syncedLyrics.isNullOrBlank() -> {
-                        val lines = LrcParser.parse(r.result.syncedLyrics!!)
-                        if (lines.isNotEmpty()) DispState.Synced(lines) else DispState.NotFound
-                    }
-                    !r.result.plainLyrics.isNullOrBlank() -> DispState.Plain(r.result.plainLyrics!!)
-                    else -> DispState.NotFound
-                }
+        try {
+            val results = LyricsFetcher().fetchAll(
+                editTitle, editArtist, (durationMs / 1000).toInt(),
+            )
+            state = when {
+                results.isEmpty() -> DispState.NotFound
+                results.size == 1 -> DispState.Preview(results[0], results)
+                else -> DispState.Results(results)
             }
-            LyricsFetchResult.NotFound -> DispState.NotFound
-            is LyricsFetchResult.NetworkError -> DispState.Error(r.message)
-            LyricsFetchResult.Timeout -> DispState.Error("timeout")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            state = DispState.Error(e.message ?: "search failed")
         }
     }
 
@@ -223,7 +229,12 @@ fun LyricsDisplayScreen(
                 Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = {
+                    if (state is DispState.Editing || state is DispState.Synced ||
+                        state is DispState.Plain || state is DispState.NotFound ||
+                        state is DispState.Error) onBack()
+                    else state = DispState.Editing
+                }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_arrow_down),
                         contentDescription = "Back", tint = Color.White,
@@ -244,11 +255,13 @@ fun LyricsDisplayScreen(
                         )
                     }
                 }
-                IconButton(onClick = { state = DispState.Editing }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_edit),
-                        contentDescription = "Edit tags", tint = Color.White,
-                    )
+                if (state !is DispState.Editing) {
+                    IconButton(onClick = { state = DispState.Editing }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_edit),
+                            contentDescription = "Edit tags", tint = Color.White,
+                        )
+                    }
                 }
                 IconButton(onClick = { settingsOpen = true }) {
                     Icon(
@@ -271,6 +284,36 @@ fun LyricsDisplayScreen(
                         onPaste = { state = DispState.PasteSheet },
                     )
                     DispState.Loading -> LoadingPulse()
+                    is DispState.Results -> ResultsListBody(
+                        results = s.results,
+                        onSelect = { sel -> state = DispState.Preview(sel, s.results) },
+                        onBack = { state = DispState.Editing },
+                    )
+                    is DispState.Preview -> PreviewBody(
+                        result = s.result,
+                        onConfirm = {
+                            val id = trackId
+                            if (id != null) {
+                                scope.launch {
+                                    LyricsCache.writeLyrics(
+                                        context, id,
+                                        s.result.syncedLyrics, s.result.plainLyrics,
+                                    )
+                                    state = when {
+                                        !s.result.syncedLyrics.isNullOrBlank() -> {
+                                            val lines = LrcParser.parse(s.result.syncedLyrics)
+                                            if (lines.isNotEmpty()) DispState.Synced(lines)
+                                            else DispState.NotFound
+                                        }
+                                        !s.result.plainLyrics.isNullOrBlank() ->
+                                            DispState.Plain(s.result.plainLyrics)
+                                        else -> DispState.NotFound
+                                    }
+                                }
+                            }
+                        },
+                        onBack = { state = DispState.Results(s.all) },
+                    )
                     is DispState.Synced -> SyncedBody(
                         lines = s.lines,
                         positionMs = positionMs,
@@ -337,6 +380,38 @@ private fun fallbackBackground(): Brush = Brush.verticalGradient(
     listOf(Color(0xFF0A0A12), Color(0xFF050508), Color.Black)
 )
 
+private fun parseFilename(filename: String): Pair<String, String>? {
+    if (filename.isBlank()) return null
+    val base = filename.substringBeforeLast('.')
+        .replace('_', ' ')
+        .trim()
+    if (base.isBlank()) return null
+    val stripped = Regex("^\\s*\\d{1,4}\\s*[.\\-)]\\s*").replace(base, "").trim()
+    val seps = listOf(" - ", " – ", " — ", " | ")
+    for (sep in seps) {
+        val idx = stripped.indexOf(sep)
+        if (idx > 0 && idx < stripped.length - sep.length) {
+            val a = stripped.substring(0, idx).trim()
+            val t = stripped.substring(idx + sep.length).trim()
+            if (a.isNotBlank() && t.isNotBlank()) return a to t
+        }
+    }
+    return null
+}
+
+private fun sourceLabel(src: String): String = when (src) {
+    "lrclib" -> "LRCLIB"
+    "lrclib-search" -> "LRCLIB search"
+    "genius" -> "Genius"
+    "lyrics.ovh" -> "lyrics.ovh"
+    else -> src
+}
+
+private fun stripLrc(s: String): String =
+    s.replace(Regex("\\[\\d{1,3}:\\d{2}(?:\\.\\d{1,3})?]"), "")
+        .replace(Regex("\\n+"), "\n")
+        .trim()
+
 @Composable
 private fun LoadingPulse() {
     val t = rememberInfiniteTransition(label = "loading")
@@ -363,7 +438,7 @@ private fun LoadingPulse() {
             )
             Spacer(Modifier.height(20.dp))
             Text(
-                "Searching lyrics…",
+                "Searching 3 sources…",
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -400,7 +475,7 @@ private fun EditForm(
         Text("Lyrics", color = Color.White, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(6.dp))
         Text(
-            "Fix tags if needed, then search online or paste.",
+            "Fix tags if needed, then search.",
             color = Color.White.copy(alpha = 0.55f),
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
@@ -426,13 +501,18 @@ private fun EditForm(
         Spacer(Modifier.height(24.dp))
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color.White.copy(alpha = 0.18f),
-            modifier = Modifier.clickable(onClick = onSearch),
+            color = if (editTitle.isNotBlank()) Color.White.copy(alpha = 0.20f)
+                    else Color.White.copy(alpha = 0.06f),
+            modifier = Modifier.clickable(enabled = editTitle.isNotBlank(), onClick = onSearch),
         ) {
-            Text("🔍 Search lyrics", color = Color.White,
+            Text(
+                "🔍 Search lyrics",
+                color = if (editTitle.isNotBlank()) Color.White
+                        else Color.White.copy(alpha = 0.4f),
                 modifier = Modifier.padding(horizontal = 36.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold)
+                fontWeight = FontWeight.Bold,
+            )
         }
         Spacer(Modifier.height(12.dp))
         Surface(
@@ -440,9 +520,12 @@ private fun EditForm(
             color = Color.White.copy(alpha = 0.10f),
             modifier = Modifier.clickable(onClick = onPaste),
         ) {
-            Text("📋 Paste lyrics", color = Color.White.copy(alpha = 0.85f),
+            Text(
+                "📋 Paste lyrics",
+                color = Color.White.copy(alpha = 0.85f),
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                style = MaterialTheme.typography.bodyMedium)
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
         Spacer(Modifier.height(40.dp))
     }
@@ -457,6 +540,220 @@ private fun FieldBlock(label: String, value: String) {
         Text(value, color = Color.White.copy(alpha = 0.8f),
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun ResultsListBody(
+    results: List<LyricsResult>,
+    onSelect: (LyricsResult) -> Unit,
+    onBack: () -> Unit,
+) {
+    val bySource = results.groupingBy { it.source }.eachCount()
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_down),
+                    contentDescription = "Back", tint = Color.White,
+                )
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "${results.size} result${if (results.size == 1) "" else "s"}",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    bySource.entries.joinToString(" · ") {
+                        "${sourceLabel(it.key)} ${it.value}"
+                    },
+                    color = Color.White.copy(alpha = 0.5f),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+        LazyColumn(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
+            itemsIndexed(results) { _, r ->
+                ResultCard(r, onClick = { onSelect(r) })
+                Spacer(Modifier.height(8.dp))
+            }
+            item { Spacer(Modifier.height(16.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun ResultCard(r: LyricsResult, onClick: () -> Unit) {
+    val isSynced = !r.syncedLyrics.isNullOrBlank()
+    val preview = (r.plainLyrics ?: stripLrc(r.syncedLyrics ?: ""))
+        .replace("\n", " ")
+        .trim()
+        .take(120)
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White.copy(alpha = 0.07f),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.White.copy(alpha = 0.15f),
+                ) {
+                    Text(
+                        sourceLabel(r.source),
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isSynced) Color(0xFF4CAF50).copy(alpha = 0.25f)
+                            else Color.White.copy(alpha = 0.10f),
+                ) {
+                    Text(
+                        if (isSynced) "♪ synced" else "text only",
+                        color = if (isSynced) Color(0xFF81C784)
+                                else Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                if (r.durationSec != null) {
+                    Text(
+                        formatMs(r.durationSec * 1000L),
+                        color = Color.White.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                r.title.ifBlank { "Untitled" },
+                color = Color.White,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (r.artist.isNotBlank()) {
+                Text(
+                    r.artist,
+                    color = Color.White.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (preview.isNotBlank()) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    preview + if (preview.length >= 120) "…" else "",
+                    color = Color.White.copy(alpha = 0.45f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewBody(
+    result: LyricsResult,
+    onConfirm: () -> Unit,
+    onBack: () -> Unit,
+) {
+    val isSynced = !result.syncedLyrics.isNullOrBlank()
+    val fullText = (result.syncedLyrics ?: result.plainLyrics ?: "")
+        .replace(Regex("\\[\\d{1,3}:\\d{2}(?:\\.\\d{1,3})?]"), "")
+        .trim()
+
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_down),
+                    contentDescription = "Back", tint = Color.White,
+                )
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    result.title.ifBlank { "Untitled" },
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    "${sourceLabel(result.source)} · " +
+                        (if (isSynced) "synced" else "plain") +
+                        (if (result.artist.isNotBlank()) " · ${result.artist}" else ""),
+                    color = Color.White.copy(alpha = 0.55f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        Column(
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                fullText,
+                color = Color.White.copy(alpha = 0.92f),
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(40.dp))
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White.copy(alpha = 0.10f),
+        ) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onBack) {
+                    Text("Back", color = Color.White.copy(alpha = 0.7f))
+                }
+                Spacer(Modifier.weight(1f))
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFF4CAF50).copy(alpha = 0.85f),
+                    modifier = Modifier.clickable(onClick = onConfirm),
+                ) {
+                    Text(
+                        "✓ Use this",
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -588,10 +885,7 @@ private fun NotFoundBody(
 }
 
 @Composable
-private fun PasteSheetBody(
-    onCancel: () -> Unit,
-    onSave: (String) -> Unit,
-) {
+private fun PasteSheetBody(onCancel: () -> Unit, onSave: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.White, unfocusedTextColor = Color.White,
@@ -609,7 +903,7 @@ private fun PasteSheetBody(
         Text("Paste lyrics", color = Color.White, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(6.dp))
         Text(
-            "Stored locally in the app. Does not modify the audio file.",
+            "Stored locally. Does not modify the audio file.",
             color = Color.White.copy(alpha = 0.55f),
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
