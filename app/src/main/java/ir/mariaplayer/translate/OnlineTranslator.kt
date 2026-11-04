@@ -17,8 +17,9 @@ object OnlineTranslator {
 
     private fun pair(targetLang: String): String {
         val target = targetLang.lowercase().trim()
-        val source = if (target == "en") "fa" else "en"
-        return "$source|$target"
+        // PR-54: MyMemory supports "Autodetect" for source.
+        // Hardcoding "en" caused phonetic gibberish for non-English songs.
+        return "Autodetect|$target"
     }
 
     suspend fun translateBatch(
