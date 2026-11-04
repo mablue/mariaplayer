@@ -39,6 +39,7 @@ import ir.mariaplayer.R
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
+    containerColor: Color = Color.White.copy(alpha = 0.07f),
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
@@ -52,7 +53,7 @@ fun GlassCard(
     }
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color.White.copy(alpha = 0.07f),
+        color = containerColor,
         modifier = clickable,
     ) {
         Box { content() }
@@ -69,10 +70,12 @@ fun GlassTrackRow(
     onDeleteClick: (() -> Unit)?,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
+    isActive: Boolean = false,
 ) {
     GlassCard(
         onClick = onClick,
         onLongClick = onLongClick,
+        containerColor = if (isActive) VioletPrimary.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.07f),
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),

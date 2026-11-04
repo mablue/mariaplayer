@@ -124,6 +124,7 @@ fun LyricsDisplayScreen(
     var prefs by remember { mutableStateOf(DisplayPrefs()) }
     var settingsOpen by remember { mutableStateOf(false) }
     var state by remember(mediaId) { mutableStateOf<DispState>(DispState.Editing) }
+    var editingFrom by remember(mediaId) { mutableStateOf<DispState?>(null) }
     var trigger by remember(mediaId) { mutableStateOf(0) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
@@ -265,10 +266,17 @@ fun LyricsDisplayScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = {
-                    if (state is DispState.Editing || state is DispState.Synced ||
+                    val restore = editingFrom
+                    if (restore != null && state is DispState.Editing) {
+                        state = restore
+                        editingFrom = null
+                    } else if (state is DispState.Editing || state is DispState.Synced ||
                         state is DispState.Plain || state is DispState.NotFound ||
-                        state is DispState.Error) onBack()
-                    else state = DispState.Editing
+                        state is DispState.Error) {
+                        onBack()
+                    } else {
+                        state = DispState.Editing
+                    }
                 }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_arrow_down),
@@ -291,7 +299,12 @@ fun LyricsDisplayScreen(
                     }
                 }
                 if (state !is DispState.Editing) {
-                    IconButton(onClick = { state = DispState.Editing }) {
+                    IconButton(onClick = {
+                        if (state !is DispState.Editing) {
+                            editingFrom = state
+                            state = DispState.Editing
+                        }
+                    }) {
                         Icon(
                             painter = painterResource(R.drawable.ic_edit),
                             contentDescription = "Edit tags", tint = Color.White,
@@ -1048,7 +1061,7 @@ private fun GlassControls(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = {
-                    runCatching { controller.seekToPreviousMediaItem() }
+                    runCatching { runCatching { controller.seekToPreviousMediaItem() } }
                         .onFailure { /* corrupt file — controls will recover on next valid track */ }
                 }, enabled = controller.hasPreviousMediaItem()) {
                     Icon(painterResource(R.drawable.ic_skip_previous), "Previous",
@@ -1066,7 +1079,7 @@ private fun GlassControls(
                         tint = Color.White, modifier = Modifier.size(38.dp))
                 }
                 IconButton(onClick = {
-                    runCatching { controller.seekToNextMediaItem() }
+                    runCatching { runCatching { controller.seekToNextMediaItem() } }
                         .onFailure { /* corrupt file — see PR-51 */ }
                 }, enabled = controller.hasNextMediaItem()) {
                     Icon(painterResource(R.drawable.ic_skip_next), "Next",
