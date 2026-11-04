@@ -1,5 +1,21 @@
 package ir.mariaplayer.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -103,22 +119,65 @@ fun PlaylistDetailScreen(
                 )
             }
 
-            else -> LazyColumn(Modifier.fillMaxSize().padding(inner)) {
+            else -> LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(inner),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 items(tracks, key = { it.id }) { t ->
                     val idx = tracks.indexOfFirst { it.id == t.id }
                     val rawIdx = playlist.trackIds.indexOf(t.id)
                     val canUp = editMode && rawIdx > 0
                     val canDown = editMode && rawIdx >= 0 && rawIdx < playlist.trackIds.lastIndex
 
-                    ListItem(
-                        headlineContent = { Text(t.title) },
-                        supportingContent = {
-                            Text(
-                                listOfNotNull(t.artist, formatDurationLocal(t.durationMs))
-                                    .joinToString(" - ")
-                            )
-                        },
-                        trailingContent = {
+                    GlassCard(
+                        onClick = if (!editMode && idx >= 0) {
+                            { onPlayTrack(tracks, idx) }
+                        } else null,
+                    ) {
+                        Row(
+                            Modifier.fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                Modifier.size(40.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(VioletPrimary, VioletDeep)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "${rawIdx + 1}",
+                                    color = IvoryWhite,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    t.title,
+                                    color = IvoryWhite,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    listOfNotNull(
+                                        t.artist,
+                                        formatDurationLocal(t.durationMs),
+                                    ).joinToString(" · "),
+                                    color = IvoryWhite.copy(alpha = 0.55f),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                             if (editMode) {
                                 Column {
                                     IconButton(
@@ -133,12 +192,14 @@ fun PlaylistDetailScreen(
                                                 }
                                             }
                                         },
+                                        modifier = Modifier.size(32.dp),
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_arrow_up),
                                             contentDescription = "Move up",
-                                            tint = if (canUp) MaterialTheme.colorScheme.primary
-                                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            tint = if (canUp) VioletPrimary
+                                                   else IvoryWhite.copy(alpha = 0.3f),
+                                            modifier = Modifier.size(18.dp),
                                         )
                                     }
                                     IconButton(
@@ -154,34 +215,38 @@ fun PlaylistDetailScreen(
                                                 }
                                             }
                                         },
+                                        modifier = Modifier.size(32.dp),
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_arrow_down),
                                             contentDescription = "Move down",
-                                            tint = if (canDown) MaterialTheme.colorScheme.primary
-                                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            tint = if (canDown) VioletPrimary
+                                                   else IvoryWhite.copy(alpha = 0.3f),
+                                            modifier = Modifier.size(18.dp),
                                         )
                                     }
                                 }
                             } else {
-                                IconButton(onClick = {
-                                    scope.launch {
-                                        PlaylistPrefs.removeTrack(context, playlistId, t.id)
-                                    }
-                                }) {
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            PlaylistPrefs.removeTrack(
+                                                context, playlistId, t.id,
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.size(36.dp),
+                                ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_delete),
                                         contentDescription = "Remove from playlist",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        tint = IvoryWhite.copy(alpha = 0.55f),
+                                        modifier = Modifier.size(20.dp),
                                     )
                                 }
                             }
-                        },
-                        modifier = Modifier.clickable(enabled = !editMode) {
-                            if (idx >= 0) onPlayTrack(tracks, idx)
-                        },
-                    )
-                    HorizontalDivider()
+                        }
+                    }
                 }
             }
         }
