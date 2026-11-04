@@ -2,35 +2,25 @@ package ir.mariaplayer.translate
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
 /**
- * PR-L47: online translation via Google's free "gtx" endpoint.
- *
- * No API key. Rate-limited (~100 req/hour per IP). We mitigate by:
- *   - Batching all lines into one request per song
- *   - Caching per (trackId, targetLang) in LyricsCache
- *   - Never auto-translating; user toggles in settings
- *
- * Endpoint:
- *   GET https://translate.googleapis.com/translate_a/single
- *     ?client=gtx&sl=auto&tl=<lang>&dt=t&q=<encoded>
- *
- * Response format:
- *   [[["ترجمه۱","original۱",...],["ترجمه۲","original۲",...]],...]
- *   We join segment[0] of each entry, which preserves "\n".
+ * PR-L47-fix: MyMemory instead of Google (Google blocks Iranian IPs).
  */
 object OnlineTranslator {
 
-    private const val USER_AGENT = "Mozilla/5.0 (Linux; Android 14) MariaPlayer/1.0"
+    private const val USER_AGENT = "MariaPlayer/1.0 (lyrics translate)"
+    private const val BASE = "https://api.mymemory.translated.net/get"
 
-    /**
-     * Translate a list of lines. Sends them joined with \n in one request.
-     * Returns List<String> of same size, or null on failure / count mismatch.
-     */
+    private fun pair(targetLang: String): String {
+        val target = targetLang.lowercase().trim()
+        val source = if (target == "en") "fa" else "en"
+        return "$source|$target"
+    }
+
     suspend fun translateBatch(
         lines: List<String>,
         targetLang: String,
@@ -38,68 +28,54 @@ object OnlineTranslator {
     ): List<String>? = withContext(Dispatchers.IO) {
         if (lines.isEmpty()) return@withContext emptyList()
         if (targetLang.isBlank()) return@withContext null
-
-        // Safety: >80 lines → rate limit would be hit; refuse.
         if (lines.size > 80) return@withContext null
 
-        val joined = lines.joinToString("\n")
-        if (joined.length > 4500) return@withContext null  // URL length guard
+        val langPair = pair(targetLang)
+        val out = ArrayList<String>(lines.size)
+        var reachedNetwork = false
 
-        val urlStr = buildString {
-            append("https://translate.googleapis.com/translate_a/single")
-            append("?client=gtx")
-            append("&sl=auto")
-            append("&tl=").append(URLEncoder.encode(targetLang, "UTF-8"))
-            append("&dt=t")
-            append("&q=").append(URLEncoder.encode(joined, "UTF-8"))
+        for (line in lines) {
+            if (line.isBlank()) { out.add(""); continue }
+            val tr = translateOne(line, langPair, timeoutMs)
+            if (tr != null) {
+                out.add(tr)
+                reachedNetwork = true
+            } else {
+                out.add(line)
+            }
+            kotlinx.coroutines.delay(100)
         }
 
-        val body = httpGet(urlStr, timeoutMs) ?: return@withContext null
-        parseResponse(body, lines.size)
+        if (!reachedNetwork) null else out
     }
 
-    /**
-     * Single-line convenience (used if batch fails).
-     */
     suspend fun translateOne(
         text: String,
-        targetLang: String,
+        langPair: String,
         timeoutMs: Int = 6000,
     ): String? = withContext(Dispatchers.IO) {
-        if (text.isBlank() || targetLang.isBlank()) return@withContext null
+        if (text.isBlank()) return@withContext null
+        if (text.toByteArray(Charsets.UTF_8).size > 480) return@withContext null
+
         val urlStr = buildString {
-            append("https://translate.googleapis.com/translate_a/single")
-            append("?client=gtx&sl=auto&tl=").append(URLEncoder.encode(targetLang, "UTF-8"))
-            append("&dt=t&q=").append(URLEncoder.encode(text, "UTF-8"))
+            append(BASE)
+            append("?q=").append(URLEncoder.encode(text, "UTF-8"))
+            append("&langpair=").append(URLEncoder.encode(langPair, "UTF-8"))
         }
+
         val body = httpGet(urlStr, timeoutMs) ?: return@withContext null
         try {
-            val arr = JSONArray(body)
-            val segs = arr.getJSONArray(0)
-            val sb = StringBuilder()
-            for (i in 0 until segs.length()) {
-                val seg = segs.optJSONArray(i) ?: continue
-                if (seg.length() > 0) sb.append(seg.optString(0, ""))
-            }
-            sb.toString().trim().ifBlank { null }
-        } catch (_: Exception) { null }
-    }
-
-    private fun parseResponse(body: String, expectedCount: Int): List<String>? {
-        return try {
-            val arr = JSONArray(body)
-            val segs = arr.getJSONArray(0)
-            val sb = StringBuilder()
-            for (i in 0 until segs.length()) {
-                val seg = segs.optJSONArray(i) ?: continue
-                if (seg.length() > 0) sb.append(seg.optString(0, ""))
-            }
-            val full = sb.toString()
-            val split = full.split("\n").map { it.trim() }
-            // Google may merge/split; require exact count
-            if (split.size != expectedCount) return null
-            split
-        } catch (_: Exception) { null }
+            val o = JSONObject(body)
+            val status = o.optInt("responseStatus", -1)
+            if (status != 200) return@withContext null
+            val data = o.optString("responseData", "")
+            if (data.isBlank()) return@withContext null
+            if (data.contains("MYMEMORY WARNING", ignoreCase = true)) return@withContext null
+            if (data.contains("QUERY LENGTH LIMIT", ignoreCase = true)) return@withContext null
+            data.trim()
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun httpGet(url: String, timeoutMs: Int): String? {
