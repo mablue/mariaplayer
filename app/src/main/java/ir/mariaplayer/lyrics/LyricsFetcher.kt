@@ -54,6 +54,8 @@ class LyricsFetcher(
                     async { tryLrclibGet(title, artist, durationSec, collected) },
                     async { tryLrclibSearch(title, artist, collected) },
                     async { tryGenius(title, artist, collected) },
+                    async { tryLyricsTranslate(title, artist, collected) },
+                    async { tryMusixmatch(title, artist, collected) },
                     async { tryLyricsOvh(title, artist, collected) },
                 )
                 jobs.awaitAll()
@@ -174,6 +176,20 @@ class LyricsFetcher(
         } catch (_: CancellationException) {
             throw CancellationException()
         } catch (_: Exception) {}
+    }
+
+    // ─── LyricsTranslate (HTML scrape, no API) ───
+    private suspend fun tryLyricsTranslate(
+        title: String, artist: String, out: ConcurrentLinkedQueue<LyricsResult>,
+    ) {
+        // TODO PR-53b: parse https://lyricstranslate.com/en/translations/...
+    }
+
+    // ─── Musixmatch (HTML scrape, no API) ───
+    private suspend fun tryMusixmatch(
+        title: String, artist: String, out: ConcurrentLinkedQueue<LyricsResult>,
+    ) {
+        // TODO PR-53c: parse https://www.musixmatch.com/lyrics/...
     }
 
     // ─── lyrics.ovh ───
