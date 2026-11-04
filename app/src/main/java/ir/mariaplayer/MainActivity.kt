@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -440,16 +441,6 @@ private fun LibraryScreen(
             runCatching { listState.animateScrollToItem(currentIndex) }
         }
     }
-    val listState = rememberLazyListState()
-
-    val currentMediaId = controller?.currentMediaItem?.mediaId?.toLongOrNull()
-    val currentIndex = remember(visible, currentMediaId) {
-        visible?.indexOfFirst { it.id == currentMediaId } ?: -1
-    }
-    LaunchedEffect(currentIndex) {
-        if (currentIndex >= 0) {
-            runCatching { listState.animateScrollToItem(currentIndex) }
-        }
     }
 
     val folderList = remember(allTracks) {

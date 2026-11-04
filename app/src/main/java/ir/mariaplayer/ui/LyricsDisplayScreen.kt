@@ -1061,7 +1061,7 @@ private fun GlassControls(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = {
-                    runCatching { runCatching { controller.seekToPreviousMediaItem() } }
+                    runCatching { runCatching { runCatching { controller.seekToPreviousMediaItem() } } }
                         .onFailure { /* corrupt file — controls will recover on next valid track */ }
                 }, enabled = controller.hasPreviousMediaItem()) {
                     Icon(painterResource(R.drawable.ic_skip_previous), "Previous",
@@ -1079,7 +1079,7 @@ private fun GlassControls(
                         tint = Color.White, modifier = Modifier.size(38.dp))
                 }
                 IconButton(onClick = {
-                    runCatching { runCatching { controller.seekToNextMediaItem() } }
+                    runCatching { runCatching { runCatching { controller.seekToNextMediaItem() } } }
                         .onFailure { /* corrupt file — see PR-51 */ }
                 }, enabled = controller.hasNextMediaItem()) {
                     Icon(painterResource(R.drawable.ic_skip_next), "Next",
