@@ -5,65 +5,83 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- ═══ VIOLET PLAY TRIANGLE (rotated -18° for dynamism) ═══ -->
-    <group android:pivotX="54" android:pivotY="54" android:rotation="-18">
-        <path
-            android:fillColor="#7928F5"
-            android:pathData="
-                M 36,22
-                Q 24,22 24,34
-                L 24,74
-                Q 24,86 36,86
-                Q 42,86 46,82
-                L 84,58
-                Q 92,54 84,50
-                L 46,26
-                Q 42,22 36,22 Z" />
-    </group>
+    <!-- Play triangle (violet, rounded corners) -->
+    <path
+        android:fillColor="#7928F5"
+        android:pathData="M30,24
+            L30,84
+            Q30,90 36,87
+            L82,58
+            Q88,54 82,50
+            L36,21
+            Q30,18 30,24 Z" />
 
-    <!-- ═══ CALLA LILY ═══ -->
-    <!-- Main cup petal (soft ivory) -->
+    <!-- Stem (white, curving from lily base down-left) -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="
-            M 50,34
-            Q 44,40 42,50
-            Q 42,58 48,62
-            Q 54,60 56,52
-            Q 58,42 54,36
-            Q 52,33 50,34 Z" />
-    <!-- Left outer petal -->
+        android:pathData="M54,65
+            C52,72 46,82 40,88
+            C36,91 33,92 30,92
+            C30,90 33,87 37,83
+            C44,76 50,68 52,62 Z" />
+
+    <!-- Bulb (white oval at bottom of stem) -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="
-            M 46,58
-            Q 36,56 30,50
-            Q 32,48 36,50
-            Q 42,54 46,58 Z" />
-    <!-- Right outer petal -->
+        android:pathData="M22,90
+            C22,86 26,82 32,82
+            C38,82 42,87 42,92
+            C42,97 37,99 32,99
+            C26,99 22,95 22,90 Z" />
+
+    <!-- Left outer petal (white) -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="
-            M 54,52
-            Q 64,48 70,52
-            Q 68,56 62,56
-            Q 56,56 54,52 Z" />
-    <!-- Stem curving down-left -->
+        android:pathData="M52,64
+            C46,56 38,46 32,38
+            C28,32 28,28 32,28
+            C38,30 46,40 52,52
+            C54,56 55,60 52,64 Z" />
+
+    <!-- Right outer petal (white) -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="
-            M 48,60
-            L 52,60
-            Q 54,70 52,80
-            L 46,80
-            Q 48,70 48,60 Z" />
-    <!-- Pale pink inner accent -->
+        android:pathData="M56,62
+            C58,54 62,46 68,38
+            C72,32 76,30 76,34
+            C76,40 70,50 64,58
+            C60,62 58,64 56,62 Z" />
+
+    <!-- Main cup petal (white, tall) -->
+    <path
+        android:fillColor="#FFFDF8"
+        android:pathData="M54,64
+            C51,56 48,46 48,36
+            C48,26 52,20 56,18
+            C60,20 60,30 58,42
+            C56,52 55,60 54,64 Z" />
+
+    <!-- Pink accent inside left petal -->
     <path
         android:fillColor="#F2DCEB"
-        android:pathData="
-            M 48,44
-            Q 46,50 48,56
-            Q 51,53 51,49
-            Q 50,45 48,44 Z" />
+        android:pathData="M50,60
+            C46,52 40,44 35,38
+            C33,36 34,35 36,37
+            C42,45 47,54 50,60 Z" />
 
+    <!-- Pink accent inside right petal -->
+    <path
+        android:fillColor="#F2DCEB"
+        android:pathData="M58,58
+            C60,50 64,42 68,37
+            C70,35 70,37 68,39
+            C63,47 60,55 58,58 Z" />
+
+    <!-- Pink accent inside main cup -->
+    <path
+        android:fillColor="#F2DCEB"
+        android:pathData="M55,30
+            C56,24 57,22 57,22
+            C58,24 57,34 55,44
+            C54,40 54,34 55,30 Z" />
 </vector>
