@@ -14,7 +14,7 @@ private val Context.displayStore by preferencesDataStore(name = "lyrics_display"
 data class DisplayPrefs(
     val fontSize: Int = 22,
     val activeFontSize: Int = 34,
-    val colorActive: Long = 0xFFE91E63,
+    val colorActive: Long = 0xFF7928F5,
     val colorInactive: Long = 0xFFB0B0B0,
     val colorBackground: Long = 0xFF0A0A0F,
 )
@@ -30,7 +30,7 @@ object LyricsDisplayPrefs {
         DisplayPrefs(
             fontSize = p[KEY_FONT] ?: 22,
             activeFontSize = p[KEY_ACTIVE_FONT] ?: 34,
-            colorActive = p[KEY_COLOR_A] ?: 0xFFE91E63,
+            colorActive = p[KEY_COLOR_A] ?: 0xFF7928F5,
             colorInactive = p[KEY_COLOR_I] ?: 0xFFB0B0B0,
             colorBackground = p[KEY_COLOR_BG] ?: 0xFF0A0A0F,
         )

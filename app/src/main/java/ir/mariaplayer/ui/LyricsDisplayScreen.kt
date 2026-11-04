@@ -1053,9 +1053,12 @@ private fun DisplaySettingsSheet(
             Text("Active color", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // PR-L45: strict 4-color brand palette for lyrics highlight.
                 listOf(
-                    0xFFE91E63L, 0xFFFF5722L, 0xFF2196F3L,
-                    0xFF00BCD4L, 0xFF4CAF50L, 0xFFFFC107L, 0xFFFFFFFFL,
+                    0xFF7928F5L,  // violet (primary)
+                    0xFFF2DCEBL,  // petal pink
+                    0xFFFFFDF8L,  // ivory white
+                    0xFF4A1799L,  // violet deep
                 ).forEach { argb ->
                     Box(Modifier.size(34.dp).clip(RoundedCornerShape(50))
                             .background(Color(argb))
