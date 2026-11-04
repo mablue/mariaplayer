@@ -54,6 +54,7 @@ fun GlassCard(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = containerColor,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
         modifier = clickable,
     ) {
         Box { content() }
