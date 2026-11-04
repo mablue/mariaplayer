@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenu
@@ -71,6 +73,7 @@ import ir.mariaplayer.data.Track
 import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
+import ir.mariaplayer.ui.GlassTrackRow
 import ir.mariaplayer.ui.AddToPlaylistSheet
 import ir.mariaplayer.ui.PermissionScreen
 import ir.mariaplayer.ui.PlaylistDetailScreen
@@ -535,48 +538,24 @@ private fun LibraryScreen(
                         }
                         CenterText(msg)
                     }
-                    else -> LazyColumn(Modifier.fillMaxSize()) {
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         items(visible, key = { it.id }) { t ->
-                            ListItem(
-                                headlineContent = { Text(t.title) },
-                                supportingContent = {
-                                    Text(
-                                        listOfNotNull(t.artist, t.album, t.folder,
-                                                      formatDuration(t.durationMs))
-                                            .joinToString(" - ")
-                                    )
-                                },
-                                trailingContent = {
-                                    Row {
-                                        IconButton(onClick = { onToggleFavorite(t.id) }) {
-                                            Icon(
-                                                painter = painterResource(
-                                                    if (t.id in favorites) R.drawable.ic_favorite_filled
-                                                    else R.drawable.ic_favorite_border
-                                                ),
-                                                contentDescription = if (t.id in favorites)
-                                                    "Remove from favorites"
-                                                else "Add to favorites",
-                                                tint = if (t.id in favorites)
-                                                           MaterialTheme.colorScheme.primary
-                                                       else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        }
-                                        IconButton(onClick = { onDeleteRequest(t) }) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.ic_delete),
-                                                contentDescription = "Delete track",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.combinedClickable(
-                                    onClick = { onTrackClick(t) },
-                                    onLongClick = { onTrackLongClick(t) },
-                                ),
+                            GlassTrackRow(
+                                title = t.title,
+                                subtitle = listOfNotNull(
+                                    t.artist, t.album, t.folder,
+                                    formatDuration(t.durationMs),
+                                ).joinToString(" · "),
+                                isFavorite = t.id in favorites,
+                                onFavClick = { onToggleFavorite(t.id) },
+                                onDeleteClick = { onDeleteRequest(t) },
+                                onClick = { onTrackClick(t) },
+                                onLongClick = { onTrackLongClick(t) },
                             )
-                            HorizontalDivider()
                         }
                     }
                 }
