@@ -68,7 +68,15 @@ object OnlineTranslator {
             val o = JSONObject(body)
             val status = o.optInt("responseStatus", -1)
             if (status != 200) return@withContext null
-            val data = o.optString("responseData", "")
+            // PR-L47-hotfix: MyMemory returns responseData as a JSON OBJECT
+            // {translatedText, match, ...}, not a plain string. Older / error
+            // paths may still put a string there, so handle both shapes.
+            val rd = o.opt("responseData")
+            val data = when (rd) {
+                is JSONObject -> rd.optString("translatedText", "")
+                is String -> rd
+                else -> ""
+            }
             if (data.isBlank()) return@withContext null
             if (data.contains("MYMEMORY WARNING", ignoreCase = true)) return@withContext null
             if (data.contains("QUERY LENGTH LIMIT", ignoreCase = true)) return@withContext null
