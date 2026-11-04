@@ -9,16 +9,6 @@ import kotlinx.coroutines.flow.first
 
 private val Context.lyricsStore by preferencesDataStore(name = "lyrics_cache")
 
-/**
- * Per-track cache of lyrics and user offset. Keyed by trackId.
- *
- * Storage format:
- *   "lyrics_{id}_synced" = String (empty = not cached)
- *   "lyrics_{id}_plain"  = String (empty = not cached)
- *   "lyrics_{id}_offset" = Long (default 0)
- *
- * Reads/writes are atomic via DataStore.
- */
 object LyricsCache {
 
     data class Cached(
@@ -60,6 +50,40 @@ object LyricsCache {
     suspend fun writeOffset(context: Context, trackId: Long, offsetMs: Long) {
         context.lyricsStore.edit { p ->
             p[longPreferencesKey("lyrics_${trackId}_offset")] = offsetMs.coerceIn(-500L, 500L)
+        }
+    }
+
+    // ─── PR-L47: translation cache ───
+    // One translation list per (trackId, targetLang). Lines joined with \n.
+    suspend fun readTranslation(
+        context: Context,
+        trackId: Long,
+        lang: String,
+    ): List<String>? {
+        val p = context.lyricsStore.data.first()
+        val storedLang = p[stringPreferencesKey("lyrics_${trackId}_tr_lang")].orEmpty()
+        if (storedLang != lang) return null
+        val text = p[stringPreferencesKey("lyrics_${trackId}_tr_text")].orEmpty()
+        if (text.isBlank()) return null
+        return text.split("\n")
+    }
+
+    suspend fun writeTranslation(
+        context: Context,
+        trackId: Long,
+        lang: String,
+        lines: List<String>,
+    ) {
+        context.lyricsStore.edit { p ->
+            p[stringPreferencesKey("lyrics_${trackId}_tr_lang")] = lang
+            p[stringPreferencesKey("lyrics_${trackId}_tr_text")] = lines.joinToString("\n")
+        }
+    }
+
+    suspend fun clearTranslation(context: Context, trackId: Long) {
+        context.lyricsStore.edit { p ->
+            p.remove(stringPreferencesKey("lyrics_${trackId}_tr_lang"))
+            p.remove(stringPreferencesKey("lyrics_${trackId}_tr_text"))
         }
     }
 }

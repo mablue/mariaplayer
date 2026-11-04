@@ -79,6 +79,7 @@ import ir.mariaplayer.lyrics.LrcLine
 import ir.mariaplayer.lyrics.LrcParser
 import ir.mariaplayer.lyrics.LyricsCache
 import ir.mariaplayer.lyrics.LyricsFetcher
+import ir.mariaplayer.translate.OnlineTranslator
 import ir.mariaplayer.lyrics.LyricsResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -126,6 +127,8 @@ fun LyricsDisplayScreen(
     var positionMs by remember { mutableLongStateOf(0L) }
     var playing by remember { mutableStateOf(controller?.isPlaying ?: false) }
     var albumArt by remember(mediaId) { mutableStateOf<Bitmap?>(null) }
+    var translations by remember(mediaId) { mutableStateOf<List<String>?>(null) }
+    var translating by remember(mediaId) { mutableStateOf(false) }
 
     val fnParsed = remember(filename) { parseFilename(filename) }
     var editTitle by remember(mediaId) {
@@ -190,6 +193,36 @@ fun LyricsDisplayScreen(
             throw e
         } catch (e: Throwable) {
             state = DispState.Error(e.message ?: "search failed")
+        }
+    }
+
+    // PR-L47: translation effect — runs on Synced state + showTranslation toggle.
+    LaunchedEffect(state, prefs.showTranslation, prefs.translationLang, trackId) {
+        if (!prefs.showTranslation) { translations = null; return@LaunchedEffect }
+        val synced = state as? DispState.Synced ?: return@LaunchedEffect
+        val id = trackId ?: return@LaunchedEffect
+
+        // Cache check
+        val cached = LyricsCache.readTranslation(context, id, prefs.translationLang)
+        if (cached != null && cached.size == synced.lines.size) {
+            translations = cached
+            return@LaunchedEffect
+        }
+
+        translating = true
+        try {
+            val texts = synced.lines.map { it.text }
+            val result = OnlineTranslator.translateBatch(texts, prefs.translationLang)
+            if (result != null && result.size == texts.size) {
+                translations = result
+                LyricsCache.writeTranslation(context, id, prefs.translationLang, result)
+            } else {
+                translations = null
+            }
+        } catch (_: Throwable) {
+            translations = null
+        } finally {
+            translating = false
         }
     }
 
@@ -317,6 +350,7 @@ fun LyricsDisplayScreen(
                     )
                     is DispState.Synced -> SyncedBody(
                         lines = s.lines,
+                        translations = translations,
                         positionMs = positionMs,
                         prefs = prefs,
                         onSeek = { ms -> controller?.seekTo(ms) },
@@ -761,6 +795,7 @@ private fun PreviewBody(
 @Composable
 private fun SyncedBody(
     lines: List<LrcLine>,
+    translations: List<String>?,
     positionMs: Long,
     prefs: DisplayPrefs,
     onSeek: (Long) -> Unit,
@@ -782,6 +817,7 @@ private fun SyncedBody(
                 val dist = abs(idx - active)
                 SyncedLine(
                     text = line.text,
+                    translation = if (prefs.showTranslation) translations?.getOrNull(idx) else null,
                     isActive = idx == active,
                     distance = dist,
                     prefs = prefs,
@@ -801,6 +837,7 @@ private fun SyncedBody(
 @Composable
 private fun SyncedLine(
     text: String,
+    translation: String?,
     isActive: Boolean,
     distance: Int,
     prefs: DisplayPrefs,
@@ -843,6 +880,20 @@ private fun SyncedLine(
             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
             textAlign = TextAlign.Center, lineHeight = (fontSize * 1.2f).sp,
         )
+        // PR-L47: translation under each line, only on active/first-neighbor
+        // (reduces visual noise; users can read the full list in the sheet).
+        if (isActive && !translation.isNullOrBlank()) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                translation,
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = (fontSize * 0.62f).sp,
+                fontWeight = FontWeight.Normal,
+                textAlign = TextAlign.Center,
+                lineHeight = (fontSize * 0.82f).sp,
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
+        }
     }
 }
 
@@ -1064,6 +1115,63 @@ private fun DisplaySettingsSheet(
                     Box(Modifier.size(34.dp).clip(RoundedCornerShape(50))
                             .background(Color(argb))
                             .clickable { onChange(prefs.copy(colorActive = argb)) })
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            // PR-L47: translation toggle + target language chips
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Show translation",
+                        style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Online (Google Translate, free, no key)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                androidx.compose.material3.Switch(
+                    checked = prefs.showTranslation,
+                    onCheckedChange = { onChange(prefs.copy(showTranslation = it)) },
+                )
+            }
+            if (prefs.showTranslation) {
+                Spacer(Modifier.height(8.dp))
+                Text("Target language",
+                    style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(6.dp))
+                androidx.compose.foundation.lazy.LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(
+                        listOf(
+                            "fa" to "فارسی", "en" to "English",
+                            "ar" to "العربية", "tr" to "Türkçe",
+                            "ru" to "Русский", "de" to "Deutsch",
+                            "fr" to "Français", "es" to "Español",
+                        )
+                    ) { (code, label) ->
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (prefs.translationLang == code)
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.clickable {
+                                onChange(prefs.copy(translationLang = code))
+                            },
+                        ) {
+                            Text(
+                                label,
+                                modifier = Modifier.padding(
+                                    horizontal = 14.dp, vertical = 6.dp,
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(24.dp))
