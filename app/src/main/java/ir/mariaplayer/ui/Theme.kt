@@ -13,6 +13,15 @@ import androidx.compose.ui.platform.LocalContext
 // Fallback brand colors if Dynamic Color is not available (Android < 12)
 val FallbackPrimary = androidx.compose.ui.graphics.Color(0xFF7928F5)
 
+// ─── Legacy brand colors (used by GlassCard, Playlists*, PlaylistDetail) ───
+// These will be migrated to MaterialTheme.colorScheme in stages 2-3 and
+// removed once all call sites use the dynamic palette.
+val VioletPrimary = androidx.compose.ui.graphics.Color(0xFF7928F5)
+val VioletDeep    = androidx.compose.ui.graphics.Color(0xFF4A1799)
+val IvoryWhite    = androidx.compose.ui.graphics.Color(0xFFFFFDF8)
+val PetalPink     = androidx.compose.ui.graphics.Color(0xFFF2DCEB)
+val DeepBlack     = androidx.compose.ui.graphics.Color(0xFF080910)
+
 private val FallbackDark = darkColorScheme(primary = FallbackPrimary)
 private val FallbackLight = lightColorScheme(primary = FallbackPrimary)
 
