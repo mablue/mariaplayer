@@ -7,9 +7,14 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
+/**
+ * PR-L55: Chained translation.
+ * 1) SimplyTranslate (Google backend) — high quality, works from Iran.
+ * 2) MyMemory — fallback, works but lower quality.
+ */
 object OnlineTranslator {
 
-    private const val USER_AGENT = "MariaPlayer/1.0 (translate)"
+    private const val UA = "MariaPlayer/1.0 (translate)"
 
     suspend fun translateBatch(
         lines: List<String>,
@@ -26,71 +31,77 @@ object OnlineTranslator {
 
         for (line in lines) {
             if (line.isBlank()) { out.add(""); continue }
-            // Try DeepLX first, then Google
-            val tr = translateDeepLX(line, "auto", target, timeoutMs)
-                ?: translateGoogle(line, target, timeoutMs)
+
+            // Try SimplyTranslate first (better quality)
+            val tr = translateSimply(line, target, timeoutMs)
+                ?: translateMyMemory(line, target, timeoutMs)
+
             if (tr != null) {
                 out.add(tr)
                 reachedNetwork = true
             } else {
-                out.add(line)
+                out.add(line) // keep original on total failure
             }
-            kotlinx.coroutines.delay(150)
+            kotlinx.coroutines.delay(120)
         }
 
         if (!reachedNetwork) null else out
     }
 
-    // DeepLX public instance (POST)
-    private suspend fun translateDeepLX(
-        text: String, sourceLang: String, targetLang: String, timeoutMs: Int,
+    // ── SimplyTranslate (Google engine) ──────────────────────────────
+    private suspend fun translateSimply(
+        text: String, targetLang: String, timeoutMs: Int,
     ): String? = withContext(Dispatchers.IO) {
         try {
-            val url = URL("https://api.deeplx.net/translate")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
-                connectTimeout = timeoutMs
-                readTimeout = timeoutMs
-                requestMethod = "POST"
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("User-Agent", USER_AGENT)
-                doOutput = true
-            }
-            val payload = JSONObject().apply {
-                put("text", text)
-                put("source_lang", sourceLang.uppercase())
-                put("target_lang", targetLang.uppercase())
-            }
-            conn.outputStream.write(payload.toString().toByteArray())
-            if (conn.responseCode != 200) return@withContext null
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            val encoded = URLEncoder.encode(text, "UTF-8")
+            val url = "https://simplytranslate.org/api/translate/" +
+                    "?engine=google&from=auto&to=$targetLang&text=$encoded"
+            val body = httpGet(url, timeoutMs) ?: return@withContext null
             val json = JSONObject(body)
-            val data = json.optString("data", "")
-            if (data.isBlank()) null else data.trim()
-        } catch (e: Exception) {
+            val result = json.optString("translated-text", "")
+            if (result.isBlank()) null else result.trim()
+        } catch (_: Exception) {
             null
         }
     }
 
-    // Google Translate unofficial endpoint (GET)
-    private suspend fun translateGoogle(
+    // ── MyMemory (fallback) ────────────────────────────────────────
+    private suspend fun translateMyMemory(
         text: String, targetLang: String, timeoutMs: Int,
     ): String? = withContext(Dispatchers.IO) {
         try {
-            val encodedText = URLEncoder.encode(text, "UTF-8")
-            val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$targetLang&dt=t&q=$encodedText"
-            val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            val encoded = URLEncoder.encode(text, "UTF-8")
+            val pair = URLEncoder.encode("Autodetect|$targetLang", "UTF-8")
+            val url = "https://api.mymemory.translated.net/get?q=$encoded&langpair=$pair"
+            val body = httpGet(url, timeoutMs) ?: return@withContext null
+            val json = JSONObject(body)
+            if (json.optInt("responseStatus", -1) != 200) return@withContext null
+            val rd = json.opt("responseData")
+            val data = when (rd) {
+                is JSONObject -> rd.optString("translatedText", "")
+                is String -> rd
+                else -> ""
+            }
+            if (data.isBlank() || data.contains("MYMEMORY WARNING", true) ||
+                data.contains("QUERY LENGTH LIMIT", true)) null else data.trim()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun httpGet(url: String, timeoutMs: Int): String? {
+        val conn = try {
+            (URL(url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = timeoutMs
                 readTimeout = timeoutMs
-                setRequestProperty("User-Agent", USER_AGENT)
+                setRequestProperty("User-Agent", UA)
             }
-            if (conn.responseCode != 200) return@withContext null
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
-            // Response is a nested JSON array: [[["translated text","source",...]]]
-            val start = body.indexOf('"') + 1
-            val end = body.indexOf('"', start)
-            if (start > 0 && end > start) body.substring(start, end).trim() else null
-        } catch (e: Exception) {
-            null
+        } catch (_: Exception) { return null }
+        return try {
+            if (conn.responseCode != 200) null
+            else conn.inputStream.bufferedReader().use { it.readText() }
+        } catch (_: Exception) { null } finally {
+            try { conn.disconnect() } catch (_: Exception) {}
         }
     }
 }
