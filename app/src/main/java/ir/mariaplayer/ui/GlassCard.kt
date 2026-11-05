@@ -1,55 +1,55 @@
 package ir.mariaplayer.ui
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.graphics.Bitmap
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import ir.mariaplayer.R
 import ir.mariaplayer.art.AlbumArtCache
 import ir.mariaplayer.data.Track
 
 /**
- * PR-49: shared glass card, mirrors the look of the lyrics result cards.
- * Every list surface (library, playlists, playlist detail) should use it.
+ * M3-standard glass card. When [containerColor] is Unspecified, the container
+ * resolves to a subtle surfaceVariant tint. Every color derives from
+ * MaterialTheme.colorScheme.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    containerColor: Color = Color.White.copy(alpha = 0.07f),
+    containerColor: Color = Color.Unspecified,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
@@ -61,17 +61,22 @@ fun GlassCard(
         onClick != null -> base.clickable(onClick = onClick)
         else -> base
     }
+    val resolvedColor = if (containerColor == Color.Unspecified) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    } else {
+        containerColor
+    }
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = containerColor,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
+        shape = MaterialTheme.shapes.large,
+        color = resolvedColor,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = clickable,
     ) {
         Box { content() }
     }
 }
 
-/** PR-49: standard track row in glass style — used by library and playlists. */
+/** M3-standard track row. All colors derive from MaterialTheme.colorScheme. */
 @Composable
 fun GlassTrackRow(
     title: String,
@@ -96,17 +101,21 @@ fun GlassTrackRow(
     GlassCard(
         onClick = onClick,
         onLongClick = onLongClick,
-        containerColor = if (isActive) VioletPrimary.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.07f),
+        containerColor = if (isActive) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        } else {
+            Color.Unspecified
+        },
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                Modifier.size(44.dp).clip(RoundedCornerShape(10.dp))
-                    .background(
-                        Brush.linearGradient(listOf(VioletPrimary, VioletDeep))
-                    ),
+                Modifier
+                    .size(44.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center,
             ) {
                 val bmp = art
@@ -120,7 +129,7 @@ fun GlassTrackRow(
                 } else {
                     Text(
                         title.take(1).uppercase().ifBlank { "♪" },
-                        color = IvoryWhite,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                     )
@@ -130,7 +139,7 @@ fun GlassTrackRow(
             Column(Modifier.weight(1f)) {
                 Text(
                     title,
-                    color = IvoryWhite,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -139,7 +148,7 @@ fun GlassTrackRow(
                 if (subtitle.isNotBlank()) {
                     Text(
                         subtitle,
-                        color = IvoryWhite.copy(alpha = 0.55f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -154,7 +163,11 @@ fun GlassTrackRow(
                     ),
                     contentDescription =
                         if (isFavorite) "Remove from favorites" else "Add to favorites",
-                    tint = if (isFavorite) VioletPrimary else IvoryWhite.copy(alpha = 0.55f),
+                    tint = if (isFavorite) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -163,7 +176,7 @@ fun GlassTrackRow(
                     Icon(
                         painter = painterResource(R.drawable.ic_delete),
                         contentDescription = "Delete track",
-                        tint = IvoryWhite.copy(alpha = 0.55f),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
                 }
