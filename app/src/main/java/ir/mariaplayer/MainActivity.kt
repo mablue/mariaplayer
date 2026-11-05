@@ -457,7 +457,8 @@ private fun LibraryScreen(
                                 modifier = isz)
                         }
                         DropdownMenu(expanded = sortMenuOpen,
-                            onDismissRequest = { sortMenuOpen = false }) {
+                            onDismissRequest = { sortMenuOpen = false },
+                            modifier = Modifier.heightIn(max = 400.dp)) {
                             SortMode.entries.forEach { m ->
                                 DropdownMenuItem(text = { Text(m.label) },
                                     onClick = { onSortChange(m); sortMenuOpen = false })
