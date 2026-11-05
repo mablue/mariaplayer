@@ -555,6 +555,7 @@ private fun LibraryScreen(
                                 onDeleteClick = { onDeleteRequest(t) },
                                 onClick = { onTrackClick(t) },
                                 onLongClick = { onTrackLongClick(t) },
+                                track = t,
                             )
                         }
                     }
