@@ -90,12 +90,60 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { MariaPlayerTheme { AppRoot() } }
+        setContent {
+            val ctx = LocalContext.current
+            val ctrl = rememberPlayerController()
+            val albumPaletteState = remember {
+                mutableStateOf<androidx.compose.material3.ColorScheme?>(null)
+            }
+            val currentTrackIdState = remember { mutableStateOf<Long?>(null) }
+
+            if (ctrl != null) {
+                val c = ctrl
+                DisposableEffect(c) {
+                    val listener = object : androidx.media3.common.Player.Listener {
+                        override fun onMediaItemTransition(
+                            mediaItem: androidx.media3.common.MediaItem?,
+                            reason: Int,
+                        ) {
+                            currentTrackIdState.value =
+                                mediaItem?.mediaId?.toLongOrNull()
+                        }
+                    }
+                    c.addListener(listener)
+                    currentTrackIdState.value =
+                        c.currentMediaItem?.mediaId?.toLongOrNull()
+                    onDispose { c.removeListener(listener) }
+                }
+            }
+
+            LaunchedEffect(currentTrackIdState.value) {
+                albumPaletteState.value = null
+                val id = currentTrackIdState.value ?: return@LaunchedEffect
+                val c = ctrl ?: return@LaunchedEffect
+                val item = c.currentMediaItem ?: return@LaunchedEffect
+                val uri = item.localConfiguration?.uri?.toString()
+                    ?: return@LaunchedEffect
+                val bmp = ir.mariaplayer.art.AlbumArtCache.get(ctx, id, uri)
+                    ?: return@LaunchedEffect
+                albumPaletteState.value = kotlinx.coroutines.withContext(
+                    kotlinx.coroutines.Dispatchers.Default
+                ) {
+                    ir.mariaplayer.art.paletteFromBitmap(bmp)
+                }
+            }
+
+            androidx.compose.runtime.CompositionLocalProvider(
+                ir.mariaplayer.art.LocalAlbumPalette provides albumPaletteState.value
+            ) {
+                MariaPlayerTheme { AppRoot(ctrl) }
+            }
+        }
     }
 }
 
 @Composable
-private fun AppRoot() {
+private fun AppRoot(controller: androidx.media3.session.MediaController?) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -161,7 +209,7 @@ private fun AppRoot() {
     }
 
     // tracks populated by LaunchedEffect above; deleted items removed in receiver
-    val controller = rememberPlayerController()
+    // controller is provided by parent (hoisted for theme-from-cover)
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
     var screen by rememberSaveable { mutableStateOf("library") }
     var pendingTrackForPlaylist by remember { mutableStateOf<Track?>(null) }
