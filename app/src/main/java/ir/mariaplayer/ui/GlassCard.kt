@@ -29,7 +29,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import ir.mariaplayer.R
+import ir.mariaplayer.art.AlbumArtCache
+import ir.mariaplayer.data.Track
 
 /**
  * PR-49: shared glass card, mirrors the look of the lyrics result cards.
@@ -72,7 +82,17 @@ fun GlassTrackRow(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
     isActive: Boolean = false,
+    track: Track? = null,
 ) {
+    val context = LocalContext.current
+    val art by produceState<Bitmap?>(
+        initialValue = track?.let { AlbumArtCache.peek(it.id) },
+        key1 = track?.id,
+    ) {
+        if (track != null && value == null) {
+            value = AlbumArtCache.get(context, track.id, track.contentUri)
+        }
+    }
     GlassCard(
         onClick = onClick,
         onLongClick = onLongClick,
@@ -83,18 +103,28 @@ fun GlassTrackRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                Modifier.size(44.dp).clip(RoundedCornerShape(50))
+                Modifier.size(44.dp).clip(RoundedCornerShape(10.dp))
                     .background(
                         Brush.linearGradient(listOf(VioletPrimary, VioletDeep))
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    title.take(1).uppercase().ifBlank { "♪" },
-                    color = IvoryWhite,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                )
+                val bmp = art
+                if (bmp != null) {
+                    Image(
+                        bitmap = bmp.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Text(
+                        title.take(1).uppercase().ifBlank { "♪" },
+                        color = IvoryWhite,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                    )
+                }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
