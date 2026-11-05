@@ -9,6 +9,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import ir.mariaplayer.art.LocalAlbumPalette
 
 // Fallback brand colors if Dynamic Color is not available (Android < 12)
 val FallbackPrimary = androidx.compose.ui.graphics.Color(0xFF7928F5)
@@ -32,7 +33,9 @@ fun MariaPlayerTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val coverPalette = LocalAlbumPalette.current
     val colorScheme = when {
+        coverPalette != null -> coverPalette
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
