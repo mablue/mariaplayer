@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenu
@@ -474,7 +475,8 @@ private fun LibraryScreen(
                                 modifier = isz)
                         }
                         DropdownMenu(expanded = folderMenuOpen,
-                            onDismissRequest = { folderMenuOpen = false }) {
+                            onDismissRequest = { folderMenuOpen = false },
+                            modifier = Modifier.heightIn(max = 400.dp)) {
                             DropdownMenuItem(text = { Text("All folders") },
                                 onClick = { onFolderFilterChange(""); folderMenuOpen = false })
                             folderList.forEach { f ->
