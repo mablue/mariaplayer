@@ -5,45 +5,39 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Play Triangle (Exact shape: straight left, rounded corners) -->
+    <!-- Play Triangle (straight left, rounded right) -->
     <path
         android:fillColor="#5E11EB"
-        android:pathData="M 36,26 C 36,22 42,22 46,25 L 84,52 C 88,54 88,58 84,61 L 46,88 C 42,91 36,91 36,86 Z" />
+        android:pathData="M 34,26 L 34,82 Q 34,86 38,83 L 84,57 Q 88,54 84,51 L 38,25 Q 34,22 34,26 Z" />
 
-    <!-- Stem curving down-left -->
+    <!-- Lily Stem -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="M 58,65 C 62,82 52,95 38,98 C 34,99 32,96 36,93 C 48,86 54,75 52,63 Z" />
+        android:pathData="M 56,64 C 60,80 54,90 40,96 C 36,98 34,94 38,92 C 48,86 54,76 52,62 Z" />
 
-    <!-- Bulb (Bottom-left oval) -->
+    <!-- Lily Bulb (Left) -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="M 26,94 C 22,108 42,111 49,102 C 54,96 50,87 42,86 C 34,85 28,88 26,94 Z" />
+        android:pathData="M 24,92 C 20,104 38,108 46,100 C 52,94 48,86 40,85 C 32,84 26,86 24,92 Z" />
 
     <!-- Left Petal -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="M 52,62 C 42,50 30,40 22,35 C 18,32 22,28 28,32 C 38,38 50,50 54,60 Z" />
+        android:pathData="M 52,62 C 42,48 28,36 20,32 C 16,29 20,25 26,30 C 36,36 48,50 54,60 Z" />
 
     <!-- Right Petal -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="M 58,60 C 66,46 78,38 86,42 C 91,44 89,48 82,48 C 72,48 62,56 58,64 Z" />
+        android:pathData="M 58,60 C 66,44 80,36 88,40 C 93,42 91,46 84,46 C 74,46 62,56 58,64 Z" />
 
     <!-- Center Petal (tall) -->
     <path
         android:fillColor="#FFFDF8"
-        android:pathData="M 56,62 C 50,45 56,28 67,20 C 73,17 77,23 69,34 C 62,45 60,55 59,64 Z" />
+        android:pathData="M 56,62 C 50,44 56,26 68,18 C 74,14 78,20 70,32 C 62,44 60,54 59,64 Z" />
 
-    <!-- Pink Accents inside petals -->
-    <path
-        android:fillColor="#F2DCEB"
-        android:pathData="M 50,58 C 44,48 34,40 26,36 C 30,40 42,48 48,58 Z" />
-    <path
-        android:fillColor="#F2DCEB"
-        android:pathData="M 58,56 C 64,46 74,42 82,44 C 76,46 66,52 60,58 Z" />
-    <path
-        android:fillColor="#F2DCEB"
-        android:pathData="M 57,58 C 54,46 60,32 66,24 C 64,34 60,46 59,58 Z" />
+    <!-- Pink Accents -->
+    <path android:fillColor="#F2DCEB" android:pathData="M 50,58 C 44,48 34,40 26,36 C 30,40 42,48 48,58 Z" />
+    <path android:fillColor="#F2DCEB" android:pathData="M 58,56 C 64,46 74,42 82,44 C 76,46 66,52 60,58 Z" />
+    <path android:fillColor="#F2DCEB" android:pathData="M 57,58 C 54,46 60,32 66,24 C 64,34 60,46 59,58 Z" />
 
 </vector>
