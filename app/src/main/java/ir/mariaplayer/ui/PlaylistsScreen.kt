@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -25,10 +24,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -65,7 +62,6 @@ fun PlaylistsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
     val playlists by produceState<List<Playlist>>(initialValue = emptyList()) {
         PlaylistPrefs.observe(context).collectLatest { value = it }
     }
@@ -127,17 +123,13 @@ fun PlaylistsScreen(
                             Box(
                                 Modifier.size(44.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(VioletPrimary, VioletDeep)
-                                        )
-                                    ),
+                                    .background(MaterialTheme.colorScheme.primary),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_playlist),
                                     contentDescription = null,
-                                    tint = IvoryWhite,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(22.dp),
                                 )
                             }
@@ -145,7 +137,7 @@ fun PlaylistsScreen(
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     p.name,
-                                    color = IvoryWhite,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,
@@ -153,7 +145,7 @@ fun PlaylistsScreen(
                                 )
                                 Text(
                                     "${p.trackIds.size} tracks",
-                                    color = IvoryWhite.copy(alpha = 0.55f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             }
@@ -164,7 +156,7 @@ fun PlaylistsScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.ic_delete),
                                     contentDescription = "Delete playlist",
-                                    tint = IvoryWhite.copy(alpha = 0.55f),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp),
                                 )
                             }
