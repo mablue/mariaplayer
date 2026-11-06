@@ -303,6 +303,61 @@ private suspend fun runAllTests(
         if (bl.fontSize.value <= 0f) throw IllegalStateException("unset")
         "bodyLarge=${bl.fontSize.value}sp"
     }
+    test("LRC rejects \"null\"") {
+        val lines = LrcParser.parse("null")
+        if (lines.isNotEmpty()) throw IllegalStateException("parsed ${lines.size} null lines")
+        "rejected"
+    }
+    test("LRC parses Persian") {
+        val lrc = "[00:01.00]دنبال جای زخمامی\n[00:05.50]نترس تو قلبمه"
+        val lines = LrcParser.parse(lrc)
+        if (lines.size != 2) throw IllegalStateException("size=${lines.size}")
+        if (!lines[0].text.contains("زخمامی")) throw IllegalStateException("t0=${lines[0].text}")
+        if (!lines[1].text.contains("قلبمه")) throw IllegalStateException("t1=${lines[1].text}")
+        "2 lines"
+    }
+    test("Cache filters \"null\"") {
+        val id = 9_999_992L
+        LyricsCache.writeLyrics(context, id, "null", "null")
+        val got = LyricsCache.read(context, id)
+        LyricsCache.clearLyrics(context, id)
+        if (got.synced != null || got.plain != null)
+            throw IllegalStateException("synced=${got.synced} plain=${got.plain}")
+        "filtered"
+    }
+    test("Cache preserves Persian") {
+        val id = 9_999_993L
+        val text = "دنبال جای زخمامی نترس تو قلبمه"
+        LyricsCache.writeLyrics(context, id, null, text)
+        val got = LyricsCache.read(context, id)
+        LyricsCache.clearLyrics(context, id)
+        if (got.plain != text) throw IllegalStateException("plain=${got.plain?.take(20)}")
+        "ok"
+    }
+    test("Cache offset clamp") {
+        val id = 9_999_994L
+        LyricsCache.writeOffset(context, id, 999_999L)
+        val got = LyricsCache.read(context, id)
+        LyricsCache.clearLyrics(context, id)
+        if (got.offsetMs != 500L) throw IllegalStateException("offset=${got.offsetMs}")
+        "clamped"
+    }
+    test("SortMode labels complete") {
+        val modes = SortMode.entries
+        if (modes.size != 5) throw IllegalStateException("size=${modes.size}")
+        modes.forEach { m ->
+            if (m.label.isBlank()) throw IllegalStateException("blank: $m")
+        }
+        "5 labels"
+    }
+    test("Lyrics scorer RTL") {
+        val s = LyricsScorer.score(
+            "واهمه", "مرتضی جعفرزاده", 274,
+            "واهمه", "مرتضی جعفرزاده", 274,
+        )
+        if (s < 90) throw IllegalStateException("perfect=$s")
+        "score=$s"
+    }
 
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
