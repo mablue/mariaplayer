@@ -194,6 +194,22 @@ private suspend fun runAllTests(
             throw IllegalStateException("got ${got.trackId}/${got.positionMs}")
         "ok"
     }
+    test("Per-track position round-trip") {
+        val id = 9_999_995L
+        PlaybackPrefs.savePosition(context, id, 45_000L)
+        val got = PlaybackPrefs.readPosition(context, id)
+        PlaybackPrefs.clearPosition(context, id)
+        if (got != 45_000L) throw IllegalStateException("got=$got")
+        "ok"
+    }
+    test("Per-track position clear") {
+        val id = 9_999_996L
+        PlaybackPrefs.savePosition(context, id, 12_000L)
+        PlaybackPrefs.clearPosition(context, id)
+        val got = PlaybackPrefs.readPosition(context, id)
+        if (got != null) throw IllegalStateException("still=$got")
+        "ok"
+    }
     test("Playlist CRUD") {
         val name = "selftest_${System.currentTimeMillis()}"
         val id = PlaylistPrefs.create(context, name)
