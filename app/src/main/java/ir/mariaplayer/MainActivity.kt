@@ -60,7 +60,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.awaitPointerEventScope
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -592,4 +604,64 @@ private fun CenterText(text: String) {
 private fun formatDuration(ms: Long): String {
     val totalSec = (ms / 1000).coerceAtLeast(0)
     return String.format(Locale.US, "%d:%02d", totalSec / 60, totalSec % 60)
+}
+
+@Composable
+private fun AlphabetIndex(
+    sections: List<Pair<String, Int>>,
+    onLetterSelected: (Int) -> Unit,
+    onLetterChange: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (sections.isEmpty()) return
+    val currentSelected by rememberUpdatedState(onLetterSelected)
+    val currentChange by rememberUpdatedState(onLetterChange)
+    Box(
+        modifier = modifier
+            .width(20.dp)
+            .fillMaxHeight()
+            .pointerInput(sections) {
+                val itemHeightPx = size.height.toFloat() / sections.size.coerceAtLeast(1)
+                fun pick(y: Float): Int =
+                    (y / itemHeightPx).toInt().coerceIn(0, sections.lastIndex)
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        down.consume()
+                        var idx = pick(down.position.y)
+                        currentChange(sections[idx].first)
+                        currentSelected(sections[idx].second)
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            event.changes.forEach { change ->
+                                if (change.pressed) {
+                                    idx = pick(change.position.y)
+                                    currentChange(sections[idx].first)
+                                    currentSelected(sections[idx].second)
+                                    change.consume()
+                                }
+                            }
+                            if (event.changes.none { it.pressed }) break
+                        }
+                        currentChange(null)
+                    }
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 4.dp),
+        ) {
+            sections.forEach { (letter, _) ->
+                Text(
+                    text = letter,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(vertical = 1.dp),
+                )
+            }
+        }
+    }
 }
