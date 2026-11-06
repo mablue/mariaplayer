@@ -71,16 +71,26 @@ class LyricsFetcher(
         }
 
         unique.map { r ->
-            r.copy(score = LyricsScorer.score(
-                targetTitle = title,
-                targetArtist = artist,
-                targetDurationSec = durationSec,
-                candidateTitle = r.title,
-                candidateArtist = r.artist,
-                candidateDurationSec = r.durationSec,
-            ))
-        }.sortedByDescending { it.score }
+            r.copy(
+                syncedLyrics = sanitize(r.syncedLyrics),
+                plainLyrics = sanitize(r.plainLyrics),
+            )
+        }.filter { !it.plainLyrics.isNullOrBlank() || !it.syncedLyrics.isNullOrBlank() }
+            .map { r ->
+                r.copy(score = LyricsScorer.score(
+                    targetTitle = title,
+                    targetArtist = artist,
+                    targetDurationSec = durationSec,
+                    candidateTitle = r.title,
+                    candidateArtist = r.artist,
+                    candidateDurationSec = r.durationSec,
+                ))
+            }.sortedByDescending { it.score }
     }
+
+    /** org.json on Android returns literal "null" for JSON null values. */
+    private fun sanitize(s: String?): String? =
+        s?.takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
 
     // ─── LRCLIB /api/get ───
     private fun tryLrclibGet(
