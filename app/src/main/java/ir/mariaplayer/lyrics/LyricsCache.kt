@@ -22,8 +22,10 @@ object LyricsCache {
     suspend fun read(context: Context, trackId: Long): Cached {
         val p = context.lyricsStore.data.first()
         return Cached(
-            synced = p[stringPreferencesKey("lyrics_${trackId}_synced")].orEmpty().ifBlank { null },
-            plain  = p[stringPreferencesKey("lyrics_${trackId}_plain")].orEmpty().ifBlank { null },
+            synced = p[stringPreferencesKey("lyrics_${trackId}_synced")].orEmpty()
+                .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) },
+            plain  = p[stringPreferencesKey("lyrics_${trackId}_plain")].orEmpty()
+                .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) },
             offsetMs = p[longPreferencesKey("lyrics_${trackId}_offset")] ?: 0L,
         )
     }
