@@ -350,8 +350,12 @@ fun LyricsDisplayScreen(
                                     state = when {
                                         !s.result.syncedLyrics.isNullOrBlank() -> {
                                             val lines = LrcParser.parse(s.result.syncedLyrics)
-                                            if (lines.isNotEmpty()) DispState.Synced(lines)
-                                            else DispState.NotFound
+                                            when {
+                                                lines.isNotEmpty() -> DispState.Synced(lines)
+                                                !s.result.plainLyrics.isNullOrBlank() ->
+                                                    DispState.Plain(s.result.plainLyrics)
+                                                else -> DispState.NotFound
+                                            }
                                         }
                                         !s.result.plainLyrics.isNullOrBlank() ->
                                             DispState.Plain(s.result.plainLyrics)
