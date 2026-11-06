@@ -553,25 +553,82 @@ private fun LibraryScreen(
                         }
                         CenterText(msg)
                     }
-                    else -> LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(visible, key = { it.id }) { t ->
-                            GlassTrackRow(
-                                title = t.title,
-                                subtitle = listOfNotNull(
-                                    t.artist, t.album, t.folder,
-                                    formatDuration(t.durationMs),
-                                ).joinToString(" · "),
-                                isFavorite = t.id in favorites,
-                                onFavClick = { onToggleFavorite(t.id) },
-                                onDeleteClick = { onDeleteRequest(t) },
-                                onClick = { onTrackClick(t) },
-                                onLongClick = { onTrackLongClick(t) },
-                                track = t,
-                            )
+                    else -> {
+                        val listState = rememberLazyListState()
+                        val scope = rememberCoroutineScope()
+                        val sections = remember(visible, sortMode) {
+                            val list = visible
+                            if (list == null ||
+                                sortMode == SortMode.RECENT ||
+                                sortMode == SortMode.DURATION
+                            ) {
+                                emptyList()
+                            } else {
+                                val keyOf: (Track) -> Char = when (sortMode) {
+                                    SortMode.TITLE -> { t -> t.title.firstOrNull()?.uppercaseChar() ?: '#' }
+                                    SortMode.ARTIST -> { t -> (t.artist ?: "").firstOrNull()?.uppercaseChar() ?: '#' }
+                                    SortMode.ALBUM -> { t -> (t.album ?: "").firstOrNull()?.uppercaseChar() ?: '#' }
+                                    else -> { _ -> '#' }
+                                }
+                                val firsts = LinkedHashMap<Char, Int>()
+                                list.forEachIndexed { idx, t ->
+                                    val c = keyOf(t)
+                                    if (!firsts.containsKey(c)) firsts[c] = idx
+                                }
+                                firsts.entries
+                                    .sortedWith(compareBy({ if (it.key == '#') 0 else 1 }, { it.key }))
+                                    .map { it.key.toString() to it.value }
+                            }
+                        }
+                        var bubbleLetter by remember { mutableStateOf<String?>(null) }
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(visible, key = { it.id }) { t ->
+                                GlassTrackRow(
+                                    title = t.title,
+                                    subtitle = listOfNotNull(
+                                        t.artist, t.album, t.folder,
+                                        formatDuration(t.durationMs),
+                                    ).joinToString(" · "),
+                                    isFavorite = t.id in favorites,
+                                    onFavClick = { onToggleFavorite(t.id) },
+                                    onDeleteClick = { onDeleteRequest(t) },
+                                    onClick = { onTrackClick(t) },
+                                    onLongClick = { onTrackLongClick(t) },
+                                    track = t,
+                                )
+                            }
+                        }
+                        AlphabetIndex(
+                            sections = sections,
+                            onLetterSelected = { index ->
+                                scope.launch { listState.scrollToItem(index) }
+                            },
+                            onLetterChange = { bubbleLetter = it },
+                            modifier = Modifier.align(Alignment.CenterEnd),
+                        )
+                        bubbleLetter?.let { letter ->
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(72.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        CircleShape,
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    letter,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
                         }
                     }
                 }
