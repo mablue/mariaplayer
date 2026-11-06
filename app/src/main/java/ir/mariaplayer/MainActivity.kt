@@ -234,35 +234,96 @@ private fun AppRoot() {
         shuffleOn = c.shuffleModeEnabled
     }
 
-    // Gamma-14: save position every 500ms plus on every play/pause and READY/ENDED.
-    LaunchedEffect(controller) {
-        val c = controller ?: return@LaunchedEffect
-        while (true) {
-            delay(500)
-            val mi = c.currentMediaItem ?: continue
-            val tid = mi.mediaId.toLongOrNull() ?: continue
-            PlaybackPrefs.save(context, tid, c.currentPosition)
-        }
-    }
-
+    // PR-L58: resume per-track — save on 500ms tick + key events,
+    // restore new track from per-track map on transition, clear on ENDED.
     DisposableEffect(controller) {
         val c = controller ?: return@DisposableEffect onDispose {}
+        var prevId: Long? = c.currentMediaItem?.mediaId?.toLongOrNull()
+        var prevPos: Long = c.currentPosition
+
+        val timerJob = scope.launch {
+            while (true) {
+                delay(500)
+                if (c.playbackState == Player.STATE_ENDED) continue
+                val mi = c.currentMediaItem ?: continue
+                val tid = mi.mediaId.toLongOrNull() ?: continue
+                val pos = c.currentPosition
+                prevPos = pos
+                PlaybackPrefs.save(context, tid, pos)
+            }
+        }
+
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 val mi = c.currentMediaItem ?: return
                 val tid = mi.mediaId.toLongOrNull() ?: return
-                scope.launch { PlaybackPrefs.save(context, tid, c.currentPosition) }
+                prevPos = c.currentPosition
+                scope.launch {
+                    PlaybackPrefs.save(context, tid, c.currentPosition)
+                    PlaybackPrefs.savePosition(context, tid, c.currentPosition)
+                }
             }
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_READY || state == Player.STATE_ENDED) {
-                    val mi = c.currentMediaItem ?: return
-                    val tid = mi.mediaId.toLongOrNull() ?: return
-                    scope.launch { PlaybackPrefs.save(context, tid, c.currentPosition) }
+                val mi = c.currentMediaItem ?: return
+                val tid = mi.mediaId.toLongOrNull() ?: return
+                when (state) {
+                    Player.STATE_READY -> {
+                        prevPos = c.currentPosition
+                        scope.launch {
+                            PlaybackPrefs.save(context, tid, c.currentPosition)
+                            PlaybackPrefs.savePosition(context, tid, c.currentPosition)
+                        }
+                    }
+                    Player.STATE_ENDED -> {
+                        prevPos = 0L
+                        scope.launch {
+                            PlaybackPrefs.clearPosition(context, tid)
+                            PlaybackPrefs.save(context, tid, 0L)
+                        }
+                    }
                 }
+            }
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) {
+                prevPos = c.currentPosition
+            }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                val oldId = prevId
+                val oldPos = prevPos
+                if (oldId != null && oldPos > 5_000L) {
+                    scope.launch {
+                        PlaybackPrefs.savePosition(context, oldId, oldPos)
+                    }
+                }
+                val newId = mediaItem?.mediaId?.toLongOrNull()
+                if (newId != null && newId != oldId) {
+                    scope.launch {
+                        val saved = PlaybackPrefs.readPosition(context, newId)
+                        if (saved != null && saved > 5_000L) {
+                            c.seekTo(saved)
+                        }
+                    }
+                }
+                prevId = newId
+                prevPos = 0L
             }
         }
         c.addListener(listener)
-        onDispose { c.removeListener(listener) }
+        onDispose {
+            timerJob.cancel()
+            val tid = c.currentMediaItem?.mediaId?.toLongOrNull()
+            if (tid != null) {
+                val pos = c.currentPosition
+                scope.launch {
+                    PlaybackPrefs.save(context, tid, pos)
+                    PlaybackPrefs.savePosition(context, tid, pos)
+                }
+            }
+            c.removeListener(listener)
+        }
     }
 
     when {
