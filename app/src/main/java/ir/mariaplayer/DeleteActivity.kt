@@ -10,7 +10,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import ir.mariaplayer.playback.PlaybackService
+import ir.mariaplayer.playback.ACTION_TRACK_DELETED
+import ir.mariaplayer.playback.EXTRA_DELETED_URI
 
 class DeleteActivity : ComponentActivity() {
 
@@ -86,9 +87,9 @@ class DeleteActivity : ComponentActivity() {
 
     private fun notifyDeleted(uri: Uri) {
         sendBroadcast(
-            Intent(PlaybackService.ACTION_TRACK_DELETED)
+            Intent(ACTION_TRACK_DELETED)
                 .setPackage(packageName)
-                .putExtra(PlaybackService.EXTRA_DELETED_URI, uri.toString())
+                .putExtra(EXTRA_DELETED_URI, uri.toString())
         )
     }
 
