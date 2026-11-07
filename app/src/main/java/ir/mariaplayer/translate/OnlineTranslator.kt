@@ -31,8 +31,8 @@ object OnlineTranslator {
         translateMyMemoryBatch(lines, target, timeoutMs)
     }
 
-    private fun sanitize(s: String?): String? =
-        s?.takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+    private fun sanitizeLocal(s: String?): String? =
+        ir.mariaplayer.util.sanitizeJsonString(s)
 
     // ── Tier 1: MS Edge / Azure Translator ─────────────────────────
     private suspend fun translateMSBatch(
@@ -53,7 +53,7 @@ object OnlineTranslator {
             val arr = JSONObject(resp).optJSONArray("translations")
                 ?: return@withContext null
             if (arr.length() == 0) return@withContext null
-            val translated = sanitize(arr.getJSONObject(0).optString("text", ""))
+            val translated = sanitizeLocal(arr.getJSONObject(0).optString("text", ""))
                 ?: return@withContext null
             val split = translated.split("\n")
             if (split.size == lines.size) split else null
@@ -88,7 +88,7 @@ object OnlineTranslator {
                 body.startsWith("[") -> JSONArray(body).optString(0, "")
                 else -> return@withContext null
             }
-            sanitize(translated)?.let {
+            sanitizeLocal(translated)?.let {
                 val split = it.split("\n")
                 if (split.size == lines.size) split else null
             }
@@ -132,7 +132,7 @@ object OnlineTranslator {
             }
             if (data.contains("MYMEMORY WARNING", ignoreCase = true) ||
                 data.contains("QUERY LENGTH LIMIT", ignoreCase = true)) return@withContext null
-            sanitize(data)
+            sanitizeLocal(data)
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
