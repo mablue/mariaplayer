@@ -85,6 +85,8 @@ import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.PlaybackPrefs
 import ir.mariaplayer.data.SortMode
 import ir.mariaplayer.data.Track
+import ir.mariaplayer.playback.ACTION_TRACK_DELETED
+import ir.mariaplayer.playback.EXTRA_DELETED_URI
 import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
@@ -145,9 +147,9 @@ private fun AppRoot() {
         if (result.resultCode == android.app.Activity.RESULT_OK && uri != null) {
             Toast.makeText(context, "Deleted: $title", Toast.LENGTH_SHORT).show()
             context.sendBroadcast(
-                Intent(ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED)
+                Intent(ACTION_TRACK_DELETED)
                     .setPackage(context.packageName)
-                    .putExtra(ir.mariaplayer.playback.PlaybackService.EXTRA_DELETED_URI, uri.toString())
+                    .putExtra(EXTRA_DELETED_URI, uri.toString())
             )
         }
     }
