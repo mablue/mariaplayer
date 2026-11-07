@@ -72,8 +72,8 @@ class LyricsFetcher(
 
         unique.map { r ->
             r.copy(
-                syncedLyrics = sanitize(r.syncedLyrics),
-                plainLyrics = sanitize(r.plainLyrics),
+                syncedLyrics = ir.mariaplayer.util.sanitizeJsonString(r.syncedLyrics),
+                plainLyrics = ir.mariaplayer.util.sanitizeJsonString(r.plainLyrics),
             )
         }.filter { !it.plainLyrics.isNullOrBlank() || !it.syncedLyrics.isNullOrBlank() }
             .map { r ->
@@ -88,9 +88,7 @@ class LyricsFetcher(
             }.sortedByDescending { it.score }
     }
 
-    /** org.json on Android returns literal "null" for JSON null values. */
-    private fun sanitize(s: String?): String? =
-        s?.takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+    // PR-L59 (SSOT): sanitize moved to util.Sanitize
 
     // ─── LRCLIB /api/get ───
     private fun tryLrclibGet(
