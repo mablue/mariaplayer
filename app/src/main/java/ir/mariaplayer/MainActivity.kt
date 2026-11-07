@@ -157,17 +157,15 @@ private fun AppRoot() {
     DisposableEffect(Unit) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, i: Intent?) {
-                if (i?.action == ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED) {
-                    val deletedUri = i.getStringExtra(
-                        ir.mariaplayer.playback.PlaybackService.EXTRA_DELETED_URI
-                    )
+                if (i?.action == ACTION_TRACK_DELETED) {
+                    val deletedUri = i.getStringExtra(EXTRA_DELETED_URI)
                     if (deletedUri != null) {
                         tracks = tracks?.filterNot { it.contentUri == deletedUri }
                     }
                 }
             }
         }
-        val filter = IntentFilter(ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED)
+        val filter = IntentFilter(ACTION_TRACK_DELETED)
         if (Build.VERSION.SDK_INT >= 33) {
             context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
