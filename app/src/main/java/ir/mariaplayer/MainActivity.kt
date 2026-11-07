@@ -459,6 +459,7 @@ private fun AppRoot() {
     pendingTrackForPlaylist?.let { pending ->
         AddToPlaylistSheet(pending) { pendingTrackForPlaylist = null }
     }
+    }
 }
 
 private fun playQueue(
@@ -713,7 +714,6 @@ private fun LibraryScreen(
                 }
             }
         }
-    }
     }
 }
 
