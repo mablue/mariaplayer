@@ -293,10 +293,24 @@ private fun AppRoot() {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 val oldId = prevId
                 val oldPos = prevPos
-                if (oldId != null && oldPos > 5_000L) {
-                    scope.launch {
-                        PlaybackPrefs.savePosition(context, oldId, oldPos)
+                when (reason) {
+                    Player.MEDIA_ITEM_TRANSITION_REASON_AUTO,
+                    Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT -> {
+                        if (oldId != null) {
+                            scope.launch {
+                                PlaybackPrefs.clearPosition(context, oldId)
+                                PlaybackPrefs.save(context, oldId, 0L)
+                            }
+                        }
                     }
+                    Player.MEDIA_ITEM_TRANSITION_REASON_SEEK -> {
+                        if (oldId != null && oldPos > 5_000L) {
+                            scope.launch {
+                                PlaybackPrefs.savePosition(context, oldId, oldPos)
+                            }
+                        }
+                    }
+                    else -> { /* playlist changed — ignore */ }
                 }
                 val newId = mediaItem?.mediaId?.toLongOrNull()
                 if (newId != null && newId != oldId) {
@@ -308,7 +322,7 @@ private fun AppRoot() {
                     }
                 }
                 prevId = newId
-                prevPos = 0L
+                prevPos = c.currentPosition
             }
         }
         c.addListener(listener)
