@@ -428,9 +428,9 @@ private fun AppRoot() {
                         if (rows > 0) {
                             Toast.makeText(context, "Deleted: " + t.title, Toast.LENGTH_SHORT).show()
                             context.sendBroadcast(
-                                Intent(ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED)
+                                Intent(ACTION_TRACK_DELETED)
                                     .setPackage(context.packageName)
-                                    .putExtra(ir.mariaplayer.playback.PlaybackService.EXTRA_DELETED_URI, t.contentUri)
+                                    .putExtra(EXTRA_DELETED_URI, t.contentUri)
                             )
                         }
                     } catch (e2: Exception) {
@@ -443,9 +443,9 @@ private fun AppRoot() {
                     if (rows > 0) {
                         Toast.makeText(context, "Deleted: " + t.title, Toast.LENGTH_SHORT).show()
                         context.sendBroadcast(
-                            Intent(ir.mariaplayer.playback.PlaybackService.ACTION_TRACK_DELETED)
+                            Intent(ACTION_TRACK_DELETED)
                                 .setPackage(context.packageName)
-                                .putExtra(ir.mariaplayer.playback.PlaybackService.EXTRA_DELETED_URI, t.contentUri)
+                                .putExtra(EXTRA_DELETED_URI, t.contentUri)
                         )
                     }
                 } catch (e: Exception) {
