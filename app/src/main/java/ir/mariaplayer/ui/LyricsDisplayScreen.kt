@@ -228,12 +228,12 @@ fun LyricsDisplayScreen(
         }
     }
 
-    LaunchedEffect(controller) {
-        val c = controller ?: return@LaunchedEffect
-        while (true) {
-            delay(150)
-            positionMs = c.currentPosition
-            playing = c.isPlaying
+    val repository = ir.mariaplayer.playback.LocalPlaybackRepository.current
+    if (repository != null) {
+        val snap by repository.state.collectAsState()
+        LaunchedEffect(snap) {
+            positionMs = snap.positionMs
+            playing = snap.isPlaying
         }
     }
 
