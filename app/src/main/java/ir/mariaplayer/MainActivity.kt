@@ -342,6 +342,7 @@ private fun AppRoot() {
         }
     }
 
+    CompositionLocalProvider(LocalPlaybackRepository provides repository) {
     when {
         screen == "lyrics_display" -> {
             LyricsDisplayScreen(controller, onBack = { screen = "library" })
@@ -710,6 +711,7 @@ private fun LibraryScreen(
                 }
             }
         }
+    }
     }
 }
 
