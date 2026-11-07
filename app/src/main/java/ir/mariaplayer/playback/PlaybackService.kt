@@ -290,8 +290,6 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
     companion object {
         const val CMD_FAVORITE = "ir.mariaplayer.FAVORITE"
         const val CMD_DELETE = "ir.mariaplayer.DELETE"
-        const val ACTION_TRACK_DELETED = "ir.mariaplayer.TRACK_DELETED"
-        const val EXTRA_DELETED_URI = "deleted_uri"
         private const val CHANNEL_DELETE = "delete_confirm"
         private const val NOTIF_DELETE_ID = 9001
     }
