@@ -13,6 +13,7 @@ import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
 import ir.mariaplayer.data.PlaybackPrefs
 import ir.mariaplayer.data.ResumeState
+import ir.mariaplayer.util.PlaybackDiagnostics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -99,6 +100,7 @@ class PlaybackRepository(private val context: Context) {
             }
         }
         newController.addListener(l)
+        PlaybackDiagnostics.listenerRegistrations.incrementAndGet()
         listener = l
 
         pollerJob = scope.launch {
