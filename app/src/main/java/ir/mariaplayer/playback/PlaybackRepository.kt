@@ -174,6 +174,7 @@ class PlaybackRepository(private val context: Context) {
     }
 
     private fun handleTransition(c: MediaController, reason: Int) {
+        PlaybackDiagnostics.transitionHandles.incrementAndGet()
         val oldId = prevTrackId
         val oldPos = prevPositionMs
         when (reason) {
@@ -208,6 +209,7 @@ class PlaybackRepository(private val context: Context) {
     }
 
     private fun handleState(c: MediaController, state: Int) {
+        PlaybackDiagnostics.stateHandles.incrementAndGet()
         val tid = c.currentMediaItem?.mediaId?.toLongOrNull() ?: return
         when (state) {
             Player.STATE_READY -> {
