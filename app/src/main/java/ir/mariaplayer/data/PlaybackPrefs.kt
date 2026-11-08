@@ -65,6 +65,7 @@ object PlaybackPrefs {
     }
 
     suspend fun clearPosition(context: Context, trackId: Long) {
+        PlaybackDiagnostics.clearPositionCalls.incrementAndGet()
         context.dataStore.edit { p ->
             val current = p[KEY_POSITIONS] ?: return@edit
             val map = try { JSONObject(current) } catch (_: Exception) { return@edit }
