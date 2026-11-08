@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import ir.mariaplayer.util.PlaybackDiagnostics
 import org.json.JSONObject
 
 private val Context.dataStore by preferencesDataStore(name = "playback")
@@ -29,6 +30,7 @@ object PlaybackPrefs {
         observe(context).first()
 
     suspend fun save(context: Context, trackId: Long, positionMs: Long) {
+        PlaybackDiagnostics.saveCalls.incrementAndGet()
         context.dataStore.edit { p ->
             p[KEY_TRACK] = trackId
             p[KEY_POS] = positionMs
