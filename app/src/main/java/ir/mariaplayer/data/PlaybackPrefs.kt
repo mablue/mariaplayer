@@ -40,6 +40,7 @@ object PlaybackPrefs {
     // ─── PR-L58: per-track position map ────────────────────────
     // JSON: {"123": 45000, "456": 120000}. Pruned to MAX_ENTRIES.
     suspend fun savePosition(context: Context, trackId: Long, positionMs: Long) {
+        PlaybackDiagnostics.savePositionCalls.incrementAndGet()
         if (positionMs <= 0L) return
         context.dataStore.edit { p ->
             val current = p[KEY_POSITIONS] ?: "{}"
@@ -54,6 +55,7 @@ object PlaybackPrefs {
     }
 
     suspend fun readPosition(context: Context, trackId: Long): Long? {
+        PlaybackDiagnostics.readPositionCalls.incrementAndGet()
         val p = context.dataStore.data.first()
         val json = p[KEY_POSITIONS] ?: return null
         return try {
