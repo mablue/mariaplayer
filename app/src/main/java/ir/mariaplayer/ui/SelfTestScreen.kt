@@ -56,6 +56,7 @@ import ir.mariaplayer.lyrics.LrcLine
 import ir.mariaplayer.lyrics.LrcParser
 import ir.mariaplayer.lyrics.LyricsCache
 import ir.mariaplayer.lyrics.LyricsScorer
+import ir.mariaplayer.util.PlaybackDiagnostics
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -373,6 +374,56 @@ private suspend fun runAllTests(
         )
         if (s < 90) throw IllegalStateException("perfect=$s")
         "score=$s"
+    }
+    test("SSOT: Drift snapshot") {
+        PlaybackDiagnostics.snapshot()
+    }
+    test("SSOT: savePosition counter") {
+        val before = PlaybackDiagnostics.savePositionCalls.get()
+        PlaybackPrefs.savePosition(context, 9_999_900L, 100L)
+        val after = PlaybackDiagnostics.savePositionCalls.get()
+        PlaybackPrefs.clearPosition(context, 9_999_900L)
+        if (after != before + 1) throw IllegalStateException("Δ=${after - before}")
+        "ok"
+    }
+    test("SSOT: clearPosition counter") {
+        val before = PlaybackDiagnostics.clearPositionCalls.get()
+        PlaybackPrefs.clearPosition(context, 9_999_901L)
+        val after = PlaybackDiagnostics.clearPositionCalls.get()
+        if (after != before + 1) throw IllegalStateException("Δ=${after - before}")
+        "ok"
+    }
+    test("SSOT: readPosition counter") {
+        val before = PlaybackDiagnostics.readPositionCalls.get()
+        PlaybackPrefs.readPosition(context, 9_999_902L)
+        val after = PlaybackDiagnostics.readPositionCalls.get()
+        if (after != before + 1) throw IllegalStateException("Δ=${after - before}")
+        "ok"
+    }
+    test("SSOT: listener registration count") {
+        val reg = PlaybackDiagnostics.listenerRegistrations.get()
+        if (reg < 0 || reg > 100)
+            throw IllegalStateException("reg=$reg out of range")
+        "reg=$reg"
+    }
+    test("SSOT: dual API agreement") {
+        val id = 9_999_903L
+        PlaybackPrefs.save(context, id, 12_345L)
+        PlaybackPrefs.savePosition(context, id, 12_345L)
+        val single = PlaybackPrefs.read(context).positionMs
+        val fromMap = PlaybackPrefs.readPosition(context, id)
+        PlaybackPrefs.clearPosition(context, id)
+        PlaybackPrefs.save(context, 0L, 0L)
+        if (single != 12_345L || fromMap != 12_345L)
+            throw IllegalStateException("single=$single map=$fromMap")
+        "agreed"
+    }
+    test("SSOT: reset consistency") {
+        PlaybackDiagnostics.reset()
+        val snap = PlaybackDiagnostics.snapshot()
+        if (!snap.contains("reg=0") || !snap.contains("save=0"))
+            throw IllegalStateException(snap)
+        "reset ok"
     }
 
     val pass = results.count { it.passed }
