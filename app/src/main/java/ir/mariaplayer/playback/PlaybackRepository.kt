@@ -109,6 +109,7 @@ class PlaybackRepository(private val context: Context) {
                 val c = controller ?: continue
                 if (c.playbackState == Player.STATE_ENDED) continue
                 prevPositionMs = c.currentPosition
+                PlaybackDiagnostics.pollerTicks.incrementAndGet()
                 updateSnapshot(c)
                 persistTick(c)
             }
@@ -119,6 +120,7 @@ class PlaybackRepository(private val context: Context) {
 
     fun unbind() {
         listener?.let { controller?.removeListener(it) }
+        PlaybackDiagnostics.listenerRemovals.incrementAndGet()
         listener = null
         pollerJob?.cancel()
         pollerJob = null
