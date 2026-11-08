@@ -234,7 +234,9 @@ private fun AppRoot() {
         val saved = PlaybackPrefs.read(context)
         val idx = saved.trackId?.let { id -> list.indexOfFirst { it.id == id } } ?: -1
         if (idx < 0) return@LaunchedEffect
-        playQueue(c, list, idx, saved.positionMs, autoPlay = false)
+        val pos = saved.trackId?.let { PlaybackPrefs.readPosition(context, it) }
+            ?: saved.positionMs
+        playQueue(c, list, idx, pos, autoPlay = false)
         shuffleOn = c.shuffleModeEnabled
     }
 
