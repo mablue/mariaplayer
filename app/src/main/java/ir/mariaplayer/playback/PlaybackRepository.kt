@@ -46,6 +46,7 @@ val LocalPlaybackRepository = compositionLocalOf<PlaybackRepository?> { null }
 class PlaybackRepository(private val context: Context) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val saveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _state = MutableStateFlow(PlaybackSnapshot())
     val state: StateFlow<PlaybackSnapshot> = _state.asStateFlow()
 
@@ -141,6 +142,7 @@ class PlaybackRepository(private val context: Context) {
 
     fun dispose() {
         unbind()
+        saveScope.cancel()
         scope.cancel()
     }
 
