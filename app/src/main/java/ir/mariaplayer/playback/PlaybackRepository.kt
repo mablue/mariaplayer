@@ -119,7 +119,8 @@ class PlaybackRepository(private val context: Context) {
     }
 
     fun unbind() {
-        listener?.let { controller?.removeListener(it) }
+        val l = listener ?: return
+        controller?.removeListener(l)
         PlaybackDiagnostics.listenerRemovals.incrementAndGet()
         listener = null
         pollerJob?.cancel()
@@ -161,7 +162,7 @@ class PlaybackRepository(private val context: Context) {
     private fun persistTick(c: MediaController) {
         val tid = c.currentMediaItem?.mediaId?.toLongOrNull() ?: return
         val pos = c.currentPosition
-        scope.launch { PlaybackPrefs.save(context, tid, pos) }
+        scope.launch { PlaybackPrefs.savePosition(context, tid, pos) }
     }
 
     private fun persistPause(c: MediaController) {
