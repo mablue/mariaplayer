@@ -417,6 +417,8 @@ private fun LibraryScreen(
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
     val folderList = remember(allTracks) {
         allTracks?.map { it.folder }?.filter { it.isNotEmpty() }?.distinct()?.sorted()
