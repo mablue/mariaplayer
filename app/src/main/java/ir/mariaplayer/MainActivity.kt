@@ -425,6 +425,11 @@ private fun LibraryScreen(
             ?: emptyList()
     }
 
+    BackHandler(enabled = selectionMode) {
+        selectionMode = false
+        selectedIds = emptySet()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
