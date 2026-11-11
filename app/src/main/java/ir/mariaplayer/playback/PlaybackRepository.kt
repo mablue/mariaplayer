@@ -3,7 +3,9 @@ package ir.mariaplayer.playback
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
@@ -231,6 +233,13 @@ class PlaybackRepository(private val context: Context) {
             }
         }
     }
+}
+
+@Composable
+fun rememberPlayingTrackId(): Long? {
+    val repo = LocalPlaybackRepository.current ?: return null
+    val snap by repo.state.collectAsState()
+    return snap.trackId
 }
 
 @Composable
