@@ -419,6 +419,66 @@ private fun LibraryScreen(
     var folderMenuOpen by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var showBulkDeleteDialog by remember { mutableStateOf(false) }
+    var showBulkAddDialog by remember { mutableStateOf(false) }
+    val playingTrackId = ir.mariaplayer.playback.rememberPlayingTrackId()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+    if (showBulkDeleteDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showBulkDeleteDialog = false },
+            title = { androidx.compose.material3.Text("Delete ${selectedIds.size} tracks?") },
+            text = { androidx.compose.material3.Text("This cannot be undone.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    showBulkDeleteDialog = false
+                    scope.launch {
+                        var deleted = 0
+                        val selected = visible?.filter { it.id in selectedIds } ?: emptyList()
+                        for (t in selected) {
+                            try {
+                                val rows = context.contentResolver.delete(
+                                    android.net.Uri.parse(t.contentUri), null, null
+                                )
+                                if (rows > 0) {
+                                    deleted++
+                                    context.sendBroadcast(
+                                        android.content.Intent(ir.mariaplayer.playback.ACTION_TRACK_DELETED)
+                                            .setPackage(context.packageName)
+                                            .putExtra(ir.mariaplayer.playback.EXTRA_DELETED_URI, t.contentUri)
+                                    )
+                                }
+                            } catch (_: Exception) {}
+                        }
+                        selectionMode = false
+                        selectedIds = emptySet()
+                        android.widget.Toast.makeText(
+                            context, "Deleted $deleted/${selected.size}",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }) { androidx.compose.material3.Text("Delete") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showBulkDeleteDialog = false }) {
+                    androidx.compose.material3.Text("Cancel")
+                }
+            },
+        )
+    }
+    if (showBulkAddDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showBulkAddDialog = false },
+            title = { androidx.compose.material3.Text("Add ${selectedIds.size} to playlist") },
+            text = { androidx.compose.material3.Text("Coming soon") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showBulkAddDialog = false }) {
+                    androidx.compose.material3.Text("OK")
+                }
+            },
+        )
+    }
 
     val folderList = remember(allTracks) {
         allTracks?.map { it.folder }?.filter { it.isNotEmpty() }?.distinct()?.sorted()
@@ -432,6 +492,49 @@ private fun LibraryScreen(
 
     Scaffold(
         topBar = {
+            if (selectionMode) {
+                TopAppBar(
+                    title = { Text("${selectedIds.size} selected") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            selectionMode = false
+                            selectedIds = emptySet()
+                        }) {
+                            Icon(painter = painterResource(R.drawable.ic_close),
+                                contentDescription = "Cancel selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showBulkDeleteDialog = true }) {
+                            Icon(painter = painterResource(R.drawable.ic_delete),
+                                contentDescription = "Delete selected")
+                        }
+                        IconButton(onClick = { showBulkAddDialog = true }) {
+                            Icon(painter = painterResource(R.drawable.ic_playlist),
+                                contentDescription = "Add to playlist")
+                        }
+                        IconButton(onClick = {
+                            val selected = visible?.filter { it.id in selectedIds } ?: emptyList()
+                            if (selected.isNotEmpty()) {
+                                val uris = ArrayList(selected.map { android.net.Uri.parse(it.contentUri) })
+                                val share = android.content.Intent(android.content.Intent.ACTION_SEND_MULTIPLE).apply {
+                                    type = "audio/*"
+                                    putParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM, uris)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    android.content.Intent.createChooser(share, "Share ${selected.size} tracks")
+                                )
+                                selectionMode = false
+                                selectedIds = emptySet()
+                            }
+                        }) {
+                            Icon(painter = painterResource(R.drawable.ic_share),
+                                contentDescription = "Share selected")
+                        }
+                    }
+                )
+            } else {
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
@@ -500,6 +603,7 @@ private fun LibraryScreen(
                     }
                 },
             )
+            }
         },
         bottomBar = { NowPlayingBar(controller, onLyricsClick) },
     ) { inner ->
@@ -564,6 +668,25 @@ private fun LibraryScreen(
                             }
                         }
                         var bubbleLetter by remember { mutableStateOf<String?>(null) }
+                        LaunchedEffect(listState, playingTrackId, visible) {
+                            var idleStart = System.currentTimeMillis()
+                            while (true) {
+                                if (listState.isScrollInProgress) {
+                                    idleStart = System.currentTimeMillis()
+                                } else if (System.currentTimeMillis() - idleStart > 15_000L) {
+                                    val tid = playingTrackId
+                                    val list = visible
+                                    if (tid != null && list != null) {
+                                        val idx = list.indexOfFirst { it.id == tid }
+                                        if (idx >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == idx }) {
+                                            listState.animateScrollToItem(idx)
+                                        }
+                                    }
+                                    idleStart = System.currentTimeMillis()
+                                }
+                                delay(500)
+                            }
+                        }
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
@@ -597,7 +720,7 @@ private fun LibraryScreen(
                                             if (next.isEmpty()) selectionMode = false
                                         }
                                     },
-                                    isActive = t.id in selectedIds,
+                                    isActive = t.id in selectedIds || t.id == playingTrackId,
                                     track = t,
                                 )
                             }
