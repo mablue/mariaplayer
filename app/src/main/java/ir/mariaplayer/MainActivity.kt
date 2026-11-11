@@ -698,14 +698,24 @@ private fun LibraryScreen(
                             }
                         }
                         var bubbleLetter by remember { mutableStateOf<String?>(null) }
-                        LaunchedEffect(listState, playingTrackId, visible) {
+                        LaunchedEffect(playingTrackId) {
+                            val tid = playingTrackId ?: return@LaunchedEffect
+                            val list = visible ?: return@LaunchedEffect
+                            val idx = list.indexOfFirst { it.id == tid }
+                            if (idx >= 0) {
+                                listState.animateScrollToItem(idx)
+                            }
+                        }
+                        val currentTid by rememberUpdatedState(playingTrackId)
+                        val currentVisible by rememberUpdatedState(visible)
+                        LaunchedEffect(listState) {
                             var idleStart = System.currentTimeMillis()
                             while (true) {
                                 if (listState.isScrollInProgress) {
                                     idleStart = System.currentTimeMillis()
                                 } else if (System.currentTimeMillis() - idleStart > 15_000L) {
-                                    val tid = playingTrackId
-                                    val list = visible
+                                    val tid = currentTid
+                                    val list = currentVisible
                                     if (tid != null && list != null) {
                                         val idx = list.indexOfFirst { it.id == tid }
                                         if (idx >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == idx }) {
