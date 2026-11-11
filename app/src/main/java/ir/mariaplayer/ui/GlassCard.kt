@@ -94,6 +94,7 @@ fun GlassTrackRow(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
     isActive: Boolean = false,
+    isSelected: Boolean = false,
     track: Track? = null,
 ) {
     val context = LocalContext.current
@@ -108,11 +109,13 @@ fun GlassTrackRow(
     GlassCard(
         onClick = onClick,
         onLongClick = onLongClick,
-        containerColor = if (isActive) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-        } else {
-            Color.Unspecified
+        containerColor = when {
+            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)
+            isActive -> MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+            else -> Color.Unspecified
         },
+        borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Unspecified,
+        borderWidth = if (isSelected) 2.dp else 1.dp,
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
