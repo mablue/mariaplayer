@@ -425,6 +425,26 @@ private fun LibraryScreen(
     val playingTrackId = ir.mariaplayer.playback.rememberPlayingTrackId()
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val bulkDeleteLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val selected = visible?.filter { it.id in selectedIds } ?: emptyList()
+            for (t in selected) {
+                context.sendBroadcast(
+                    android.content.Intent(ir.mariaplayer.playback.ACTION_TRACK_DELETED)
+                        .setPackage(context.packageName)
+                        .putExtra(ir.mariaplayer.playback.EXTRA_DELETED_URI, t.contentUri)
+                )
+            }
+            android.widget.Toast.makeText(
+                context, "Deleted ${selected.size}",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            selectionMode = false
+            selectedIds = emptySet()
+        }
+    }
 
     if (showBulkDeleteDialog) {
         androidx.compose.material3.AlertDialog(
