@@ -68,10 +68,15 @@ fun GlassCard(
     } else {
         containerColor
     }
+    val resolvedBorder = if (borderColor == Color.Unspecified) {
+        MaterialTheme.colorScheme.outlineVariant
+    } else {
+        borderColor
+    }
     Surface(
         shape = MaterialTheme.shapes.large,
         color = resolvedColor,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(borderWidth, resolvedBorder),
         modifier = clickable,
     ) {
         Box { content() }
