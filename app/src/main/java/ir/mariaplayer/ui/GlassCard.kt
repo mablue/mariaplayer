@@ -110,12 +110,19 @@ fun GlassTrackRow(
         onClick = onClick,
         onLongClick = onLongClick,
         containerColor = when {
-            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)
-            isActive -> MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+            isActive -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.22f)
+            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
             else -> Color.Unspecified
         },
-        borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Unspecified,
-        borderWidth = if (isSelected) 2.dp else 1.dp,
+        borderColor = when {
+            isSelected -> MaterialTheme.colorScheme.primary
+            isActive -> MaterialTheme.colorScheme.tertiary
+            else -> Color.Unspecified
+        },
+        borderWidth = when {
+            isSelected || isActive -> 2.dp
+            else -> 1.dp
+        },
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
