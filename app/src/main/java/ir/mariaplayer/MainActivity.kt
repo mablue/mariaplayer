@@ -750,7 +750,8 @@ private fun LibraryScreen(
                                             if (next.isEmpty()) selectionMode = false
                                         }
                                     },
-                                    isActive = t.id in selectedIds || t.id == playingTrackId,
+                                    isActive = t.id == playingTrackId,
+                                    isSelected = t.id in selectedIds,
                                     track = t,
                                 )
                             }
