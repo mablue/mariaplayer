@@ -453,32 +453,41 @@ private fun LibraryScreen(
             text = { androidx.compose.material3.Text("This cannot be undone.") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
-                    showBulkDeleteDialog = false
-                    scope.launch {
-                        var deleted = 0
-                        val selected = visible?.filter { it.id in selectedIds } ?: emptyList()
-                        for (t in selected) {
-                            try {
-                                val rows = context.contentResolver.delete(
-                                    android.net.Uri.parse(t.contentUri), null, null
+                    val selected = visible?.filter { it.id in selectedIds } ?: emptyList()
+                    val uris = selected.map { android.net.Uri.parse(it.contentUri) }
+                    if (uris.isNotEmpty() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                        try {
+                            val pi = android.provider.MediaStore.createDeleteRequest(
+                                context.contentResolver, uris
+                            )
+                            bulkDeleteLauncher.launch(
+                                androidx.activity.result.IntentSenderRequest.Builder(pi.intentSender).build()
+                            )
+                        } catch (_: Exception) {}
+                    } else if (uris.isNotEmpty()) {
+                        scope.launch {
+                            var deleted = 0
+                            for (u in uris) {
+                                try {
+                                    if (context.contentResolver.delete(u, null, null) > 0) deleted++
+                                } catch (_: Exception) {}
+                            }
+                            for (t in selected) {
+                                context.sendBroadcast(
+                                    android.content.Intent(ir.mariaplayer.playback.ACTION_TRACK_DELETED)
+                                        .setPackage(context.packageName)
+                                        .putExtra(ir.mariaplayer.playback.EXTRA_DELETED_URI, t.contentUri)
                                 )
-                                if (rows > 0) {
-                                    deleted++
-                                    context.sendBroadcast(
-                                        android.content.Intent(ir.mariaplayer.playback.ACTION_TRACK_DELETED)
-                                            .setPackage(context.packageName)
-                                            .putExtra(ir.mariaplayer.playback.EXTRA_DELETED_URI, t.contentUri)
-                                    )
-                                }
-                            } catch (_: Exception) {}
+                            }
+                            android.widget.Toast.makeText(
+                                context, "Deleted $deleted/${uris.size}",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                            selectionMode = false
+                            selectedIds = emptySet()
                         }
-                        selectionMode = false
-                        selectedIds = emptySet()
-                        android.widget.Toast.makeText(
-                            context, "Deleted $deleted/${selected.size}",
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
                     }
+                    showBulkDeleteDialog = false
                 }) { androidx.compose.material3.Text("Delete") }
             },
             dismissButton = {
