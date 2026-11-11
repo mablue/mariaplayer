@@ -50,6 +50,8 @@ import ir.mariaplayer.data.Track
 fun GlassCard(
     modifier: Modifier = Modifier,
     containerColor: Color = Color.Unspecified,
+    borderColor: Color = Color.Unspecified,
+    borderWidth: androidx.compose.ui.unit.Dp = 1.dp,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
