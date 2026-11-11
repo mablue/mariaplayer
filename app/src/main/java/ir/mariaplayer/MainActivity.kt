@@ -432,6 +432,45 @@ private fun LibraryScreen(
 
     Scaffold(
         topBar = {
+            if (selectionMode) {
+                TopAppBar(
+                    title = { Text("${selectedIds.size} selected") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            selectionMode = false
+                            selectedIds = emptySet()
+                        }) {
+                            Icon(painter = painterResource(R.drawable.ic_close),
+                                contentDescription = "Cancel selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            android.widget.Toast.makeText(context, "Bulk delete coming soon", android.widget.Toast.LENGTH_SHORT).show()
+                        }) {
+                            Icon(painter = painterResource(R.drawable.ic_delete),
+                                contentDescription = "Delete selected")
+                        }
+                        IconButton(onClick = {
+                            val selected = visible?.filter { it.id in selectedIds } ?: emptyList()
+                            if (selected.isNotEmpty()) {
+                                val uris = ArrayList(selected.map { android.net.Uri.parse(it.contentUri) })
+                                val share = android.content.Intent(android.content.Intent.ACTION_SEND_MULTIPLE).apply {
+                                    type = "audio/*"
+                                    putParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM, uris)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    android.content.Intent.createChooser(share, "Share ${selected.size} tracks")
+                                )
+                            }
+                        }) {
+                            Icon(painter = painterResource(R.drawable.ic_share),
+                                contentDescription = "Share selected")
+                        }
+                    }
+                )
+            } else {
             TopAppBar(
                 title = { Text("MariaPlayer") },
                 actions = {
@@ -500,6 +539,7 @@ private fun LibraryScreen(
                     }
                 },
             )
+            }
         },
         bottomBar = { NowPlayingBar(controller, onLyricsClick) },
     ) { inner ->
