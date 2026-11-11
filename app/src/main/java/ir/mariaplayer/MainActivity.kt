@@ -419,6 +419,7 @@ private fun LibraryScreen(
     var folderMenuOpen by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    val playingTrackId = ir.mariaplayer.playback.rememberPlayingTrackId()
 
     val folderList = remember(allTracks) {
         allTracks?.map { it.folder }?.filter { it.isNotEmpty() }?.distinct()?.sorted()
@@ -637,7 +638,7 @@ private fun LibraryScreen(
                                             if (next.isEmpty()) selectionMode = false
                                         }
                                     },
-                                    isActive = t.id in selectedIds,
+                                    isActive = t.id in selectedIds || t.id == playingTrackId,
                                     track = t,
                                 )
                             }
