@@ -580,8 +580,24 @@ private fun LibraryScreen(
                                     isFavorite = t.id in favorites,
                                     onFavClick = { onToggleFavorite(t.id) },
                                     onDeleteClick = { onDeleteRequest(t) },
-                                    onClick = { onTrackClick(t) },
-                                    onLongClick = { onTrackLongClick(t) },
+                                    onClick = {
+                                        if (selectionMode) {
+                                            val next = if (t.id in selectedIds) selectedIds - t.id else selectedIds + t.id
+                                            selectedIds = next
+                                            if (next.isEmpty()) selectionMode = false
+                                        } else onTrackClick(t)
+                                    },
+                                    onLongClick = {
+                                        if (!selectionMode) {
+                                            selectionMode = true
+                                            selectedIds = setOf(t.id)
+                                        } else {
+                                            val next = if (t.id in selectedIds) selectedIds - t.id else selectedIds + t.id
+                                            selectedIds = next
+                                            if (next.isEmpty()) selectionMode = false
+                                        }
+                                    },
+                                    isActive = t.id in selectedIds,
                                     track = t,
                                 )
                             }
