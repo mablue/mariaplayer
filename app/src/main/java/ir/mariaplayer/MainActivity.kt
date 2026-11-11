@@ -605,6 +605,25 @@ private fun LibraryScreen(
                             }
                         }
                         var bubbleLetter by remember { mutableStateOf<String?>(null) }
+                        LaunchedEffect(listState, playingTrackId, visible) {
+                            var idleStart = System.currentTimeMillis()
+                            while (true) {
+                                if (listState.isScrollInProgress) {
+                                    idleStart = System.currentTimeMillis()
+                                } else if (System.currentTimeMillis() - idleStart > 15_000L) {
+                                    val tid = playingTrackId
+                                    val list = visible
+                                    if (tid != null && list != null) {
+                                        val idx = list.indexOfFirst { it.id == tid }
+                                        if (idx >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == idx }) {
+                                            listState.animateScrollToItem(idx)
+                                        }
+                                    }
+                                    idleStart = System.currentTimeMillis()
+                                }
+                                delay(500)
+                            }
+                        }
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
