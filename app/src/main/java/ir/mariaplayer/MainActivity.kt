@@ -181,6 +181,10 @@ private fun AppRoot() {
     // tracks populated by LaunchedEffect above; deleted items removed in receiver
     val controller = rememberPlayerController()
     val repository = rememberPlaybackRepository(controller)
+    val librarySnapshot by repository.state.collectAsState()
+    val libraryPlayingTrackId = librarySnapshot.trackId
+    val libraryListState = rememberLazyListState()
+    var lastAutoScrolledTid by remember { mutableStateOf<Long?>(null) }
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
     var screen by rememberSaveable { mutableStateOf("library") }
     var pendingTrackForPlaylist by remember { mutableStateOf<Track?>(null) }
@@ -227,6 +231,32 @@ private fun AppRoot() {
             }
             .sortedWith(comparatorFor(sortMode))
             .toList()
+    }
+
+    LaunchedEffect(libraryPlayingTrackId, visible) {
+        val tid = libraryPlayingTrackId ?: return@LaunchedEffect
+        if (lastAutoScrolledTid == tid) return@LaunchedEffect
+        val list = visible ?: return@LaunchedEffect
+        val idx = list.indexOfFirst { it.id == tid }
+        if (idx < 0) return@LaunchedEffect
+        lastAutoScrolledTid = tid
+        val info = libraryListState.layoutInfo
+        val item = info.visibleItemsInfo.find { it.index == idx }
+        if (item == null) {
+            libraryListState.animateScrollToItem(idx)
+        } else {
+            val top = info.viewportStartOffset
+            val bottom = info.viewportEndOffset
+            val itemTop = item.offset
+            val itemBottom = item.offset + item.size
+            when {
+                itemTop < top -> libraryListState.animateScrollToItem(idx)
+                itemBottom > bottom -> {
+                    val off = -(bottom - top - item.size)
+                    libraryListState.animateScrollToItem(idx, off)
+                }
+            }
+        }
     }
 
     LaunchedEffect(controller, tracks) {
