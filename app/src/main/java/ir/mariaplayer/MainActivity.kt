@@ -309,6 +309,8 @@ private fun AppRoot() {
         else -> LibraryScreen(
         allTracks = tracks,
         visible = visible,
+        listState = libraryListState,
+        playingTrackId = libraryPlayingTrackId,
         scanning = tracks == null,
         controller = controller,
         shuffleOn = shuffleOn,
