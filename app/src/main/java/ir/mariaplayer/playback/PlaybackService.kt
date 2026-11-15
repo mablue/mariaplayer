@@ -235,6 +235,14 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
      * notification-initiated PendingIntent is granted BAL.
      */
     private fun requestDelete(uri: Uri, title: String) {
+        // Android 10+ silently drops startActivity() from a background service
+        // (no exception thrown), so the try/catch fallback never fires. Check
+        // foreground state explicitly and post a notification instead — tapping
+        // it opens DeleteActivity with BAL, which then shows the Allow/Deny dialog.
+        if (!isAppInForeground()) {
+            postDeleteConfirmNotification(uri, title)
+            return
+        }
         val intent = Intent(this, DeleteActivity::class.java).apply {
             putExtra(DeleteActivity.EXTRA_URI, uri.toString())
             putExtra(DeleteActivity.EXTRA_TITLE, title)
@@ -245,6 +253,18 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
         } catch (_: Exception) {
             postDeleteConfirmNotification(uri, title)
         }
+    }
+
+    private fun isAppInForeground(): Boolean {
+        val am = getSystemService(ActivityManager::class.java) ?: return false
+        val procs = am.runningAppProcesses ?: return false
+        val myPid = Process.myPid()
+        for (p in procs) {
+            if (p.pid == myPid) {
+                return p.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            }
+        }
+        return false
     }
 
     private fun postDeleteConfirmNotification(uri: Uri, title: String) {
