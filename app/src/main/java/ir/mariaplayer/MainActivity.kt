@@ -458,7 +458,6 @@ private fun LibraryScreen(
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
     var showBulkAddDialog by remember { mutableStateOf(false) }
-    val playingTrackId = ir.mariaplayer.playback.rememberPlayingTrackId()
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val bulkDeleteLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
