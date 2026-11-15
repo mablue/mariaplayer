@@ -49,6 +49,7 @@ import ir.mariaplayer.R
 import ir.mariaplayer.data.Playlist
 import ir.mariaplayer.data.PlaylistPrefs
 import ir.mariaplayer.data.Track
+import ir.mariaplayer.art.AlbumArtCache
 import ir.mariaplayer.playback.NowPlayingBar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -138,18 +139,45 @@ fun PlaylistDetailScreen(
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            val art by produceState<Bitmap?>(
+                                initialValue = AlbumArtCache.peek(t.id),
+                                key1 = t.id,
+                            ) {
+                                if (value == null) {
+                                    value = AlbumArtCache.get(context, t.id, t.contentUri)
+                                }
+                            }
                             Box(
                                 Modifier.size(40.dp)
-                                    .clip(RoundedCornerShape(50))
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(MaterialTheme.colorScheme.primary),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text(
-                                    "${rawIdx + 1}",
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                )
+                                if (editMode) {
+                                    Text(
+                                        "${rawIdx + 1}",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                    )
+                                } else {
+                                    val bmp = art
+                                    if (bmp != null) {
+                                        Image(
+                                            bitmap = bmp.asImageBitmap(),
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop,
+                                        )
+                                    } else {
+                                        Text(
+                                            t.title.take(1).uppercase().ifBlank { "♪" },
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                        )
+                                    }
+                                }
                             }
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
