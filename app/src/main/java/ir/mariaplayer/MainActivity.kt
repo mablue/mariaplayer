@@ -451,6 +451,7 @@ private fun LibraryScreen(
     onLyricsClick: () -> Unit,
     onPlaylistsClick: () -> Unit,
     onSelfTestClick: () -> Unit,
+    onNowPlayingExpand: () -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
@@ -670,7 +671,7 @@ private fun LibraryScreen(
             )
             }
         },
-        bottomBar = { NowPlayingBar(controller, onLyricsClick) },
+        bottomBar = { NowPlayingBar(controller, onLyricsClick, onExpand = onNowPlayingExpand) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
             OutlinedTextField(
