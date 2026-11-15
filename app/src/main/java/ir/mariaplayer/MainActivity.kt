@@ -737,7 +737,12 @@ private fun LibraryScreen(
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                            contentPadding = PaddingValues(
+                                start = 12.dp,
+                                end = 12.dp,
+                                top = 8.dp,
+                                bottom = 16.dp,
+                            ),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             items(visible, key = { it.id }) { t ->
