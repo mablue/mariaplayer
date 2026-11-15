@@ -21,15 +21,34 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+
+      # Cache the preinstalled Android SDK to avoid sdkmanager re-downloads.
+      - name: Cache Android SDK
+        id: cache-android-sdk
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk
+            ~/.android
+          key: android-sdk-v1-${{ runner.os }}-pt36-plat36-bt36
+          restore-keys: |
+            android-sdk-v1-${{ runner.os }}-
+
+      # gradle/actions/setup-gradle handles ~/.gradle caching automatically.
       - uses: gradle/actions/setup-gradle@v4
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: ''
+
       - name: Install SDK packages
+        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
         run: yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+
       - name: Decode signing keystore
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
@@ -38,8 +57,10 @@ jobs:
           mkdir -p "$RUNNER_TEMP/keystore"
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/keystore/mariaplayer.jks"
           stat -c%s "$RUNNER_TEMP/keystore/mariaplayer.jks"
+
       - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --build-cache --stacktrace
+
       - name: Build release APK
         env:
           VERSION_CODE:  ${{ github.run_number }}
@@ -47,12 +68,12 @@ jobs:
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
           KEY_ALIAS:     ${{ secrets.KEY_ALIAS }}
           KEY_PASS:      ${{ secrets.KEY_PASS }}
-        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+        run: ./gradlew :app:assembleRelease --no-daemon --build-cache --stacktrace
+
       - name: Package + metadata
         id: meta
         run: |
           set -euo pipefail
-          # versionName uses Kotlin interpolation; use VERSION_CODE env
           VER="0.1.${VERSION_CODE:-1}"
           SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           TAG="v${VER}-build.${{ github.run_number }}-${SHA}"
@@ -66,11 +87,10 @@ jobs:
           echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
           echo "size=$SIZE" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: mariaplayer-release
-          path: ${{ steps.meta.outputs.apk }}
+
+      # NOTE: upload-artifact removed. APK is published to GitHub Releases
+      # (separate storage, no 500MB Actions quota) below.
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
