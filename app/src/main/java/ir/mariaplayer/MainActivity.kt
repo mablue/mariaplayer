@@ -732,29 +732,7 @@ private fun LibraryScreen(
                             }
                         }
                         var bubbleLetter by remember { mutableStateOf<String?>(null) }
-                        LaunchedEffect(playingTrackId) {
-                            val tid = playingTrackId ?: return@LaunchedEffect
-                            val list = visible ?: return@LaunchedEffect
-                            val idx = list.indexOfFirst { it.id == tid }
-                            if (idx < 0) return@LaunchedEffect
-                            val info = listState.layoutInfo
-                            val item = info.visibleItemsInfo.find { it.index == idx }
-                            if (item == null) {
-                                listState.animateScrollToItem(idx)
-                            } else {
-                                val top = info.viewportStartOffset
-                                val bottom = info.viewportEndOffset
-                                val itemTop = item.offset
-                                val itemBottom = item.offset + item.size
-                                when {
-                                    itemTop < top -> listState.animateScrollToItem(idx)
-                                    itemBottom > bottom -> {
-                                        val off = -(bottom - top - item.size)
-                                        listState.animateScrollToItem(idx, off)
-                                    }
-                                }
-                            }
-                        }
+                        // auto-scroll moved to AppRoot (survives navigation)
                         val currentTid by rememberUpdatedState(playingTrackId)
                         val currentVisible by rememberUpdatedState(visible)
                         LaunchedEffect(listState) {
