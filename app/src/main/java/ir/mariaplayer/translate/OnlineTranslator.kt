@@ -34,15 +34,26 @@ object OnlineTranslator {
     private fun sanitizeLocal(s: String?): String? =
         ir.mariaplayer.util.sanitizeJsonString(s)
 
+    /** MS Edge rejects from=auto (400) since Nov 2026; pick fa/en by script. */
+    private fun detectSource(text: String): String {
+        for (ch in text) {
+            if (ch in '\u0600'..'\u06FF' || ch in '\uFB50'..'\uFDFF' || ch in '\uFE70'..'\uFEFF') {
+                return "fa"
+            }
+        }
+        return "en"
+    }
+
     // ── Tier 1: MS Edge / Azure Translator ─────────────────────────
     private suspend fun translateMSBatch(
         lines: List<String>, target: String, timeoutMs: Int,
     ): List<String>? = withContext(Dispatchers.IO) {
         try {
             val joined = lines.joinToString("\n")
+            val from = detectSource(joined)
             val body = JSONArray().put(joined).toString()
             val url = "https://edge.microsoft.com/translate/translatetext" +
-                    "?from=auto&to=$target&isEnterpriseClient=false"
+                    "?from=$from&to=$target&isEnterpriseClient=false"
             val resp = httpPost(
                 url, body, timeoutMs,
                 extraHeaders = mapOf(
