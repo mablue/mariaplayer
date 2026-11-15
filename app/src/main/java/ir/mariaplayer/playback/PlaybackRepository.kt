@@ -146,7 +146,10 @@ class PlaybackRepository(private val context: Context) {
             val tid = c.currentMediaItem?.mediaId?.toLongOrNull()
             if (tid != null) {
                 val pos = c.currentPosition
-                scope.launch {
+                // NonCancellable: dispose() calls scope.cancel() right after
+                // unbind(), which would otherwise kill this coroutine before
+                // the final save completes.
+                saveScope.launch(NonCancellable) {
                     PlaybackPrefs.save(context, tid, pos)
                     PlaybackPrefs.savePosition(context, tid, pos)
                 }
