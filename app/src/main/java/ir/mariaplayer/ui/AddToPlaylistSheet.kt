@@ -37,9 +37,10 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddToPlaylistSheet(
-    track: Track,
+    tracks: List<Track>,
     onDismiss: () -> Unit,
 ) {
+    if (tracks.isEmpty()) { onDismiss(); return }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -54,18 +55,20 @@ fun AddToPlaylistSheet(
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(Modifier.fillMaxWidth()) {
             Text(
-                "Add to playlist",
+                if (tracks.size == 1) "Add to playlist" else "Add ${tracks.size} tracks to playlist",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
-            Text(
-                track.title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 20.dp),
-            )
+            if (tracks.size == 1) {
+                Text(
+                    tracks[0].title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
 
             LazyColumn(Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 items(playlists, key = { it.id }) { p ->
@@ -74,12 +77,17 @@ fun AddToPlaylistSheet(
                         supportingContent = { Text("${p.trackIds.size} tracks") },
                         modifier = Modifier.clickable {
                             scope.launch {
-                                val added = PlaylistPrefs.addTrack(context, p.id, track.id)
-                                Toast.makeText(
-                                    context,
-                                    if (added) "Added to ${p.name}" else "Already in ${p.name}",
-                                    Toast.LENGTH_SHORT,
-                                ).show()
+                                var added = 0
+                                var dup = 0
+                                for (t in tracks) {
+                                    if (PlaylistPrefs.addTrack(context, p.id, t.id)) added++ else dup++
+                                }
+                                val msg = when {
+                                    added == 0 -> "Already in ${p.name}"
+                                    dup == 0 -> if (tracks.size == 1) "Added to ${p.name}" else "Added $added to ${p.name}"
+                                    else -> "Added $added, $dup already in ${p.name}"
+                                }
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                             }
                             onDismiss()
                         },
@@ -124,9 +132,11 @@ fun AddToPlaylistSheet(
                         val name = newName.trim()
                         scope.launch {
                             val id = PlaylistPrefs.create(context, name)
-                            PlaylistPrefs.addTrack(context, id, track.id)
+                            for (t in tracks) PlaylistPrefs.addTrack(context, id, t.id)
                             Toast.makeText(
-                                context, "Created $name and added track",
+                                context,
+                                if (tracks.size == 1) "Created $name and added track"
+                                else "Created $name with ${tracks.size} tracks",
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
