@@ -388,7 +388,7 @@ private fun AppRoot() {
     }
 
     pendingTrackForPlaylist?.let { pending ->
-        AddToPlaylistSheet(pending) { pendingTrackForPlaylist = null }
+        AddToPlaylistSheet(listOf(pending)) { pendingTrackForPlaylist = null }
     }
     }
 }
