@@ -706,7 +706,6 @@ private fun LibraryScreen(
                         CenterText(msg)
                     }
                     else -> {
-                        val listState = rememberLazyListState()
                         val scope = rememberCoroutineScope()
                         val sections = remember(visible, sortMode) {
                             val list = visible
