@@ -1074,6 +1074,19 @@ private fun GlassControls(
                             if (controller.hasPreviousMediaItem()) 1f else 0.3f),
                         modifier = Modifier.size(34.dp))
                 }
+                IconButton(onClick = {
+                    runCatching {
+                        val newPos = (controller.currentPosition - 15_000L).coerceAtLeast(0L)
+                        controller.seekTo(newPos)
+                    }
+                }) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.ic_replay), "Rewind 15s",
+                            tint = Color.White, modifier = Modifier.size(28.dp))
+                        Text("15", color = Color.White, fontSize = 9.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    }
+                }
                 Box(Modifier.size(64.dp).clip(RoundedCornerShape(50))
                         .background(Color.White.copy(alpha = 0.16f))
                         .clickable { if (playing) controller.pause() else controller.play() },
@@ -1082,6 +1095,20 @@ private fun GlassControls(
                             if (playing) R.drawable.ic_pause else R.drawable.ic_play_arrow),
                         if (playing) "Pause" else "Play",
                         tint = Color.White, modifier = Modifier.size(38.dp))
+                }
+                IconButton(onClick = {
+                    runCatching {
+                        val raw = controller.currentPosition + 30_000L
+                        val newPos = if (durationMs > 0) raw.coerceAtMost(durationMs) else raw
+                        controller.seekTo(newPos)
+                    }
+                }) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.ic_forward), "Forward 30s",
+                            tint = Color.White, modifier = Modifier.size(28.dp))
+                        Text("30", color = Color.White, fontSize = 9.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    }
                 }
                 IconButton(onClick = {
                     runCatching { runCatching { runCatching { controller.seekToNextMediaItem() } } }
