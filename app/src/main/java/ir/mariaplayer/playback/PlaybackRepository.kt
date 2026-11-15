@@ -91,6 +91,17 @@ class PlaybackRepository(private val context: Context) {
                 newPosition: Player.PositionInfo,
                 reason: Int,
             ) {
+                // Capture old track's exact position BEFORE we overwrite
+                // prevPositionMs with the new track's position. Without this,
+                // onMediaItemTransition(SEEK) reads oldPos=0 and skips saving,
+                // so navigating A→B→A loses A's resume position.
+                val oldId = oldPosition.mediaItem?.mediaId?.toLongOrNull()
+                val newId = newPosition.mediaItem?.mediaId?.toLongOrNull()
+                if (oldId != null && oldId != newId && oldPosition.positionMs > 5000) {
+                    scope.launch {
+                        PlaybackPrefs.savePosition(context, oldId, oldPosition.positionMs)
+                    }
+                }
                 controller?.let {
                     prevPositionMs = it.currentPosition
                     updateSnapshot(it)
