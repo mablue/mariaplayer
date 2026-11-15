@@ -533,16 +533,16 @@ private fun LibraryScreen(
         )
     }
     if (showBulkAddDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showBulkAddDialog = false },
-            title = { androidx.compose.material3.Text("Add ${selectedIds.size} to playlist") },
-            text = { androidx.compose.material3.Text("Coming soon") },
-            confirmButton = {
-                androidx.compose.material3.TextButton(onClick = { showBulkAddDialog = false }) {
-                    androidx.compose.material3.Text("OK")
-                }
-            },
-        )
+        val selectedTracks = visible?.filter { it.id in selectedIds } ?: emptyList()
+        if (selectedTracks.isNotEmpty()) {
+            AddToPlaylistSheet(selectedTracks) {
+                showBulkAddDialog = false
+                selectionMode = false
+                selectedIds = emptySet()
+            }
+        } else {
+            showBulkAddDialog = false
+        }
     }
 
     val folderList = remember(allTracks) {
