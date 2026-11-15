@@ -22,17 +22,21 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # Cache the preinstalled Android SDK to avoid sdkmanager re-downloads.
-      - name: Cache Android SDK
+      # Cache only the specific SDK packages we actually need.
+      # Caching the whole SDK pulls in NDK/emulator/python3 which tar
+      # can't re-stat on the runner, generating thousands of warnings
+      # and inflating cache size (~5GB). Narrow scope fixes both.
+      - name: Cache Android SDK packages
         id: cache-android-sdk
         uses: actions/cache@v4
         with:
           path: |
-            /usr/local/lib/android/sdk
-            ~/.android
-          key: android-sdk-v1-${{ runner.os }}-pt36-plat36-bt36
+            /usr/local/lib/android/sdk/platforms/android-36
+            /usr/local/lib/android/sdk/build-tools/36.0.0
+            /usr/local/lib/android/sdk/platform-tools
+          key: android-sdk-v2-${{ runner.os }}-plat36-bt36-pt
           restore-keys: |
-            android-sdk-v1-${{ runner.os }}-
+            android-sdk-v2-${{ runner.os }}-
 
       # gradle/actions/setup-gradle handles ~/.gradle caching automatically.
       - uses: gradle/actions/setup-gradle@v4
