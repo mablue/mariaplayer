@@ -34,7 +34,11 @@ import ir.mariaplayer.R
 import java.util.Locale
 
 @Composable
-fun NowPlayingBar(controller: MediaController?, onLyricsClick: () -> Unit = {}) {
+fun NowPlayingBar(
+    controller: MediaController?,
+    onLyricsClick: () -> Unit = {},
+    onExpand: (() -> Unit)? = null,
+) {
     if (controller == null) return
     val repository = LocalPlaybackRepository.current ?: return
     val state by repository.state.collectAsState()
@@ -51,6 +55,16 @@ fun NowPlayingBar(controller: MediaController?, onLyricsClick: () -> Unit = {}) 
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onExpand != null) {
+                    IconButton(onClick = onExpand, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_up),
+                            contentDescription = "Open player",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 Column(Modifier.weight(1f)) {
                     Text(state.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleSmall)
