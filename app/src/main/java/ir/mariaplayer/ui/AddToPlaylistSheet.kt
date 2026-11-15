@@ -32,17 +32,20 @@ import ir.mariaplayer.data.Playlist
 import ir.mariaplayer.data.PlaylistPrefs
 import ir.mariaplayer.data.Track
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddToPlaylistSheet(
     tracks: List<Track>,
+    workScope: CoroutineScope? = null,
     onDismiss: () -> Unit,
 ) {
     if (tracks.isEmpty()) { onDismiss(); return }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val localScope = rememberCoroutineScope()
+    val scope = workScope ?: localScope
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val playlists by produceState<List<Playlist>>(initialValue = emptyList()) {
