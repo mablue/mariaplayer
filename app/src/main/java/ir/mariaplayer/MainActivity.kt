@@ -427,6 +427,8 @@ private fun playQueue(
 private fun LibraryScreen(
     allTracks: List<Track>?,
     visible: List<Track>?,
+    listState: LazyListState,
+    playingTrackId: Long?,
     scanning: Boolean,
     controller: MediaController?,
     shuffleOn: Boolean,
