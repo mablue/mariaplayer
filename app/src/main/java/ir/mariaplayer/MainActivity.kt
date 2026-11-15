@@ -388,7 +388,7 @@ private fun AppRoot() {
     }
 
     pendingTrackForPlaylist?.let { pending ->
-        AddToPlaylistSheet(listOf(pending)) { pendingTrackForPlaylist = null }
+        AddToPlaylistSheet(listOf(pending), scope) { pendingTrackForPlaylist = null }
     }
     }
 }
@@ -535,7 +535,7 @@ private fun LibraryScreen(
     if (showBulkAddDialog) {
         val selectedTracks = visible?.filter { it.id in selectedIds } ?: emptyList()
         if (selectedTracks.isNotEmpty()) {
-            AddToPlaylistSheet(selectedTracks) {
+            AddToPlaylistSheet(selectedTracks, scope) {
                 showBulkAddDialog = false
                 selectionMode = false
                 selectedIds = emptySet()
