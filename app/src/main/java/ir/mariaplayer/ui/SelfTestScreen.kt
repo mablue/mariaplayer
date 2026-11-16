@@ -562,6 +562,96 @@ private suspend fun runAllTests(
         if (s < 90) throw IllegalStateException("perfect=$s")
         "score=$s"
     }
+    test("SSOT: snapshot has all 10 fields") {
+        val snap = PlaybackDiagnostics.snapshot()
+        val required = listOf("reg=", "rem=", "tick=", "trans=", "state=",
+            "save=", "savePos=", "read=", "readPos=", "clear=")
+        for (f in required) {
+            if (!snap.contains(f)) throw IllegalStateException("missing $f in $snap")
+        }
+        "all 10"
+    }
+    test("SSOT: save(0) writes, savePosition(0) skips") {
+        val id = 9_900_020L
+        PlaybackPrefs.savePosition(context, id, 0L)
+        if (PlaybackPrefs.readPosition(context, id) != null)
+            throw IllegalStateException("savePosition(0) should be no-op")
+        PlaybackPrefs.save(context, id, 0L)
+        val slot = PlaybackPrefs.read()
+        PlaybackPrefs.save(context, 0L, 0L)
+        if (slot.trackId != id)
+            throw IllegalStateException("save(0) should write, got ${slot.trackId}")
+        "writes vs skips"
+    }
+    test("SSOT: slot and map independent") {
+        val a = 9_900_021L
+        val b = 9_900_022L
+        PlaybackPrefs.save(context, a, 111L)
+        PlaybackPrefs.savePosition(context, b, 222L)
+        val slot = PlaybackPrefs.read()
+        val mapA = PlaybackPrefs.readPosition(context, a)
+        val mapB = PlaybackPrefs.readPosition(context, b)
+        PlaybackPrefs.clearPosition(context, b)
+        PlaybackPrefs.save(context, 0L, 0L)
+        if (slot.trackId != a || slot.positionMs != 111L)
+            throw IllegalStateException("slot=$slot")
+        if (mapA != null)
+            throw IllegalStateException("mapA should be null, got $mapA")
+        if (mapB != 222L)
+            throw IllegalStateException("mapB=$mapB")
+        "independent"
+    }
+    test("SSOT: readPosition null for missing") {
+        val got = PlaybackPrefs.readPosition(context, 999_888_777_666L)
+        if (got != null) throw IllegalStateException("expected null, got $got")
+        "null"
+    }
+    test("SSOT: multi-track isolation") {
+        val ids = listOf(9_900_030L, 9_900_031L, 9_900_032L)
+        val pos = listOf(1_000L, 2_000L, 3_000L)
+        for (i in ids.indices) PlaybackPrefs.savePosition(context, ids[i], pos[i])
+        for (i in ids.indices) {
+            val got = PlaybackPrefs.readPosition(context, ids[i])
+            if (got != pos[i])
+                throw IllegalStateException("id=${ids[i]} got=$got want=${pos[i]}")
+        }
+        PlaybackPrefs.clearPosition(context, ids[1])
+        val mid = PlaybackPrefs.readPosition(context, ids[1])
+        val first = PlaybackPrefs.readPosition(context, ids[0])
+        val last = PlaybackPrefs.readPosition(context, ids[2])
+        for (id in ids) PlaybackPrefs.clearPosition(context, id)
+        if (mid != null) throw IllegalStateException("mid not cleared")
+        if (first != 1_000L || last != 3_000L)
+            throw IllegalStateException("neighbors damaged: $first,$last")
+        "3-track"
+    }
+    test("SSOT: save after clear restores") {
+        val id = 9_900_050L
+        PlaybackPrefs.savePosition(context, id, 100L)
+        PlaybackPrefs.clearPosition(context, id)
+        if (PlaybackPrefs.readPosition(context, id) != null)
+            throw IllegalStateException("clear failed")
+        PlaybackPrefs.savePosition(context, id, 200L)
+        val got = PlaybackPrefs.readPosition(context, id)
+        PlaybackPrefs.clearPosition(context, id)
+        if (got != 200L) throw IllegalStateException("restore=$got")
+        "ok"
+    }
+    test("SSOT: counter accuracy (delta)") {
+        val s0 = PlaybackDiagnostics.saveCalls.get()
+        val sp0 = PlaybackDiagnostics.savePositionCalls.get()
+        val c0 = PlaybackDiagnostics.clearPositionCalls.get()
+        repeat(3) { PlaybackPrefs.save(context, 0L, 0L) }
+        repeat(2) { PlaybackPrefs.savePosition(context, 9_900_060L, 50L) }
+        repeat(1) { PlaybackPrefs.clearPosition(context, 9_900_060L) }
+        val dS = PlaybackDiagnostics.saveCalls.get() - s0
+        val dSp = PlaybackDiagnostics.savePositionCalls.get() - sp0
+        val dC = PlaybackDiagnostics.clearPositionCalls.get() - c0
+        if (dS != 3) throw IllegalStateException("save Δ=$dS")
+        if (dSp != 2) throw IllegalStateException("savePos Δ=$dSp")
+        if (dC != 1) throw IllegalStateException("clear Δ=$dC")
+        "Δ ok"
+    }
     test("SSOT: Drift snapshot") {
         PlaybackDiagnostics.snapshot()
     }
