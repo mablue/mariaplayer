@@ -17,7 +17,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -95,6 +98,7 @@ import ir.mariaplayer.playback.NowPlayingScreen
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.GlassTrackRow
+import ir.mariaplayer.ui.AboutDialog
 import ir.mariaplayer.ui.AddToPlaylistSheet
 import ir.mariaplayer.ui.PermissionScreen
 import ir.mariaplayer.ui.PlaylistDetailScreen
@@ -482,6 +486,7 @@ private fun LibraryScreen(
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
     var showBulkAddDialog by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val bulkDeleteLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -569,6 +574,10 @@ private fun LibraryScreen(
         }
     }
 
+    if (showAbout) {
+        AboutDialog { showAbout = false }
+    }
+
     val folderList = remember(allTracks) {
         allTracks?.map { it.folder }?.filter { it.isNotEmpty() }?.distinct()?.sorted()
             ?: emptyList()
@@ -625,10 +634,23 @@ private fun LibraryScreen(
                 )
             } else {
             TopAppBar(
-                title = { Text("MariaPlayer") },
+                navigationIcon = {
+                    IconButton(onClick = { showAbout = true }) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_launcher_foreground),
+                            contentDescription = "About",
+                            modifier = Modifier.size(36.dp),
+                        )
+                    }
+                },
+                title = {},
                 actions = {
                     val sz = Modifier.size(36.dp)
                     val isz = Modifier.size(22.dp)
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                     IconButton(onClick = { onSelfTestClick() }, modifier = sz) {
                         Icon(painter = painterResource(R.drawable.ic_self_test),
                             contentDescription = "Self-test", modifier = isz)
@@ -689,6 +711,7 @@ private fun LibraryScreen(
                             tint = if (shuffleOn) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = isz)
+                    }
                     }
                 },
             )
