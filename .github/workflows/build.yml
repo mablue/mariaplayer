@@ -22,23 +22,13 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # Cache only the specific SDK packages we actually need.
-      # Caching the whole SDK pulls in NDK/emulator/python3 which tar
-      # can't re-stat on the runner, generating thousands of warnings
-      # and inflating cache size (~5GB). Narrow scope fixes both.
-      - name: Cache Android SDK packages
-        id: cache-android-sdk
-        uses: actions/cache@v4
-        with:
-          path: |
-            /usr/local/lib/android/sdk/platforms/android-36
-            /usr/local/lib/android/sdk/build-tools/36.0.0
-            /usr/local/lib/android/sdk/platform-tools
-          key: android-sdk-v2-${{ runner.os }}-plat36-bt36-pt
-          restore-keys: |
-            android-sdk-v2-${{ runner.os }}-
-
-      # gradle/actions/setup-gradle handles ~/.gradle caching automatically.
+      # SDK cache removed (C31). Data from 10 prior runs showed:
+      #   • cache restore: 5-13 s
+      #   • cache save:    1-3 s
+      #   • "Install SDK": 2-3 s regardless of cache (runner pre-installs)
+      #   Net result: +10-15 s per run with zero savings, plus tar noise
+      # from NDK/python files that sdkmanager never touches. Gradle
+      # dependency caching (gradle/actions below) is untouched and works.
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Setup Android SDK
@@ -47,7 +37,6 @@ jobs:
           packages: ''
 
       - name: Install SDK packages
-        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
         run: yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Make gradlew executable
