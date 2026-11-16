@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import ir.mariaplayer.R
 import ir.mariaplayer.data.ContentType
 import ir.mariaplayer.data.ContentTypePrefs
+import ir.mariaplayer.data.ContentTypeLogic
 import ir.mariaplayer.data.FavoritesPrefs
 import ir.mariaplayer.data.MediaClassifier
 import ir.mariaplayer.data.LibraryPrefs
@@ -54,6 +55,7 @@ import ir.mariaplayer.data.PlaybackPrefs
 import ir.mariaplayer.data.PlaylistPrefs
 import ir.mariaplayer.data.QueryNormalizer
 import ir.mariaplayer.data.SortMode
+import ir.mariaplayer.data.Track
 import ir.mariaplayer.data.Source
 import ir.mariaplayer.lyrics.LrcLine
 import ir.mariaplayer.lyrics.LrcParser
@@ -61,6 +63,7 @@ import ir.mariaplayer.lyrics.LyricsCache
 import ir.mariaplayer.lyrics.LyricsScorer
 import ir.mariaplayer.util.PlaybackDiagnostics
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -362,6 +365,89 @@ private suspend fun runAllTests(
         ContentTypePrefs.clear(context, id)
         val got = ContentTypePrefs.read(context, id)
         if (got != null) throw IllegalStateException("still=$got")
+        "ok"
+    }
+    test("Logic: derive without override") {
+        val track = Track(
+            id = 901L, title = "Song", artist = "A", album = null,
+            durationMs = 180_000L, contentUri = "file:///x",
+            folder = "Music", filename = "x.mp3",
+        )
+        val t = ContentTypeLogic.derive(track, emptyMap())
+        if (t != ContentType.MUSIC) throw IllegalStateException("got $t")
+        "MUSIC"
+    }
+    test("Logic: derive override wins") {
+        val track = Track(
+            id = 902L, title = "Song", artist = "A", album = null,
+            durationMs = 180_000L, contentUri = "file:///x",
+            folder = "Music", filename = "x.mp3",
+        )
+        val t = ContentTypeLogic.derive(track, mapOf(902L to ContentType.PODCAST))
+        if (t != ContentType.PODCAST) throw IllegalStateException("got $t")
+        "override wins"
+    }
+    test("Logic: applyAll reclassifies") {
+        val short = Track(id = 903L, title = "S", artist = "A", album = null,
+            durationMs = 120_000L, contentUri = "file:///1",
+            folder = "M", filename = "1.mp3")
+        val long = Track(id = 904L, title = "L", artist = "B", album = null,
+            durationMs = 3_600_000L, contentUri = "file:///2",
+            folder = "M", filename = "2.mp3")
+        val r = ContentTypeLogic.applyAll(listOf(short, long), emptyMap())
+        if (r[0].contentType != ContentType.MUSIC) throw IllegalStateException("0=${r[0].contentType}")
+        if (r[1].contentType != ContentType.PODCAST) throw IllegalStateException("1=${r[1].contentType}")
+        "ok"
+    }
+    test("Logic: countByType") {
+        val a = Track(id = 905L, title = "a", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "u").copy(contentType = ContentType.MUSIC)
+        val b = Track(id = 906L, title = "b", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "v").copy(contentType = ContentType.PODCAST)
+        val c = Track(id = 907L, title = "c", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "w").copy(contentType = ContentType.MUSIC)
+        val counts = ContentTypeLogic.countByType(listOf(a, b, c))
+        if (counts[null] != 3) throw IllegalStateException("all=${counts[null]}")
+        if (counts[ContentType.MUSIC] != 2) throw IllegalStateException("music=${counts[ContentType.MUSIC]}")
+        if (counts[ContentType.PODCAST] != 1) throw IllegalStateException("pod=${counts[ContentType.PODCAST]}")
+        "ok"
+    }
+    test("Logic: matchesFilter null = all") {
+        val t = Track(id = 908L, title = "x", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "u").copy(contentType = ContentType.PODCAST)
+        if (!ContentTypeLogic.matchesFilter(t, null)) throw IllegalStateException("null failed")
+        "ok"
+    }
+    test("Logic: matchesFilter typed") {
+        val music = Track(id = 909L, title = "m", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "u").copy(contentType = ContentType.MUSIC)
+        val pod = Track(id = 910L, title = "p", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "v").copy(contentType = ContentType.PODCAST)
+        if (!ContentTypeLogic.matchesFilter(music, ContentType.MUSIC))
+            throw IllegalStateException("music should match")
+        if (ContentTypeLogic.matchesFilter(pod, ContentType.MUSIC))
+            throw IllegalStateException("pod must NOT match music")
+        "ok"
+    }
+    test("Logic: sameTypeOnly isolation") {
+        val m1 = Track(id = 911L, title = "m1", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "u").copy(contentType = ContentType.MUSIC)
+        val p = Track(id = 912L, title = "p", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "v").copy(contentType = ContentType.PODCAST)
+        val m2 = Track(id = 913L, title = "m2", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "w").copy(contentType = ContentType.MUSIC)
+        val pool = ContentTypeLogic.sameTypeOnly(listOf(m1, p, m2), m1)
+        if (pool.size != 2) throw IllegalStateException("size=${pool.size}")
+        if (pool.any { it.id == 912L }) throw IllegalStateException("podcast leaked into music queue")
+        "ok"
+    }
+    test("Flow: observeAll emits override") {
+        val id = 9_900_010L
+        ContentTypePrefs.set(context, id, ContentType.PODCAST)
+        val map = ContentTypePrefs.observeAll(context).first()
+        ContentTypePrefs.clear(context, id)
+        if (map[id] != ContentType.PODCAST)
+            throw IllegalStateException("map=$map")
         "ok"
     }
     test("Theme default style") {
