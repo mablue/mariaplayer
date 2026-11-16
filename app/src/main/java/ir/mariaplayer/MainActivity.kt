@@ -108,6 +108,7 @@ import ir.mariaplayer.ui.LyricsDisplayScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -142,7 +143,17 @@ private fun AppRoot() {
     var pendingDeleteTitle by remember { mutableStateOf("") }
 
     LaunchedEffect(hasAudio) {
-        if (hasAudio) tracks = LibraryScanner.scan(context)
+        if (hasAudio) {
+            val raw = LibraryScanner.scan(context)
+            val overrides = ir.mariaplayer.data.ContentTypePrefs
+                .observeAll(context).first()
+            tracks = raw.map { t ->
+                val auto = ir.mariaplayer.data.MediaClassifier.classify(
+                    t.title, t.album, t.folder, t.filename, t.durationMs,
+                )
+                t.copy(contentType = overrides[t.id] ?: auto)
+            }
+        }
     }
 
 
@@ -354,8 +365,10 @@ private fun AppRoot() {
         onShuffleClick = {
             val c = controller ?: return@LibraryScreen
             val list = visible ?: return@LibraryScreen
-            if (c.mediaItemCount == 0 && list.isNotEmpty()) {
-                playQueue(c, list, 0, 0L, autoPlay = true)
+            val pool = if (contentFilter != null) list
+                       else list.filter { it.contentType == ir.mariaplayer.data.ContentType.MUSIC }
+            if (c.mediaItemCount == 0 && pool.isNotEmpty()) {
+                playQueue(c, pool, 0, 0L, autoPlay = true)
                 c.shuffleModeEnabled = true
             } else {
                 c.shuffleModeEnabled = !c.shuffleModeEnabled
@@ -365,8 +378,9 @@ private fun AppRoot() {
         onTrackClick = { t ->
             val c = controller ?: return@LibraryScreen
             val list = visible ?: return@LibraryScreen
-            val idx = list.indexOfFirst { it.id == t.id }
-            if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
+            val sameType = list.filter { it.contentType == t.contentType }
+            val idx = sameType.indexOfFirst { it.id == t.id }
+            if (idx >= 0) playQueue(c, sameType, idx, 0L, autoPlay = true)
         },
         onTrackLongClick = { t -> pendingTrackForPlaylist = t },
         onLyricsClick = { screen = "lyrics_display" },
