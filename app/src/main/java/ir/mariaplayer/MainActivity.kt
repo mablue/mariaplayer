@@ -151,11 +151,8 @@ private fun AppRoot() {
     }.collectAsState(initial = emptyMap())
 
     val tracks: List<Track>? = remember(rawTracks, contentTypeOverrides) {
-        rawTracks?.map { t ->
-            val auto = ir.mariaplayer.data.MediaClassifier.classify(
-                t.title, t.album, t.folder, t.filename, t.durationMs,
-            )
-            t.copy(contentType = contentTypeOverrides[t.id] ?: auto)
+        rawTracks?.let {
+            ir.mariaplayer.data.ContentTypeLogic.applyAll(it, contentTypeOverrides)
         }
     }
 
@@ -781,16 +778,7 @@ private fun LibraryScreen(
                 selected = contentFilter,
                 onChange = onContentFilterChange,
                 counts = remember(allTracks) {
-                    val all = allTracks ?: emptyList()
-                    mapOf<ir.mariaplayer.data.ContentType?, Int>(
-                        null to all.size,
-                        ir.mariaplayer.data.ContentType.MUSIC to
-                            all.count { it.contentType == ir.mariaplayer.data.ContentType.MUSIC },
-                        ir.mariaplayer.data.ContentType.PODCAST to
-                            all.count { it.contentType == ir.mariaplayer.data.ContentType.PODCAST },
-                        ir.mariaplayer.data.ContentType.AUDIOBOOK to
-                            all.count { it.contentType == ir.mariaplayer.data.ContentType.AUDIOBOOK },
-                    )
+                    ir.mariaplayer.data.ContentTypeLogic.countByType(allTracks ?: emptyList())
                 },
             )
 
