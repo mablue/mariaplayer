@@ -316,9 +316,61 @@ private suspend fun runAllTests(
         "${ok.size}/${probes.size} — $detail"
     }
     test("Theme default style") {
-        val bl = VazirTypography.bodyLarge
+        val bl = MikhakTypography.bodyLarge
         if (bl.fontSize.value <= 0f) throw IllegalStateException("unset")
         "bodyLarge=${bl.fontSize.value}sp"
+    }
+    test("Font: Mikhak family loaded") {
+        val fam = MikhakTypography.bodyLarge.fontFamily
+            ?: throw IllegalStateException("null family")
+        if (fam == androidx.compose.ui.text.font.FontFamily.Default)
+            throw IllegalStateException("still default")
+        "loaded"
+    }
+    test("Font: font files present") {
+        val ctx = context
+        val bold = androidx.core.content.res.ResourcesCompat.getFont(ctx, R.font.mikhak_bold)
+            ?: throw IllegalStateException("bold missing")
+        val reg = androidx.core.content.res.ResourcesCompat.getFont(ctx, R.font.mikhak_regular)
+            ?: throw IllegalStateException("regular missing")
+        "bold+regular"
+    }
+    test("Font: Persian glyph available") {
+        val fam = MikhakTypography.bodyLarge.fontFamily ?: error("no family")
+        val paint = android.graphics.Paint().apply {
+            typeface = androidx.compose.ui.text.font.FontFamily
+                .Resolver(context).resolve(fam)
+                .value as android.graphics.Typeface
+            textSize = 32f
+        }
+        val w = paint.measureText("\u0641\u0627\u0631\u0633\u06cc")
+        if (w <= 1f) throw IllegalStateException("no Persian glyph: w=$w")
+        "w=${w.toInt()}px"
+    }
+    test("Font: Latin glyph available") {
+        val fam = MikhakTypography.bodyLarge.fontFamily ?: error("no family")
+        val paint = android.graphics.Paint().apply {
+            typeface = androidx.compose.ui.text.font.FontFamily
+                .Resolver(context).resolve(fam)
+                .value as android.graphics.Typeface
+            textSize = 32f
+        }
+        val w = paint.measureText("Hello World")
+        if (w <= 1f) throw IllegalStateException("no Latin glyph: w=$w")
+        "w=${w.toInt()}px"
+    }
+    test("Font: digits render") {
+        val fam = MikhakTypography.bodyLarge.fontFamily ?: error("no family")
+        val paint = android.graphics.Paint().apply {
+            typeface = androidx.compose.ui.text.font.FontFamily
+                .Resolver(context).resolve(fam)
+                .value as android.graphics.Typeface
+            textSize = 32f
+        }
+        val w1 = paint.measureText("0123456789")
+        val w2 = paint.measureText("\u06F0\u06F1\u06F2\u06F3\u06F4\u06F5\u06F6\u06F7\u06F8\u06F9")
+        if (w1 <= 1f || w2 <= 1f) throw IllegalStateException("latin=$w1 persian=$w2")
+        "ok"
     }
     test("LRC rejects \"null\"") {
         val lines = LrcParser.parse("null")
