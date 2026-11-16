@@ -452,11 +452,13 @@ private suspend fun runAllTests(
         if (after != before + 1) throw IllegalStateException("Δ=${after - before}")
         "ok"
     }
-    test("SSOT: listener registration count") {
+    test("SSOT: listener balance") {
         val reg = PlaybackDiagnostics.listenerRegistrations.get()
-        if (reg < 0 || reg > 100)
-            throw IllegalStateException("reg=$reg out of range")
-        "reg=$reg"
+        val rem = PlaybackDiagnostics.listenerRemovals.get()
+        val active = reg - rem
+        if (active < 0 || active > 1)
+            throw IllegalStateException("active=$active (reg=$reg rem=$rem)")
+        "active=$active (reg=$reg rem=$rem)"
     }
     test("SSOT: dual API agreement") {
         val id = 9_999_903L
