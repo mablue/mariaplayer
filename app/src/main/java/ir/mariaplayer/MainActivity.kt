@@ -224,14 +224,16 @@ private fun AppRoot() {
     var query by rememberSaveable { mutableStateOf("") }
     var folderFilter by rememberSaveable { mutableStateOf("") }
     var favOnly by rememberSaveable { mutableStateOf(false) }
+    var contentFilter by rememberSaveable { mutableStateOf<ir.mariaplayer.data.ContentType?>(null) }
 
-    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, favOnly, favorites) {
+    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, favOnly, favorites, contentFilter) {
         val base = tracks ?: return@remember null
         val q = query.trim().lowercase()
         base.asSequence()
             .filter { t ->
                 (folderFilter.isEmpty() || t.folder == folderFilter) &&
                 (!favOnly || t.id in favorites) &&
+                (contentFilter == null || t.contentType == contentFilter) &&
                 (q.isEmpty() ||
                     t.title.lowercase().contains(q) ||
                     t.artist?.lowercase()?.contains(q) == true ||
@@ -371,6 +373,8 @@ private fun AppRoot() {
         onPlaylistsClick = { screen = "playlists" },
         onSelfTestClick = { screen = "selftest" },
         onNowPlayingExpand = { showNowPlaying = true },
+        contentFilter = contentFilter,
+        onContentFilterChange = { contentFilter = it },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
             if (Build.VERSION.SDK_INT >= 30) {
@@ -479,6 +483,8 @@ private fun LibraryScreen(
     onPlaylistsClick: () -> Unit,
     onSelfTestClick: () -> Unit,
     onNowPlayingExpand: () -> Unit,
+    contentFilter: ir.mariaplayer.data.ContentType?,
+    onContentFilterChange: (ir.mariaplayer.data.ContentType?) -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
@@ -736,6 +742,11 @@ private fun LibraryScreen(
                         }
                     }
                 },
+            )
+
+            ir.mariaplayer.ui.ContentTypeFilterBar(
+                selected = contentFilter,
+                onChange = onContentFilterChange,
             )
 
             Box(Modifier.fillMaxWidth().weight(1f)) {
