@@ -189,6 +189,7 @@ private fun AppRoot() {
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
     var screen by rememberSaveable { mutableStateOf("library") }
     var showNowPlaying by rememberSaveable { mutableStateOf(false) }
+    var lyricsFromNowPlaying by rememberSaveable { mutableStateOf(false) }
     var pendingTrackForPlaylist by remember { mutableStateOf<Track?>(null) }
 
     // PR-L20-fix: system back button returns to library instead of
@@ -281,12 +282,22 @@ private fun AppRoot() {
         NowPlayingScreen(
             controller = controller,
             onClose = { showNowPlaying = false },
-            onLyricsClick = { showNowPlaying = false; screen = "lyrics_display" },
+            onLyricsClick = {
+                lyricsFromNowPlaying = true
+                showNowPlaying = false
+                screen = "lyrics_display"
+            },
         )
     } else {
     when {
         screen == "lyrics_display" -> {
-            LyricsDisplayScreen(controller, onBack = { screen = "library" })
+            LyricsDisplayScreen(controller, onBack = {
+                if (lyricsFromNowPlaying) {
+                    lyricsFromNowPlaying = false
+                    showNowPlaying = true
+                }
+                screen = "library"
+            })
         }
         screen == "playlists" -> {
             PlaylistsScreen(
