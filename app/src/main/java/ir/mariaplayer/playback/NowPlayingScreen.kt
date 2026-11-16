@@ -32,6 +32,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -71,168 +73,222 @@ fun NowPlayingScreen(
         color = MaterialTheme.colorScheme.surface,
         modifier = Modifier.fillMaxSize(),
     ) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onClose) {
-                    Icon(painterResource(R.drawable.ic_arrow_down), "Close")
-                }
-                Text(
-                    "Now Playing",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
+        Box(Modifier.fillMaxSize()) {
+            // Layer 1: full-screen album art
+            val bmp = art
+            if (bmp != null) {
+                Image(
+                    bitmap = bmp.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
             }
-
-            Spacer(Modifier.height(24.dp))
-
+            // Layer 2: dark gradient veil (text readable, art hinted)
             Box(
                 Modifier
-                    .fillMaxWidth(0.75f)
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                val bmp = art
-                if (bmp != null) {
-                    Image(
-                        bitmap = bmp.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Black.copy(alpha = 0.55f),
+                                Color.Black.copy(alpha = 0.72f),
+                                Color.Black.copy(alpha = 0.88f),
+                            )
+                        )
                     )
-                } else {
-                    Text(
-                        state.title.take(1).uppercase().ifBlank { "\u266A" },
-                        fontSize = 72.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Text(
-                state.title.ifBlank { "\u2014" },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface,
             )
-            if (state.artist.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    state.artist,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    formatNowTime(state.positionMs),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Slider(
-                    value = if (state.durationMs > 0)
-                        (state.positionMs.toFloat() / state.durationMs).coerceIn(0f, 1f)
-                    else 0f,
-                    onValueChange = { v ->
-                        if (state.durationMs > 0) {
-                            controller.seekTo((v * state.durationMs).toLong())
-                        }
-                    },
-                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                )
-                Text(
-                    formatNowTime(state.durationMs),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
+            // Layer 3: content
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .systemBarsPadding()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                IconButton(
-                    onClick = { controller.seekToPreviousMediaItem() },
-                    enabled = state.hasPrev,
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(painterResource(R.drawable.ic_skip_previous), "Previous",
-                        modifier = Modifier.size(36.dp))
-                }
-                IconButton(onClick = {
-                    val p = (state.positionMs - 15_000L).coerceAtLeast(0L)
-                    controller.seekTo(p)
-                }) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(painterResource(R.drawable.ic_replay), "Rewind 15s",
-                            modifier = Modifier.size(32.dp))
-                        Text("15", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    IconButton(onClick = onClose) {
+                        Icon(painterResource(R.drawable.ic_arrow_down), "Close",
+                            tint = Color.White)
                     }
+                    Text(
+                        "Now Playing",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
+
+                Spacer(Modifier.height(24.dp))
+
                 Box(
-                    Modifier.size(72.dp).clip(RoundedCornerShape(50))
-                        .background(MaterialTheme.colorScheme.primary)
-                        .clickable { if (state.isPlaying) controller.pause() else controller.play() },
+                    Modifier
+                        .fillMaxWidth(0.75f)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White.copy(alpha = 0.08f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        painterResource(if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play_arrow),
-                        if (state.isPlaying) "Pause" else "Play",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(42.dp),
-                    )
-                }
-                IconButton(onClick = {
-                    val raw = state.positionMs + 30_000L
-                    val p = if (state.durationMs > 0) raw.coerceAtMost(state.durationMs) else raw
-                    controller.seekTo(p)
-                }) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(painterResource(R.drawable.ic_forward), "Forward 30s",
-                            modifier = Modifier.size(32.dp))
-                        Text("30", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    if (bmp != null) {
+                        Image(
+                            bitmap = bmp.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Text(
+                            state.title.take(1).uppercase().ifBlank { "\u266A" },
+                            fontSize = 72.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.7f),
+                        )
                     }
                 }
-                IconButton(
-                    onClick = { controller.seekToNextMediaItem() },
-                    enabled = state.hasNext,
-                ) {
-                    Icon(painterResource(R.drawable.ic_skip_next), "Next",
-                        modifier = Modifier.size(36.dp))
+
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    state.title.ifBlank { "\u2014" },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = Color.White,
+                )
+                if (state.artist.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        state.artist,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
+
+                Spacer(Modifier.height(24.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        formatNowTime(state.positionMs),
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.75f),
+                    )
+                    Slider(
+                        value = if (state.durationMs > 0)
+                            (state.positionMs.toFloat() / state.durationMs).coerceIn(0f, 1f)
+                        else 0f,
+                        onValueChange = { v ->
+                            if (state.durationMs > 0) {
+                                controller.seekTo((v * state.durationMs).toLong())
+                            }
+                        },
+                        modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                    )
+                    Text(
+                        formatNowTime(state.durationMs),
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.75f),
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(
+                        onClick = { controller.seekToPreviousMediaItem() },
+                        enabled = state.hasPrev,
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.ic_skip_previous), "Previous",
+                            tint = Color.White.copy(alpha = if (state.hasPrev) 1f else 0.3f),
+                            modifier = Modifier.size(36.dp),
+                        )
+                    }
+                    IconButton(onClick = {
+                        val p = (state.positionMs - 15_000L).coerceAtLeast(0L)
+                        controller.seekTo(p)
+                    }) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                painterResource(R.drawable.ic_replay), "Rewind 15s",
+                                tint = Color.White, modifier = Modifier.size(32.dp),
+                            )
+                            Text("15", fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                                color = Color.White)
+                        }
+                    }
+                    Box(
+                        Modifier.size(72.dp).clip(RoundedCornerShape(50))
+                            .background(Color.White.copy(alpha = 0.18f))
+                            .clickable {
+                                if (state.isPlaying) controller.pause() else controller.play()
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painterResource(
+                                if (state.isPlaying) R.drawable.ic_pause
+                                else R.drawable.ic_play_arrow
+                            ),
+                            if (state.isPlaying) "Pause" else "Play",
+                            tint = Color.White,
+                            modifier = Modifier.size(42.dp),
+                        )
+                    }
+                    IconButton(onClick = {
+                        val raw = state.positionMs + 30_000L
+                        val p = if (state.durationMs > 0)
+                            raw.coerceAtMost(state.durationMs) else raw
+                        controller.seekTo(p)
+                    }) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                painterResource(R.drawable.ic_forward), "Forward 30s",
+                                tint = Color.White, modifier = Modifier.size(32.dp),
+                            )
+                            Text("30", fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                                color = Color.White)
+                        }
+                    }
+                    IconButton(
+                        onClick = { controller.seekToNextMediaItem() },
+                        enabled = state.hasNext,
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.ic_skip_next), "Next",
+                            tint = Color.White.copy(alpha = if (state.hasNext) 1f else 0.3f),
+                            modifier = Modifier.size(36.dp),
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                OutlinedButton(
+                    onClick = onLyricsClick,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, Color.White.copy(alpha = 0.4f)
+                    ),
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_lyrics), null,
+                        Modifier.size(18.dp), tint = Color.White,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Lyrics", color = Color.White)
+                }
+
+                Spacer(Modifier.weight(1f))
             }
-
-            Spacer(Modifier.height(24.dp))
-
-            OutlinedButton(onClick = onLyricsClick) {
-                Icon(painterResource(R.drawable.ic_lyrics), null, Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Lyrics")
-            }
-
-            Spacer(Modifier.weight(1f))
         }
     }
 }
