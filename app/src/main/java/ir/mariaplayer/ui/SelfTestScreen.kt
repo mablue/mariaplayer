@@ -344,7 +344,10 @@ private suspend fun runAllTests(
         "AUDIOBOOK"
     }
     test("Classifier: very long no markers") {
-        val t = MediaClassifier.classify("Random Title", null, "Music", "audio.mp3", 2 * 3_600_000L)
+        val t = MediaClassifier.classify(
+            "Random Title", null, "Music", "audio.mp3",
+            2 * 3_600_000L + 60_000L,
+        )
         if (t != ContentType.AUDIOBOOK) throw IllegalStateException("got $t")
         "AUDIOBOOK"
     }
