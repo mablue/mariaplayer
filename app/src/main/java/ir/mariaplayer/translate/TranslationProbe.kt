@@ -42,6 +42,7 @@ object TranslationProbe {
         val jobs = listOf(
             async { probeMSEdge(text, target, timeoutMs) },
             async { probeGoogle(text, target, timeoutMs) },
+            async { probeGoogleGtx(text, target, timeoutMs) },
             async { probeMyMemory(text, source, target, timeoutMs) },
         )
         jobs.awaitAll()
@@ -114,6 +115,34 @@ object TranslationProbe {
             if (t.isBlank() || t.equals("null", ignoreCase = true))
                 return@withContext Probe(name, false, "empty")
             Probe(name, true, t.trim())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Probe(name, false, e.message?.take(40) ?: "err")
+        }
+    }
+
+    private suspend fun probeGoogleGtx(
+        text: String, target: String, timeoutMs: Int,
+    ): Probe = withContext(Dispatchers.IO) {
+        val name = "Google gtx"
+        try {
+            val enc = URLEncoder.encode(text, "UTF-8")
+            val url = "https://translate.googleapis.com/translate_a/single" +
+                    "?client=gtx&sl=auto&tl=$target&dt=t&q=$enc"
+            val body = httpGet(url, timeoutMs)
+                ?: return@withContext Probe(name, false, "no response")
+            val outer = JSONArray(body)
+            val inner = outer.getJSONArray(0)
+            val sb = StringBuilder()
+            for (i in 0 until inner.length()) {
+                val seg = inner.optJSONArray(i) ?: continue
+                if (seg.length() > 0) sb.append(seg.optString(0, ""))
+            }
+            val t = sb.toString().trim()
+            if (t.isBlank() || t.equals("null", ignoreCase = true))
+                return@withContext Probe(name, false, "empty")
+            Probe(name, true, t)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
