@@ -1,33 +1,25 @@
 package ir.mariaplayer.data
 
 /**
- * C21: heuristics for Podcast vs Audiobook detection when ID3 tags are
- * unhelpful. Priority order (specific → generic):
- *   1. MediaStore IS_PODCAST flag
- *   2. Audiobook keyword in folder/album/title/filename
- *   3. Podcast keyword in folder/album/title/filename
- *   4. Episode pattern (S01E05, Episode N, Ep. N)
- *   5. Chapter pattern + >30 min duration
- *   6. Duration > 2 hours with no markers
- *   7. MUSIC
+ * C23: duration-only classifier.
+ *
+ * Regex/keyword heuristics proved fragile across English and Persian
+ * (S01E05, Episode 5, Ep.5, فصل 3, Chapter 12, کتاب صوتی, ...). Rather
+ * than chase every naming convention, we split by duration alone:
+ *
+ *   • <  20 min  →  MUSIC   (normal songs, albums, singles)
+ *   • >= 20 min  →  PODCAST (podcasts, audiobooks, DJ mixes, DJ sets)
+ *
+ * AUDIOBOOK is never auto-assigned — user can pick it manually via the
+ * TrackTypeSheet for extra distinction. ContentTypePrefs overrides win
+ * over classification.
+ *
+ * Queue isolation in MainActivity guarantees that playing a song never
+ * pulls a podcast into the queue and vice versa.
  */
 object MediaClassifier {
-
-    private val audiobookKeywords = listOf(
-        "audiobook", "audio book", "کتاب صوتی", "كتاب صوتي",
-    )
-    private val podcastKeywords = listOf(
-        "podcast", "podcasts", "پادکست", "پاد كست",
-    )
-
-    private val episodePattern = Regex(
-        """\b(S\d{1,3}[\s-]?E\d{1,4}|Episode?\s*[#.]?\s*\d+|Ep\.?\s*[#.]?\s*\d+)\b""",
-        RegexOption.IGNORE_CASE,
-    )
-    private val chapterPattern = Regex(
-        """\b(Chapter|Ch\.?|Part|بخش|فصل)\s*\d+\b""",
-        RegexOption.IGNORE_CASE,
-    )
+    /** Threshold between music and long-form content. Tunable. */
+    const val LONG_THRESHOLD_MS = 20 * 60_000L
 
     fun classify(
         title: String,
@@ -38,18 +30,10 @@ object MediaClassifier {
         isPodcastFlag: Boolean = false,
     ): ContentType {
         if (isPodcastFlag) return ContentType.PODCAST
-
-        val blob = listOf(title, album ?: "", folder, filename)
-            .joinToString(" ")
-            .lowercase()
-
-        if (audiobookKeywords.any { blob.contains(it) }) return ContentType.AUDIOBOOK
-        if (podcastKeywords.any { blob.contains(it) }) return ContentType.PODCAST
-        if (episodePattern.containsMatchIn(blob)) return ContentType.PODCAST
-        if (durationMs > 30 * 60_000L && chapterPattern.containsMatchIn(blob)) {
-            return ContentType.AUDIOBOOK
+        return if (durationMs >= LONG_THRESHOLD_MS) {
+            ContentType.PODCAST
+        } else {
+            ContentType.MUSIC
         }
-        if (durationMs > 120 * 60_000L) return ContentType.AUDIOBOOK
-        return ContentType.MUSIC
     }
 }
