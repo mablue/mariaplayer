@@ -138,21 +138,24 @@ private fun AppRoot() {
         return
     }
 
-    var tracks by remember { mutableStateOf<List<Track>?>(null) }
+    var rawTracks by remember { mutableStateOf<List<Track>?>(null) }
     var pendingDeleteUri by remember { mutableStateOf<Uri?>(null) }
     var pendingDeleteTitle by remember { mutableStateOf("") }
 
     LaunchedEffect(hasAudio) {
-        if (hasAudio) {
-            val raw = LibraryScanner.scan(context)
-            val overrides = ir.mariaplayer.data.ContentTypePrefs
-                .observeAll(context).first()
-            tracks = raw.map { t ->
-                val auto = ir.mariaplayer.data.MediaClassifier.classify(
-                    t.title, t.album, t.folder, t.filename, t.durationMs,
-                )
-                t.copy(contentType = overrides[t.id] ?: auto)
-            }
+        if (hasAudio) rawTracks = LibraryScanner.scan(context)
+    }
+
+    val contentTypeOverrides by remember {
+        ir.mariaplayer.data.ContentTypePrefs.observeAll(context)
+    }.collectAsState(initial = emptyMap())
+
+    val tracks: List<Track>? = remember(rawTracks, contentTypeOverrides) {
+        rawTracks?.map { t ->
+            val auto = ir.mariaplayer.data.MediaClassifier.classify(
+                t.title, t.album, t.folder, t.filename, t.durationMs,
+            )
+            t.copy(contentType = contentTypeOverrides[t.id] ?: auto)
         }
     }
 
