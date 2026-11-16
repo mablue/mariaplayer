@@ -28,6 +28,7 @@ object OnlineTranslator {
 
         translateMSBatch(lines, target, timeoutMs)?.let { return@withContext it }
         translateGoogleBatch(lines, target, timeoutMs)?.let { return@withContext it }
+        translateGoogleGtxBatch(lines, target, timeoutMs)?.let { return@withContext it }
         translateMyMemoryBatch(lines, target, timeoutMs)
     }
 
@@ -100,6 +101,34 @@ object OnlineTranslator {
                 else -> return@withContext null
             }
             sanitizeLocal(translated)?.let {
+                val split = it.split("\n")
+                if (split.size == lines.size) split else null
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    // ── Tier 2.5: Google gtx (alternative endpoint) ────────────────
+    private suspend fun translateGoogleGtxBatch(
+        lines: List<String>, target: String, timeoutMs: Int,
+    ): List<String>? = withContext(Dispatchers.IO) {
+        try {
+            val joined = lines.joinToString("\n")
+            val encoded = URLEncoder.encode(joined, "UTF-8")
+            val url = "https://translate.googleapis.com/translate_a/single" +
+                    "?client=gtx&sl=auto&tl=$target&dt=t&q=$encoded"
+            val body = httpGet(url, timeoutMs) ?: return@withContext null
+            val outer = JSONArray(body)
+            val inner = outer.getJSONArray(0)
+            val sb = StringBuilder()
+            for (i in 0 until inner.length()) {
+                val seg = inner.optJSONArray(i) ?: continue
+                if (seg.length() > 0) sb.append(seg.optString(0, ""))
+            }
+            sanitizeLocal(sb.toString())?.let {
                 val split = it.split("\n")
                 if (split.size == lines.size) split else null
             }
