@@ -780,6 +780,18 @@ private fun LibraryScreen(
             ir.mariaplayer.ui.ContentTypeFilterBar(
                 selected = contentFilter,
                 onChange = onContentFilterChange,
+                counts = remember(allTracks) {
+                    val all = allTracks ?: emptyList()
+                    mapOf<ir.mariaplayer.data.ContentType?, Int>(
+                        null to all.size,
+                        ir.mariaplayer.data.ContentType.MUSIC to
+                            all.count { it.contentType == ir.mariaplayer.data.ContentType.MUSIC },
+                        ir.mariaplayer.data.ContentType.PODCAST to
+                            all.count { it.contentType == ir.mariaplayer.data.ContentType.PODCAST },
+                        ir.mariaplayer.data.ContentType.AUDIOBOOK to
+                            all.count { it.contentType == ir.mariaplayer.data.ContentType.AUDIOBOOK },
+                    )
+                },
             )
 
             Box(Modifier.fillMaxWidth().weight(1f)) {
