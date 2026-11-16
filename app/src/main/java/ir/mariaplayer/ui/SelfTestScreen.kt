@@ -308,12 +308,12 @@ private suspend fun runAllTests(
     }
     test("Translation probe") {
         val probes = ir.mariaplayer.translate.TranslationProbe.probeAll("hello", "en", "fa")
-        val summary = probes.joinToString(" · ") {
-            "${it.name}=${if (it.ok) "\u2713" else "\u2717" + it.output.take(15)}"
-        }
         val ok = probes.filter { it.ok }
-        if (ok.isEmpty()) throw IllegalStateException(summary)
-        "\u2713 ${ok.size}/${probes.size} | " + ok.first().output.take(20)
+        val detail = probes.joinToString(" | ") {
+            "${it.name}:${if (it.ok) "✓" else "✗"}"
+        }
+        if (ok.isEmpty()) throw IllegalStateException(detail)
+        "${ok.size}/${probes.size} — $detail"
     }
     test("Theme default style") {
         val bl = VazirTypography.bodyLarge
