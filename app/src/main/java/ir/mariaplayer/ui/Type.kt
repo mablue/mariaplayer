@@ -8,32 +8,32 @@ import androidx.compose.ui.text.font.FontWeight
 import ir.mariaplayer.R
 
 /**
- * PR-L16a: Vazirmatn as default family for both Latin and Persian.
- * MIT licensed, designed for correct Persian shaping and ZWNJ layout.
+ * Mikhak by Amin Abedi (SIL OFL 1.1). Handwritten feel with matching
+ * Latin glyphs — designed as one family for Persian + English.
  */
-val VazirFamily = FontFamily(
-    Font(R.font.vazir_regular, FontWeight.Normal),
-    Font(R.font.vazir_bold, FontWeight.Bold),
+val MikhakFamily = FontFamily(
+    Font(R.font.mikhak_regular, FontWeight.Normal),
+    Font(R.font.mikhak_bold, FontWeight.Bold),
 )
 
-private fun TextStyle.vazir() = copy(fontFamily = VazirFamily)
+private fun TextStyle.mikhak() = copy(fontFamily = MikhakFamily)
 
-val VazirTypography: Typography = Typography().run {
+val MikhakTypography: Typography = Typography().run {
     Typography(
-        displayLarge = displayLarge.vazir(),
-        displayMedium = displayMedium.vazir(),
-        displaySmall = displaySmall.vazir(),
-        headlineLarge = headlineLarge.vazir(),
-        headlineMedium = headlineMedium.vazir(),
-        headlineSmall = headlineSmall.vazir(),
-        titleLarge = titleLarge.vazir(),
-        titleMedium = titleMedium.vazir(),
-        titleSmall = titleSmall.vazir(),
-        bodyLarge = bodyLarge.vazir(),
-        bodyMedium = bodyMedium.vazir(),
-        bodySmall = bodySmall.vazir(),
-        labelLarge = labelLarge.vazir(),
-        labelMedium = labelMedium.vazir(),
-        labelSmall = labelSmall.vazir(),
+        displayLarge = displayLarge.mikhak(),
+        displayMedium = displayMedium.mikhak(),
+        displaySmall = displaySmall.mikhak(),
+        headlineLarge = headlineLarge.mikhak(),
+        headlineMedium = headlineMedium.mikhak(),
+        headlineSmall = headlineSmall.mikhak(),
+        titleLarge = titleLarge.mikhak(),
+        titleMedium = titleMedium.mikhak(),
+        titleSmall = titleSmall.mikhak(),
+        bodyLarge = bodyLarge.mikhak(),
+        bodyMedium = bodyMedium.mikhak(),
+        bodySmall = bodySmall.mikhak(),
+        labelLarge = labelLarge.mikhak(),
+        labelMedium = labelMedium.mikhak(),
+        labelSmall = labelSmall.mikhak(),
     )
 }
