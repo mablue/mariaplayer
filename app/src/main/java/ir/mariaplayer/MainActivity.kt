@@ -91,6 +91,7 @@ import ir.mariaplayer.data.Track
 import ir.mariaplayer.playback.ACTION_TRACK_DELETED
 import ir.mariaplayer.playback.EXTRA_DELETED_URI
 import ir.mariaplayer.playback.NowPlayingBar
+import ir.mariaplayer.playback.NowPlayingScreen
 import ir.mariaplayer.playback.rememberPlayerController
 import ir.mariaplayer.ui.MariaPlayerTheme
 import ir.mariaplayer.ui.GlassTrackRow
@@ -187,6 +188,7 @@ private fun AppRoot() {
     var lastAutoScrolledTid by remember { mutableStateOf<Long?>(null) }
     var shuffleOn by remember { mutableStateOf(controller?.shuffleModeEnabled ?: false) }
     var screen by rememberSaveable { mutableStateOf("library") }
+    var showNowPlaying by rememberSaveable { mutableStateOf(false) }
     var pendingTrackForPlaylist by remember { mutableStateOf<Track?>(null) }
 
     // PR-L20-fix: system back button returns to library instead of
@@ -198,6 +200,7 @@ private fun AppRoot() {
             else -> "library"
         }
     }
+    BackHandler(enabled = showNowPlaying) { showNowPlaying = false }
 
     var sortMode by remember { mutableStateOf(SortMode.TITLE) }
     var prefsLoaded by remember { mutableStateOf(false) }
@@ -274,6 +277,13 @@ private fun AppRoot() {
     }
 
     CompositionLocalProvider(LocalPlaybackRepository provides repository) {
+    if (showNowPlaying) {
+        NowPlayingScreen(
+            controller = controller,
+            onClose = { showNowPlaying = false },
+            onLyricsClick = { showNowPlaying = false; screen = "lyrics_display" },
+        )
+    } else {
     when {
         screen == "lyrics_display" -> {
             LyricsDisplayScreen(controller, onBack = { screen = "library" })
@@ -345,6 +355,7 @@ private fun AppRoot() {
         onLyricsClick = { screen = "lyrics_display" },
         onPlaylistsClick = { screen = "playlists" },
         onSelfTestClick = { screen = "selftest" },
+        onNowPlayingExpand = { showNowPlaying = true },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
             if (Build.VERSION.SDK_INT >= 30) {
@@ -385,6 +396,7 @@ private fun AppRoot() {
             }
         },
     )
+    }
     }
 
     pendingTrackForPlaylist?.let { pending ->
