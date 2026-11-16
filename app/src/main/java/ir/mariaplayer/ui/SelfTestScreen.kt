@@ -531,6 +531,80 @@ private suspend fun runAllTests(
         if (musicTrack.contentType == podTrack.contentType) throw IllegalStateException("setup broken")
         "all accepts both"
     }
+    test("Tabs: add same id twice = no dup") {
+        val orig = LibraryTabPrefs.read(context)
+        val id = "custom_dup_" + System.currentTimeMillis()
+        val tab = LibraryTab(id, LibraryTab.Kind.MUSIC, "Dup", isDefault = false)
+        LibraryTabPrefs.add(context, tab)
+        LibraryTabPrefs.add(context, tab)
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        val count = got.count { it.id == id }
+        if (count != 1) throw IllegalStateException("count=$count")
+        "no dup"
+    }
+    test("Tabs: multiple customs preserved in order") {
+        val orig = LibraryTabPrefs.read(context)
+        val base = "custom_multi_" + System.currentTimeMillis()
+        val a = LibraryTab("${base}_a", LibraryTab.Kind.MUSIC, "A", isDefault = false)
+        val b = LibraryTab("${base}_b", LibraryTab.Kind.PODCAST, "B", isDefault = false)
+        val c = LibraryTab("${base}_c", LibraryTab.Kind.AUDIOBOOK, "C", isDefault = false)
+        LibraryTabPrefs.add(context, a)
+        LibraryTabPrefs.add(context, b)
+        LibraryTabPrefs.add(context, c)
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        val mine = got.filter { it.id.startsWith(base) }.map { it.label }
+        if (mine != listOf("A", "B", "C"))
+            throw IllegalStateException("order=$mine")
+        "A,B,C"
+    }
+    test("Tabs: remove middle keeps neighbors") {
+        val orig = LibraryTabPrefs.read(context)
+        val base = "custom_mid_" + System.currentTimeMillis()
+        val a = LibraryTab("${base}_1", LibraryTab.Kind.MUSIC, "L", isDefault = false)
+        val b = LibraryTab("${base}_2", LibraryTab.Kind.MUSIC, "M", isDefault = false)
+        val c = LibraryTab("${base}_3", LibraryTab.Kind.MUSIC, "R", isDefault = false)
+        LibraryTabPrefs.add(context, a)
+        LibraryTabPrefs.add(context, b)
+        LibraryTabPrefs.add(context, c)
+        LibraryTabPrefs.remove(context, b.id)
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        val ids = got.filter { it.id.startsWith(base) }.map { it.id.removePrefix("${base}_") }
+        if (ids != listOf("1", "3"))
+            throw IllegalStateException("after remove=$ids")
+        "1,3"
+    }
+    test("Tabs: rename does not touch siblings") {
+        val orig = LibraryTabPrefs.read(context)
+        val base = "custom_rn_" + System.currentTimeMillis()
+        val a = LibraryTab("${base}_x", LibraryTab.Kind.MUSIC, "X", isDefault = false)
+        val b = LibraryTab("${base}_y", LibraryTab.Kind.MUSIC, "Y", isDefault = false)
+        LibraryTabPrefs.add(context, a)
+        LibraryTabPrefs.add(context, b)
+        LibraryTabPrefs.rename(context, a.id, "X2")
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        val byId = got.associateBy { it.id }
+        if (byId[a.id]?.label != "X2") throw IllegalStateException("a=${byId[a.id]?.label}")
+        if (byId[b.id]?.label != "Y") throw IllegalStateException("b=${byId[b.id]?.label}")
+        "ok"
+    }
+    test("Tabs: default ids stable") {
+        val tabs = LibraryTab.defaults()
+        val ids = tabs.map { it.id }.toSet()
+        val want = setOf("all", "music", "podcasts", "audiobooks")
+        if (ids != want) throw IllegalStateException("ids=$ids")
+        "stable"
+    }
+    test("Tabs: PLAYLIST kind semantics") {
+        val pl = LibraryTab("pl_x", LibraryTab.Kind.PLAYLIST, "Mix", playlistId = 42L, isDefault = false)
+        if (pl.kind != LibraryTab.Kind.PLAYLIST) throw IllegalStateException("kind=${pl.kind}")
+        if (pl.playlistId != 42L) throw IllegalStateException("pid=${pl.playlistId}")
+        if (pl.isDefault) throw IllegalStateException("should not be default")
+        "ok"
+    }
     test("Theme default style") {
         val bl = MikhakTypography.bodyLarge
         if (bl.fontSize.value <= 0f) throw IllegalStateException("unset")
