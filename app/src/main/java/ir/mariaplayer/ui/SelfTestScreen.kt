@@ -732,7 +732,7 @@ private suspend fun runAllTests(
         if (PlaybackPrefs.readPosition(context, id) != null)
             throw IllegalStateException("savePosition(0) should be no-op")
         PlaybackPrefs.save(context, id, 0L)
-        val slot = PlaybackPrefs.read()
+        val slot = PlaybackPrefs.read(context)
         PlaybackPrefs.save(context, 0L, 0L)
         if (slot.trackId != id)
             throw IllegalStateException("save(0) should write, got ${slot.trackId}")
@@ -743,7 +743,7 @@ private suspend fun runAllTests(
         val b = 9_900_022L
         PlaybackPrefs.save(context, a, 111L)
         PlaybackPrefs.savePosition(context, b, 222L)
-        val slot = PlaybackPrefs.read()
+        val slot = PlaybackPrefs.read(context)
         val mapA = PlaybackPrefs.readPosition(context, a)
         val mapB = PlaybackPrefs.readPosition(context, b)
         PlaybackPrefs.clearPosition(context, b)
