@@ -318,38 +318,35 @@ private suspend fun runAllTests(
         if (ok.isEmpty()) throw IllegalStateException(detail)
         "${ok.size}/${probes.size} — $detail"
     }
-    test("Classifier: music") {
+    test("Classifier: short song") {
         val t = MediaClassifier.classify("Song Title", "Album X", "Music", "01-song.mp3", 180_000L)
         if (t != ContentType.MUSIC) throw IllegalStateException("got $t")
         "MUSIC"
     }
-    test("Classifier: podcast folder") {
-        val t = MediaClassifier.classify("Ep 5", "My Podcast", "Podcasts", "ep5.mp3", 3_600_000L)
+    test("Classifier: boundary just below threshold") {
+        val t = MediaClassifier.classify("Song", null, "Music", "x.mp3", MediaClassifier.LONG_THRESHOLD_MS - 1)
+        if (t != ContentType.MUSIC) throw IllegalStateException("got $t")
+        "MUSIC"
+    }
+    test("Classifier: boundary exactly at threshold") {
+        val t = MediaClassifier.classify("Track", null, "Music", "x.mp3", MediaClassifier.LONG_THRESHOLD_MS)
         if (t != ContentType.PODCAST) throw IllegalStateException("got $t")
         "PODCAST"
     }
-    test("Classifier: episode pattern") {
-        val t = MediaClassifier.classify("S01E05 - Intro", null, "Music", "s01e05.mp3", 1_200_000L)
+    test("Classifier: 30-min podcast") {
+        val t = MediaClassifier.classify("Ep 5", "My Podcast", "Podcasts", "ep5.mp3", 30 * 60_000L)
         if (t != ContentType.PODCAST) throw IllegalStateException("got $t")
         "PODCAST"
     }
-    test("Classifier: audiobook folder") {
-        val t = MediaClassifier.classify("Chapter 1", "My Audiobook", "Audiobooks", "c1.mp3", 5_400_000L)
-        if (t != ContentType.AUDIOBOOK) throw IllegalStateException("got $t")
-        "AUDIOBOOK"
+    test("Classifier: 90-min audiobook chapter") {
+        val t = MediaClassifier.classify("Chapter 1", null, "Music", "c1.mp3", 90 * 60_000L)
+        if (t != ContentType.PODCAST) throw IllegalStateException("got $t")
+        "PODCAST (auto; audiobook via manual)"
     }
-    test("Classifier: chapter + duration") {
-        val t = MediaClassifier.classify("Chapter 3 - The Fall", null, "Music", "ch3.mp3", 45 * 60_000L)
-        if (t != ContentType.AUDIOBOOK) throw IllegalStateException("got $t")
-        "AUDIOBOOK"
-    }
-    test("Classifier: very long no markers") {
-        val t = MediaClassifier.classify(
-            "Random Title", null, "Music", "audio.mp3",
-            2 * 3_600_000L + 60_000L,
-        )
-        if (t != ContentType.AUDIOBOOK) throw IllegalStateException("got $t")
-        "AUDIOBOOK"
+    test("Classifier: 2-hour DJ mix") {
+        val t = MediaClassifier.classify("Summer Mix", null, "Music", "mix.mp3", 2 * 3_600_000L)
+        if (t != ContentType.PODCAST) throw IllegalStateException("got $t")
+        "PODCAST"
     }
     test("Override: round-trip") {
         val id = 9_900_005L
