@@ -336,11 +336,11 @@ private suspend fun runAllTests(
         "bold+regular"
     }
     test("Font: Persian glyph available") {
-        val fam = MikhakTypography.bodyLarge.fontFamily ?: error("no family")
+        val tf = androidx.core.content.res.ResourcesCompat
+            .getFont(context, R.font.mikhak_bold)
+            ?: throw IllegalStateException("typeface null")
         val paint = android.graphics.Paint().apply {
-            typeface = androidx.compose.ui.text.font.FontFamily
-                .Resolver(context).resolve(fam)
-                .value as android.graphics.Typeface
+            typeface = tf
             textSize = 32f
         }
         val w = paint.measureText("\u0641\u0627\u0631\u0633\u06cc")
@@ -348,11 +348,11 @@ private suspend fun runAllTests(
         "w=${w.toInt()}px"
     }
     test("Font: Latin glyph available") {
-        val fam = MikhakTypography.bodyLarge.fontFamily ?: error("no family")
+        val tf = androidx.core.content.res.ResourcesCompat
+            .getFont(context, R.font.mikhak_bold)
+            ?: throw IllegalStateException("typeface null")
         val paint = android.graphics.Paint().apply {
-            typeface = androidx.compose.ui.text.font.FontFamily
-                .Resolver(context).resolve(fam)
-                .value as android.graphics.Typeface
+            typeface = tf
             textSize = 32f
         }
         val w = paint.measureText("Hello World")
@@ -360,11 +360,11 @@ private suspend fun runAllTests(
         "w=${w.toInt()}px"
     }
     test("Font: digits render") {
-        val fam = MikhakTypography.bodyLarge.fontFamily ?: error("no family")
+        val tf = androidx.core.content.res.ResourcesCompat
+            .getFont(context, R.font.mikhak_bold)
+            ?: throw IllegalStateException("typeface null")
         val paint = android.graphics.Paint().apply {
-            typeface = androidx.compose.ui.text.font.FontFamily
-                .Resolver(context).resolve(fam)
-                .value as android.graphics.Typeface
+            typeface = tf
             textSize = 32f
         }
         val w1 = paint.measureText("0123456789")
