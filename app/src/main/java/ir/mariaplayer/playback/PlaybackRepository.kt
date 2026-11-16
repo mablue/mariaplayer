@@ -201,10 +201,10 @@ class PlaybackRepository(private val context: Context) {
             Player.MEDIA_ITEM_TRANSITION_REASON_AUTO,
             Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT -> {
                 if (oldId != null) {
-                    scope.launch {
-                        PlaybackPrefs.clearPosition(context, oldId)
-                        PlaybackPrefs.save(context, oldId, 0L)
-                    }
+                    scope.launch { PlaybackPrefs.clearPosition(context, oldId) }
+                }
+                c.currentMediaItem?.mediaId?.toLongOrNull()?.let { freshId ->
+                    scope.launch { PlaybackPrefs.save(context, freshId, 0L) }
                 }
             }
             Player.MEDIA_ITEM_TRANSITION_REASON_SEEK -> {
