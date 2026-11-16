@@ -506,6 +506,7 @@ private fun LibraryScreen(
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
     var showBulkAddDialog by remember { mutableStateOf(false) }
+    var showTrackTypeSheet by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -581,6 +582,17 @@ private fun LibraryScreen(
             },
         )
     }
+    if (showTrackTypeSheet) {
+        ir.mariaplayer.ui.TrackTypeSheet(
+            trackIds = selectedIds.toList(),
+            onDismiss = {
+                showTrackTypeSheet = false
+                selectionMode = false
+                selectedIds = emptySet()
+            },
+        )
+    }
+
     if (showBulkAddDialog) {
         val selectedTracks = visible?.filter { it.id in selectedIds } ?: emptyList()
         if (selectedTracks.isNotEmpty()) {
@@ -649,6 +661,10 @@ private fun LibraryScreen(
                         }) {
                             Icon(painter = painterResource(R.drawable.ic_share),
                                 contentDescription = "Share selected")
+                        }
+                        IconButton(onClick = { showTrackTypeSheet = true }) {
+                            Icon(painter = painterResource(R.drawable.ic_settings),
+                                contentDescription = "Change type")
                         }
                     }
                 )
