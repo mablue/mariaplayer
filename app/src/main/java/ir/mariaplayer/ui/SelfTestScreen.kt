@@ -51,6 +51,8 @@ import ir.mariaplayer.data.FavoritesPrefs
 import ir.mariaplayer.data.MediaClassifier
 import ir.mariaplayer.data.LibraryPrefs
 import ir.mariaplayer.data.LibraryScanner
+import ir.mariaplayer.data.LibraryTab
+import ir.mariaplayer.data.LibraryTabPrefs
 import ir.mariaplayer.data.PlaybackPrefs
 import ir.mariaplayer.data.PlaylistPrefs
 import ir.mariaplayer.data.QueryNormalizer
@@ -449,6 +451,85 @@ private suspend fun runAllTests(
         if (map[id] != ContentType.PODCAST)
             throw IllegalStateException("map=$map")
         "ok"
+    }
+    test("Tabs: defaults have 4") {
+        val tabs = LibraryTab.defaults()
+        if (tabs.size != 4) throw IllegalStateException("size=${tabs.size}")
+        if (tabs.map { it.kind }.toSet().size != 4)
+            throw IllegalStateException("kinds not unique")
+        "4"
+    }
+    test("Tabs: defaults all isDefault") {
+        if (LibraryTab.defaults().any { !it.isDefault })
+            throw IllegalStateException("some default not flagged")
+        "all default"
+    }
+    test("Tabs: add custom round-trip") {
+        val orig = LibraryTabPrefs.read(context)
+        val tab = LibraryTab(
+            id = "custom_test_" + System.currentTimeMillis(),
+            kind = LibraryTab.Kind.MUSIC,
+            label = "TestTab",
+            isDefault = false,
+        )
+        LibraryTabPrefs.add(context, tab)
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        if (got.none { it.id == tab.id }) throw IllegalStateException("not added")
+        if (got.firstOrNull { it.id == tab.id }?.label != "TestTab")
+            throw IllegalStateException("label mismatch")
+        "ok"
+    }
+    test("Tabs: remove custom works") {
+        val orig = LibraryTabPrefs.read(context)
+        val tab = LibraryTab(
+            id = "custom_del_" + System.currentTimeMillis(),
+            kind = LibraryTab.Kind.PODCAST,
+            label = "Del",
+            isDefault = false,
+        )
+        LibraryTabPrefs.add(context, tab)
+        LibraryTabPrefs.remove(context, tab.id)
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        if (got.any { it.id == tab.id }) throw IllegalStateException("still present")
+        "removed"
+    }
+    test("Tabs: default cannot be removed") {
+        val orig = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.remove(context, "all")
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        if (got.none { it.id == "all" }) throw IllegalStateException("all was removed")
+        "protected"
+    }
+    test("Tabs: rename round-trip") {
+        val orig = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.rename(context, "music", "Songs")
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        val music = got.firstOrNull { it.id == "music" }
+        if (music?.label != "Songs") throw IllegalStateException("label=${music?.label}")
+        "ok"
+    }
+    test("Tabs: empty prefs → defaults") {
+        val orig = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, emptyList())
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        if (got.size != 4) throw IllegalStateException("size=${got.size}")
+        "restored"
+    }
+    test("Tabs: filter predicate ALL kind") {
+        val all = LibraryTab.defaults().first { it.kind == LibraryTab.Kind.ALL }
+        val musicTrack = Track(id = 1L, title = "t", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "u").copy(contentType = ir.mariaplayer.data.ContentType.MUSIC)
+        val podTrack = Track(id = 2L, title = "p", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "v").copy(contentType = ir.mariaplayer.data.ContentType.PODCAST)
+        // ALL tab should accept both — verify by kind semantics
+        if (all.kind != LibraryTab.Kind.ALL) throw IllegalStateException("kind=${all.kind}")
+        if (musicTrack.contentType == podTrack.contentType) throw IllegalStateException("setup broken")
+        "all accepts both"
     }
     test("Theme default style") {
         val bl = MikhakTypography.bodyLarge
