@@ -44,7 +44,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.mariaplayer.R
+import ir.mariaplayer.data.ContentType
+import ir.mariaplayer.data.ContentTypePrefs
 import ir.mariaplayer.data.FavoritesPrefs
+import ir.mariaplayer.data.MediaClassifier
 import ir.mariaplayer.data.LibraryPrefs
 import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.PlaybackPrefs
@@ -314,6 +317,52 @@ private suspend fun runAllTests(
         }
         if (ok.isEmpty()) throw IllegalStateException(detail)
         "${ok.size}/${probes.size} — $detail"
+    }
+    test("Classifier: music") {
+        val t = MediaClassifier.classify("Song Title", "Album X", "Music", "01-song.mp3", 180_000L)
+        if (t != ContentType.MUSIC) throw IllegalStateException("got $t")
+        "MUSIC"
+    }
+    test("Classifier: podcast folder") {
+        val t = MediaClassifier.classify("Ep 5", "My Podcast", "Podcasts", "ep5.mp3", 3_600_000L)
+        if (t != ContentType.PODCAST) throw IllegalStateException("got $t")
+        "PODCAST"
+    }
+    test("Classifier: episode pattern") {
+        val t = MediaClassifier.classify("S01E05 - Intro", null, "Music", "s01e05.mp3", 1_200_000L)
+        if (t != ContentType.PODCAST) throw IllegalStateException("got $t")
+        "PODCAST"
+    }
+    test("Classifier: audiobook folder") {
+        val t = MediaClassifier.classify("Chapter 1", "My Audiobook", "Audiobooks", "c1.mp3", 5_400_000L)
+        if (t != ContentType.AUDIOBOOK) throw IllegalStateException("got $t")
+        "AUDIOBOOK"
+    }
+    test("Classifier: chapter + duration") {
+        val t = MediaClassifier.classify("Chapter 3 - The Fall", null, "Music", "ch3.mp3", 45 * 60_000L)
+        if (t != ContentType.AUDIOBOOK) throw IllegalStateException("got $t")
+        "AUDIOBOOK"
+    }
+    test("Classifier: very long no markers") {
+        val t = MediaClassifier.classify("Random Title", null, "Music", "audio.mp3", 2 * 3_600_000L)
+        if (t != ContentType.AUDIOBOOK) throw IllegalStateException("got $t")
+        "AUDIOBOOK"
+    }
+    test("Override: round-trip") {
+        val id = 9_900_005L
+        ContentTypePrefs.set(context, id, ContentType.PODCAST)
+        val got = ContentTypePrefs.read(context, id)
+        ContentTypePrefs.clear(context, id)
+        if (got != ContentType.PODCAST) throw IllegalStateException("got=$got")
+        "ok"
+    }
+    test("Override: clear removes") {
+        val id = 9_900_006L
+        ContentTypePrefs.set(context, id, ContentType.AUDIOBOOK)
+        ContentTypePrefs.clear(context, id)
+        val got = ContentTypePrefs.read(context, id)
+        if (got != null) throw IllegalStateException("still=$got")
+        "ok"
     }
     test("Theme default style") {
         val bl = MikhakTypography.bodyLarge
