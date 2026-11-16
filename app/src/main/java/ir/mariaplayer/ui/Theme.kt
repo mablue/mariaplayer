@@ -17,7 +17,7 @@ fun MariaPlayerTheme(
     val colorScheme = if (darkTheme) StandardDark else StandardLight
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = VazirTypography,
+        typography = MikhakTypography,
         content = content,
     )
 }
