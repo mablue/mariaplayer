@@ -88,7 +88,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
-import ir.mariaplayer.data.FavoritesPrefs
+import ir.mariaplayer.data.Collection
+import ir.mariaplayer.data.CollectionRepository
+import ir.mariaplayer.data.CollectionRule
 import ir.mariaplayer.data.LibraryPrefs
 import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.PlaybackPrefs
@@ -104,8 +106,6 @@ import ir.mariaplayer.ui.GlassTrackRow
 import ir.mariaplayer.ui.AboutDialog
 import ir.mariaplayer.ui.AddToPlaylistSheet
 import ir.mariaplayer.ui.PermissionScreen
-import ir.mariaplayer.ui.PlaylistDetailScreen
-import ir.mariaplayer.ui.PlaylistsScreen
 import ir.mariaplayer.ui.SelfTestScreen
 import ir.mariaplayer.ui.LyricsDisplayScreen
 import kotlinx.coroutines.Dispatchers
@@ -214,10 +214,7 @@ private fun AppRoot() {
     // exiting the app. Handles every non-library screen here so
     // individual screens don't need their own BackHandler.
     BackHandler(enabled = screen != "library") {
-        screen = when {
-            screen.startsWith("playlist:") -> "playlists"
-            else -> "library"
-        }
+        screen = "library"
     }
     BackHandler(enabled = showNowPlaying) { showNowPlaying = false }
 
@@ -231,30 +228,32 @@ private fun AppRoot() {
         if (prefsLoaded) LibraryPrefs.saveSort(context, sortMode)
     }
 
-    val favorites by produceState<Set<Long>>(initialValue = emptySet()) {
-        FavoritesPrefs.observe(context).collectLatest { value = it }
+    var collections by remember { mutableStateOf<List<Collection>>(emptyList()) }
+    var selectedCollectionId by rememberSaveable { mutableStateOf(CollectionRepository.ALL_ID) }
+    var showNewCollectionDialog by remember { mutableStateOf(false) }
+    var collectionToEdit by remember { mutableStateOf<Collection?>(null) }
+    LaunchedEffect(Unit) {
+        CollectionRepository.initializeIfNeeded(context)
+        CollectionRepository.observe(context).collectLatest { collections = it }
+    }
+    val selectedCollection = remember(collections, selectedCollectionId) {
+        collections.firstOrNull { it.id == selectedCollectionId } ?: collections.firstOrNull()
+    }
+    val favorites: Set<Long> = remember(collections) {
+        (collections.firstOrNull { it.id == CollectionRepository.FAVORITES_ID }?.rule as? CollectionRule.Manual)
+            ?.trackIds?.toSet() ?: emptySet()
     }
 
     var query by rememberSaveable { mutableStateOf("") }
     var folderFilter by rememberSaveable { mutableStateOf("") }
-    var favOnly by rememberSaveable { mutableStateOf(false) }
-    var tabs by remember { mutableStateOf(ir.mariaplayer.data.LibraryTab.defaults()) }
-    var selectedTabId by rememberSaveable { mutableStateOf("all") }
-    val selectedTab = tabs.firstOrNull { it.id == selectedTabId } ?: tabs.first()
-    var showNewTabDialog by remember { mutableStateOf(false) }
-    var tabToEdit by remember { mutableStateOf<ir.mariaplayer.data.LibraryTab?>(null) }
-    LaunchedEffect(Unit) {
-        tabs = ir.mariaplayer.data.LibraryTabPrefs.read(context)
-    }
 
-    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, favOnly, favorites, selectedTab) {
+    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, selectedCollection) {
         val base = tracks ?: return@remember null
+        val inCollection = selectedCollection?.let { CollectionRepository.resolveTracks(base, it) } ?: base
         val q = query.trim().lowercase()
-        base.asSequence()
+        inCollection.asSequence()
             .filter { t ->
                 (folderFilter.isEmpty() || t.folder == folderFilter) &&
-                (!favOnly || t.id in favorites) &&
-                tabMatches(selectedTab, t, favorites) &&
                 (q.isEmpty() ||
                     t.title.lowercase().contains(q) ||
                     t.artist?.lowercase()?.contains(q) == true ||
@@ -304,149 +303,32 @@ private fun AppRoot() {
         shuffleOn = c.shuffleModeEnabled
     }
 
-    if (showNewTabDialog) {
-        var newName by remember { mutableStateOf("") }
-        var newKind by remember { mutableStateOf(ir.mariaplayer.data.LibraryTab.Kind.MUSIC) }
-        var smartPreset by remember { mutableStateOf("under10") }
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showNewTabDialog = false },
-            title = { androidx.compose.material3.Text("New tab") },
-            text = {
-                androidx.compose.foundation.layout.Column {
-                    androidx.compose.material3.OutlinedTextField(
-                        value = newName,
-                        onValueChange = { newName = it },
-                        singleLine = true,
-                        label = { androidx.compose.material3.Text("Name") },
-                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                    )
-                    androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(12.dp))
-                    androidx.compose.material3.Text(
-                        "Filter by:",
-                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                    )
-                    androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(6.dp))
-                    androidx.compose.foundation.layout.Row {
-                        listOf(
-                            ir.mariaplayer.data.LibraryTab.Kind.MUSIC to "Music",
-                            ir.mariaplayer.data.LibraryTab.Kind.PODCAST to "Podcasts",
-                            ir.mariaplayer.data.LibraryTab.Kind.AUDIOBOOK to "Audiobooks",
-                            ir.mariaplayer.data.LibraryTab.Kind.SMART to "Smart",
-                        ).forEach { (kind, label) ->
-                            androidx.compose.material3.FilterChip(
-                                selected = newKind == kind,
-                                onClick = { newKind = kind },
-                                label = { androidx.compose.material3.Text(label) },
-                                modifier = androidx.compose.ui.Modifier.padding(end = 6.dp),
-                            )
-                        }
-                    }
-                    if (newKind == ir.mariaplayer.data.LibraryTab.Kind.SMART) {
-                        androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(6.dp))
-                        androidx.compose.material3.Text(
-                            "Rule:",
-                            style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                        )
-                        androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(6.dp))
-                        androidx.compose.foundation.layout.Row {
-                            listOf(
-                                "under10" to "<10m",
-                                "long10" to "10m+",
-                                "books2h" to "2h+",
-                            ).forEach { (preset, label) ->
-                                androidx.compose.material3.FilterChip(
-                                    selected = smartPreset == preset,
-                                    onClick = { smartPreset = preset },
-                                    label = { androidx.compose.material3.Text(label) },
-                                    modifier = androidx.compose.ui.Modifier.padding(end = 6.dp),
-                                )
-                            }
-                        }
-                    }
+    if (showNewCollectionDialog) {
+        NewCollectionDialog(
+            onDismiss = { showNewCollectionDialog = false },
+            onCreate = { name, rule ->
+                scope.launch {
+                    val id = CollectionRepository.create(context, name, rule)
+                    selectedCollectionId = id
                 }
-            },
-            confirmButton = {
-                androidx.compose.material3.TextButton(
-                    enabled = newName.isNotBlank(),
-                    onClick = {
-                        val msPair: Pair<Long?, Long?> = when {
-                            newKind != ir.mariaplayer.data.LibraryTab.Kind.SMART -> null to null
-                            smartPreset == "under10" -> null to 10 * 60_000L
-                            smartPreset == "long10"  -> 10 * 60_000L to null
-                            smartPreset == "books2h" -> 2L * 60 * 60_000L to null
-                            else -> null to null
-                        }
-                        val minMs = msPair.first
-                        val maxMs = msPair.second
-                        val tab = ir.mariaplayer.data.LibraryTab(
-                            id = "custom_" + System.currentTimeMillis(),
-                            kind = newKind,
-                            label = newName.trim(),
-                            isDefault = false,
-                            minDurationMs = minMs,
-                            maxDurationMs = maxMs,
-                        )
-                        scope.launch {
-                            ir.mariaplayer.data.LibraryTabPrefs.add(context, tab)
-                            tabs = ir.mariaplayer.data.LibraryTabPrefs.read(context)
-                            selectedTabId = tab.id
-                        }
-                        showNewTabDialog = false
-                    },
-                ) { androidx.compose.material3.Text("Create") }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showNewTabDialog = false }) {
-                    androidx.compose.material3.Text("Cancel")
-                }
+                showNewCollectionDialog = false
             },
         )
     }
-    tabToEdit?.let { tab ->
-        var editedLabel by remember(tab.id) { mutableStateOf(tab.label) }
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { tabToEdit = null },
-            title = { androidx.compose.material3.Text("Edit tab") },
-            text = {
-                androidx.compose.material3.OutlinedTextField(
-                    value = editedLabel,
-                    onValueChange = { editedLabel = it },
-                    singleLine = true,
-                    label = { androidx.compose.material3.Text("Name") },
-                )
+    collectionToEdit?.let { coll ->
+        EditCollectionDialog(
+            collection = coll,
+            onDismiss = { collectionToEdit = null },
+            onSave = { newName ->
+                scope.launch { CollectionRepository.rename(context, coll.id, newName) }
+                collectionToEdit = null
             },
-            confirmButton = {
-                androidx.compose.material3.TextButton(
-                    enabled = editedLabel.isNotBlank(),
-                    onClick = {
-                        scope.launch {
-                            ir.mariaplayer.data.LibraryTabPrefs.rename(context, tab.id, editedLabel.trim())
-                            tabs = ir.mariaplayer.data.LibraryTabPrefs.read(context)
-                        }
-                        tabToEdit = null
-                    },
-                ) { androidx.compose.material3.Text("Save") }
-            },
-            dismissButton = {
-                androidx.compose.foundation.layout.Row {
-                    if (!tab.isDefault || tab.kind == ir.mariaplayer.data.LibraryTab.Kind.FAVORITES) {
-                        androidx.compose.material3.TextButton(onClick = {
-                            scope.launch {
-                                if (tab.kind == ir.mariaplayer.data.LibraryTab.Kind.FAVORITES) {
-                                    val favs = ir.mariaplayer.data.FavoritesPrefs.snapshot(context)
-                                    for (id in favs) ir.mariaplayer.data.FavoritesPrefs.set(context, id, false)
-                                }
-                                ir.mariaplayer.data.LibraryTabPrefs.remove(context, tab.id)
-                                tabs = ir.mariaplayer.data.LibraryTabPrefs.read(context)
-                                if (selectedTabId == tab.id) selectedTabId = "all"
-                            }
-                            tabToEdit = null
-                        }) { androidx.compose.material3.Text("Delete") }
-                    }
-                    androidx.compose.material3.TextButton(onClick = { tabToEdit = null }) {
-                        androidx.compose.material3.Text("Cancel")
-                    }
+            onDelete = {
+                scope.launch {
+                    CollectionRepository.delete(context, coll.id)
+                    if (selectedCollectionId == coll.id) selectedCollectionId = CollectionRepository.ALL_ID
                 }
+                collectionToEdit = null
             },
         )
     }
@@ -473,34 +355,11 @@ private fun AppRoot() {
                 screen = "library"
             })
         }
-        screen == "playlists" -> {
-            PlaylistsScreen(
-                onBack = { screen = "library" },
-                onOpenPlaylist = { id -> screen = "playlist:$id" },
-                controller = controller,
-                onLyricsClick = { screen = "lyrics_display" },
-            )
-        }
+
         screen == "selftest" -> {
             SelfTestScreen(onBack = { screen = "library" })
         }
-        screen.startsWith("playlist:") -> {
-            val pid = screen.removePrefix("playlist:").toLongOrNull()
-            if (pid == null) {
-                androidx.compose.runtime.LaunchedEffect(Unit) { screen = "playlists" }
-            } else {
-                PlaylistDetailScreen(
-                    playlistId = pid,
-                    allTracks = tracks ?: emptyList(),
-                    controller = controller,
-                    onPlayTrack = { list, idx ->
-                        playQueue(controller, list, idx, 0L, autoPlay = true)
-                    },
-                    onBack = { screen = "playlists" },
-                    onLyricsClick = { screen = "lyrics_display" },
-                )
-            }
-        }
+
         else -> LibraryScreen(
         allTracks = tracks,
         visible = visible,
@@ -515,33 +374,12 @@ private fun AppRoot() {
         onQueryChange = { query = it },
         folderFilter = folderFilter,
         onFolderFilterChange = { folderFilter = it },
-        favOnly = favOnly,
-        onFavOnlyChange = { favOnly = it },
         favorites = favorites,
-        onToggleFavorite = { id -> scope.launch {
-            val wasFav = id in favorites
-            FavoritesPrefs.toggle(context, id)
-            if (!wasFav) {
-                val current = ir.mariaplayer.data.LibraryTabPrefs.read(context)
-                if (current.none { it.kind == ir.mariaplayer.data.LibraryTab.Kind.FAVORITES }) {
-                    ir.mariaplayer.data.LibraryTabPrefs.save(
-                        context,
-                        current + ir.mariaplayer.data.LibraryTab.favorites(),
-                    )
-                    tabs = ir.mariaplayer.data.LibraryTabPrefs.read(context)
-                }
-            }
-        }},
+        onToggleFavorite = { id -> scope.launch { CollectionRepository.toggleFavorite(context, id) } },
         onShuffleClick = {
             val c = controller ?: return@LibraryScreen
             val list = visible ?: return@LibraryScreen
-            val pool = when (selectedTabId) {
-                "all" -> list
-                "music" -> list.filter { it.contentType == ir.mariaplayer.data.ContentType.MUSIC }
-                "podcasts" -> list.filter { it.contentType == ir.mariaplayer.data.ContentType.PODCAST }
-                "audiobooks" -> list.filter { it.contentType == ir.mariaplayer.data.ContentType.AUDIOBOOK }
-                else -> list
-            }
+            val pool = list
             if (c.mediaItemCount == 0 && pool.isNotEmpty()) {
                 playQueue(c, pool, 0, 0L, autoPlay = true)
                 c.shuffleModeEnabled = true
@@ -559,14 +397,13 @@ private fun AppRoot() {
         },
         onTrackLongClick = { t -> pendingTrackForPlaylist = t },
         onLyricsClick = { screen = "lyrics_display" },
-        onPlaylistsClick = { screen = "playlists" },
         onSelfTestClick = { screen = "selftest" },
         onNowPlayingExpand = { showNowPlaying = true },
-        tabs = tabs,
-        selectedTabId = selectedTabId,
-        onTabSelect = { selectedTabId = it },
-        onTabAdd = { showNewTabDialog = true },
-        onTabLongPress = { tab -> tabToEdit = tab },
+        collections = collections,
+        selectedCollectionId = selectedCollection?.id ?: "",
+        onSelectCollection = { selectedCollectionId = it.id },
+        onAddCollection = { showNewCollectionDialog = true },
+        onEditCollection = { collectionToEdit = it },
         onDeleteRequest = { t ->
             val uri = Uri.parse(t.contentUri)
             if (Build.VERSION.SDK_INT >= 30) {
@@ -616,11 +453,6 @@ private fun AppRoot() {
     }
 }
 
-private fun tabMatches(
-    tab: ir.mariaplayer.data.LibraryTab,
-    t: Track,
-    favorites: Set<Long>,
-): Boolean = tab.matches(t, favorites)
 
 private fun playQueue(
     c: MediaController?,
@@ -669,8 +501,6 @@ private fun LibraryScreen(
     onQueryChange: (String) -> Unit,
     folderFilter: String,
     onFolderFilterChange: (String) -> Unit,
-    favOnly: Boolean,
-    onFavOnlyChange: (Boolean) -> Unit,
     favorites: Set<Long>,
     onToggleFavorite: (Long) -> Unit,
     onShuffleClick: () -> Unit,
@@ -678,14 +508,13 @@ private fun LibraryScreen(
     onDeleteRequest: (Track) -> Unit,
     onTrackLongClick: (Track) -> Unit,
     onLyricsClick: () -> Unit,
-    onPlaylistsClick: () -> Unit,
     onSelfTestClick: () -> Unit,
     onNowPlayingExpand: () -> Unit,
-    tabs: List<ir.mariaplayer.data.LibraryTab>,
-    selectedTabId: String,
-    onTabSelect: (String) -> Unit,
-    onTabAdd: () -> Unit,
-    onTabLongPress: (ir.mariaplayer.data.LibraryTab) -> Unit,
+    collections: List<Collection>,
+    selectedCollectionId: String,
+    onSelectCollection: (Collection) -> Unit,
+    onAddCollection: () -> Unit,
+    onEditCollection: (Collection) -> Unit,
 ) {
     var sortMenuOpen by remember { mutableStateOf(false) }
     var folderMenuOpen by remember { mutableStateOf(false) }
@@ -911,10 +740,6 @@ private fun LibraryScreen(
                         Icon(painter = painterResource(R.drawable.ic_self_test),
                             contentDescription = "Self-test", modifier = isz)
                     }
-                    IconButton(onClick = { onPlaylistsClick() }, modifier = sz) {
-                        Icon(painter = painterResource(R.drawable.ic_playlist),
-                            contentDescription = "Playlists", modifier = isz)
-                    }
                     Box {
                         IconButton(onClick = { sortMenuOpen = true }, modifier = sz) {
                             Icon(painter = painterResource(R.drawable.ic_sort),
@@ -966,26 +791,24 @@ private fun LibraryScreen(
         bottomBar = { NowPlayingBar(controller, onLyricsClick, onExpand = onNowPlayingExpand) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            ir.mariaplayer.ui.LibraryTabBar(
-                tabs = tabs,
-                selectedId = selectedTabId,
-                onSelect = onTabSelect,
-                onAdd = onTabAdd,
-                onLongPress = onTabLongPress,
+            ir.mariaplayer.ui.CollectionBar(
+                collections = collections,
+                selectedId = selectedCollectionId,
+                onSelect = onSelectCollection,
+                onAdd = onAddCollection,
+                onLongPress = onEditCollection,
             )
 
             Box(Modifier.fillMaxWidth().weight(1f)) {
                 when {
                     scanning -> CenterText("Scanning library...")
                     visible.isNullOrEmpty() -> {
-                        val isFavTab = tabs.firstOrNull { it.id == selectedTabId }?.kind ==
-                            ir.mariaplayer.data.LibraryTab.Kind.FAVORITES
+                        val isFavTab = selectedCollectionId == CollectionRepository.FAVORITES_ID
                         val msg = when {
                             allTracks.isNullOrEmpty() ->
                                 "No audio files found.\nAdd music to /sdcard/Music, then reopen the app."
                             query.isNotBlank() -> "No results for \"$query\""
                             isFavTab -> "No favorites yet.\nTap the heart next to a track to add."
-                            favOnly -> "No favorites yet.\nTap the heart next to a track to add."
                             folderFilter.isNotEmpty() -> "No tracks in \"$folderFilter\""
                             else -> "No tracks match the current filters."
                         }
@@ -1182,4 +1005,135 @@ private fun AlphabetIndex(
             }
         }
     }
+}
+
+
+@androidx.compose.material3.ExperimentalMaterial3Api
+@androidx.compose.runtime.Composable
+private fun NewCollectionDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String, CollectionRule) -> Unit,
+) {
+    var name by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+    var mode by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("manual") }
+    var regexPattern by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New collection") },
+        text = {
+            Column {
+                androidx.compose.material3.OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    singleLine = true, label = { Text("Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(12.dp))
+                Text("Type:", style = MaterialTheme.typography.labelLarge)
+                androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(6.dp))
+                Row(Modifier.horizontalScroll(rememberScrollState())) {
+                    listOf(
+                        "manual" to "Manual",
+                        "under10" to "<10m",
+                        "10m2h" to "10m-2h",
+                        "over2h" to "2h+",
+                        "regex" to "Regex",
+                    ).forEach { (m, label) ->
+                        androidx.compose.material3.FilterChip(
+                            selected = mode == m, onClick = { mode = m },
+                            label = { Text(label) },
+                            modifier = Modifier.padding(end = 6.dp),
+                        )
+                    }
+                }
+                if (mode == "regex") {
+                    androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(6.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = regexPattern, onValueChange = { regexPattern = it },
+                        singleLine = true, label = { Text("Pattern") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = name.isNotBlank() && (mode != "regex" || regexPattern.isNotBlank()),
+                onClick = {
+                    val rule: CollectionRule = when (mode) {
+                        "manual" -> CollectionRule.Manual(emptyList())
+                        "under10" -> CollectionRule.Duration(maxMs = 10 * 60_000L)
+                        "10m2h" -> CollectionRule.Duration(minMs = 10 * 60_000L, maxMs = 2 * 60 * 60_000L)
+                        "over2h" -> CollectionRule.Duration(minMs = 2L * 60 * 60_000L)
+                        "regex" -> CollectionRule.Pattern(regexPattern)
+                        else -> CollectionRule.Manual(emptyList())
+                    }
+                    onCreate(name.trim(), rule)
+                },
+            ) { Text("Create") }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@androidx.compose.material3.ExperimentalMaterial3Api
+@androidx.compose.runtime.Composable
+private fun EditCollectionDialog(
+    collection: Collection,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+    onDelete: () -> Unit,
+) {
+    var editedName by androidx.compose.runtime.remember(collection.id) {
+        androidx.compose.runtime.mutableStateOf(collection.label)
+    }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit collection") },
+        text = {
+            Column {
+                androidx.compose.material3.OutlinedTextField(
+                    value = editedName, onValueChange = { editedName = it },
+                    singleLine = true, label = { Text("Name") },
+                )
+                androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(8.dp))
+                Text(
+                    "Rule: ${describeCollectionRule(collection.rule)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = editedName.isNotBlank(),
+                onClick = { onSave(editedName.trim()) },
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            Row {
+                if (collection.id != CollectionRepository.ALL_ID) {
+                    androidx.compose.material3.TextButton(onClick = onDelete) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        },
+    )
+}
+
+private fun describeCollectionRule(rule: CollectionRule): String = when (rule) {
+    is CollectionRule.All -> "All tracks"
+    is CollectionRule.Manual -> "${rule.trackIds.size} tracks"
+    is CollectionRule.Duration -> {
+        val min = rule.minMs?.let { "${it / 60_000}m" } ?: "0"
+        val max = rule.maxMs?.let { "${it / 60_000}m" } ?: "inf"
+        "Duration $min to $max"
+    }
+    is CollectionRule.Types -> "Types: ${rule.types.joinToString { it.name }}"
+    is CollectionRule.Pattern -> "Regex: ${rule.pattern}"
 }

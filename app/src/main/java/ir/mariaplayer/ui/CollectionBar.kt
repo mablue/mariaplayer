@@ -20,45 +20,41 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ir.mariaplayer.R
-import ir.mariaplayer.data.LibraryTab
+import ir.mariaplayer.data.Collection
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LibraryTabBar(
-    tabs: List<LibraryTab>,
-    selectedId: String,
-    onSelect: (String) -> Unit,
+fun CollectionBar(
+    collections: List<Collection>,
+    selectedId: String?,
+    onSelect: (Collection) -> Unit,
     onAdd: () -> Unit,
-    onLongPress: (LibraryTab) -> Unit,
+    onLongPress: (Collection) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        items(tabs, key = { it.id }) { tab ->
-            val selected = tab.id == selectedId
+        items(collections, key = { it.id }) { c ->
+            val selected = c.id == selectedId
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = if (selected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.surfaceVariant,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
                     .padding(horizontal = 4.dp, vertical = 4.dp)
                     .combinedClickable(
-                        onClick = { onSelect(tab.id) },
-                        onLongClick = { onLongPress(tab) },
+                        onClick = { onSelect(c) },
+                        onLongClick = { onLongPress(c) },
                     ),
             ) {
                 Text(
-                    text = tab.label,
+                    text = c.label,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (selected)
-                        MaterialTheme.colorScheme.onPrimary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                 )
             }
@@ -67,7 +63,7 @@ fun LibraryTabBar(
             IconButton(onClick = onAdd) {
                 Icon(
                     painter = painterResource(R.drawable.ic_add),
-                    contentDescription = "New tab",
+                    contentDescription = "New collection",
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

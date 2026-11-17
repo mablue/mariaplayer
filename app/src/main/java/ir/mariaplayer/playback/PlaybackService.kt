@@ -29,7 +29,8 @@ import com.google.common.util.concurrent.ListenableFuture
 import ir.mariaplayer.DeleteActivity
 import ir.mariaplayer.MainActivity
 import ir.mariaplayer.R
-import ir.mariaplayer.data.FavoritesPrefs
+import ir.mariaplayer.data.CollectionRepository
+import ir.mariaplayer.data.CollectionRule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -73,8 +74,9 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
         setMediaNotificationProvider(MariaNotificationProvider(this) { favorites })
 
         scope.launch {
-            FavoritesPrefs.observe(this@PlaybackService).collectLatest { favs ->
-                favorites = favs
+            CollectionRepository.observe(this@PlaybackService).collectLatest { list ->
+                favorites = (list.firstOrNull { it.id == CollectionRepository.FAVORITES_ID }
+                    ?.rule as? CollectionRule.Manual)?.trackIds?.toSet() ?: emptySet()
                 updateCustomLayout()
             }
         }
@@ -212,7 +214,7 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
             CMD_FAVORITE -> {
                 val id = session.player.currentMediaItem?.mediaId?.toLongOrNull()
                 if (id != null) {
-                    scope.launch { FavoritesPrefs.toggle(this@PlaybackService, id) }
+                    scope.launch { CollectionRepository.toggleFavorite(this@PlaybackService, id) }
                 }
                 return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
             }

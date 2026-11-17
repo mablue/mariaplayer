@@ -28,11 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import ir.mariaplayer.data.Playlist
-import ir.mariaplayer.data.PlaylistPrefs
+import ir.mariaplayer.data.Collection
+import ir.mariaplayer.data.CollectionRepository
+import ir.mariaplayer.data.CollectionRule
 import ir.mariaplayer.data.Track
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,9 +49,10 @@ fun AddToPlaylistSheet(
     val scope = workScope ?: localScope
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val playlists by produceState<List<Playlist>>(initialValue = emptyList()) {
-        PlaylistPrefs.observe(context).collectLatest { value = it }
+    val collections by produceState<List<Collection>>(initialValue = emptyList()) {
+        CollectionRepository.observe(context).collectLatest { value = it }
     }
+    val targets = collections.filter { it.rule is CollectionRule.Manual }
 
     var newNameDialog by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
@@ -63,32 +65,30 @@ fun AddToPlaylistSheet(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
             if (tracks.size == 1) {
-                Text(
-                    tracks[0].title,
+                Text(tracks[0].title,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 20.dp))
             }
-
             LazyColumn(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                items(playlists, key = { it.id }) { p ->
+                items(targets, key = { it.id }) { c ->
                     ListItem(
-                        headlineContent = { Text(p.name) },
-                        supportingContent = { Text("${p.trackIds.size} tracks") },
+                        headlineContent = { Text(c.label) },
+                        supportingContent = {
+                            val n = (c.rule as? CollectionRule.Manual)?.trackIds?.size ?: 0
+                            Text("$n tracks")
+                        },
                         modifier = Modifier.clickable {
                             scope.launch {
-                                var added = 0
-                                var dup = 0
+                                var added = 0; var dup = 0
                                 for (t in tracks) {
-                                    if (PlaylistPrefs.addTrack(context, p.id, t.id)) added++ else dup++
+                                    if (CollectionRepository.addTrack(context, c.id, t.id)) added++ else dup++
                                 }
                                 val msg = when {
-                                    added == 0 -> "Already in ${p.name}"
-                                    dup == 0 -> if (tracks.size == 1) "Added to ${p.name}" else "Added $added to ${p.name}"
-                                    else -> "Added $added, $dup already in ${p.name}"
+                                    added == 0 -> "Already in ${c.label}"
+                                    dup == 0 -> if (tracks.size == 1) "Added to ${c.label}" else "Added $added to ${c.label}"
+                                    else -> "Added $added, $dup already in ${c.label}"
                                 }
                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                             }
@@ -100,15 +100,9 @@ fun AddToPlaylistSheet(
                 item {
                     ListItem(
                         headlineContent = {
-                            Text(
-                                "+ New playlist",
-                                color = MaterialTheme.colorScheme.primary,
-                            )
+                            Text("+ New playlist", color = MaterialTheme.colorScheme.primary)
                         },
-                        modifier = Modifier.clickable {
-                            newName = ""
-                            newNameDialog = true
-                        },
+                        modifier = Modifier.clickable { newName = ""; newNameDialog = true },
                     )
                 }
                 item { Column(Modifier.padding(top = 16.dp)) {} }
@@ -122,10 +116,8 @@ fun AddToPlaylistSheet(
             title = { Text("New playlist") },
             text = {
                 OutlinedTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    singleLine = true,
-                    placeholder = { Text("Name") },
+                    value = newName, onValueChange = { newName = it },
+                    singleLine = true, placeholder = { Text("Name") },
                 )
             },
             confirmButton = {
@@ -134,14 +126,13 @@ fun AddToPlaylistSheet(
                     onClick = {
                         val name = newName.trim()
                         scope.launch {
-                            val id = PlaylistPrefs.create(context, name)
-                            for (t in tracks) PlaylistPrefs.addTrack(context, id, t.id)
-                            Toast.makeText(
-                                context,
+                            val id = CollectionRepository.create(
+                                context, name, CollectionRule.Manual(emptyList()))
+                            for (t in tracks) CollectionRepository.addTrack(context, id, t.id)
+                            Toast.makeText(context,
                                 if (tracks.size == 1) "Created $name and added track"
                                 else "Created $name with ${tracks.size} tracks",
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                                Toast.LENGTH_SHORT).show()
                         }
                         newNameDialog = false
                         onDismiss()

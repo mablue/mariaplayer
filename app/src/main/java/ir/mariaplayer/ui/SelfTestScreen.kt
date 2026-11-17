@@ -44,17 +44,16 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.mariaplayer.R
+import ir.mariaplayer.data.Collection
+import ir.mariaplayer.data.CollectionRepository
+import ir.mariaplayer.data.CollectionRule
 import ir.mariaplayer.data.ContentType
 import ir.mariaplayer.data.ContentTypePrefs
 import ir.mariaplayer.data.ContentTypeLogic
-import ir.mariaplayer.data.FavoritesPrefs
 import ir.mariaplayer.data.MediaClassifier
 import ir.mariaplayer.data.LibraryPrefs
 import ir.mariaplayer.data.LibraryScanner
-import ir.mariaplayer.data.LibraryTab
-import ir.mariaplayer.data.LibraryTabPrefs
 import ir.mariaplayer.data.PlaybackPrefs
-import ir.mariaplayer.data.PlaylistPrefs
 import ir.mariaplayer.data.QueryNormalizer
 import ir.mariaplayer.data.SortMode
 import ir.mariaplayer.data.Track
@@ -177,15 +176,6 @@ private suspend fun runAllTests(
         if (tracks.isEmpty()) throw IllegalStateException("0 tracks")
         "${tracks.size} tracks"
     }
-    test("Favorites round-trip") {
-        val testId = 9_900_000_000L + Random.nextLong(100_000)
-        FavoritesPrefs.set(context, testId, true)
-        val added = FavoritesPrefs.snapshot(context).contains(testId)
-        FavoritesPrefs.set(context, testId, false)
-        val removed = !FavoritesPrefs.snapshot(context).contains(testId)
-        if (!added || !removed) throw IllegalStateException("add=$added rm=$removed")
-        "ok"
-    }
     test("Sort preference") {
         val orig = LibraryPrefs.readSort(context)
         LibraryPrefs.saveSort(context, SortMode.DURATION)
@@ -217,19 +207,6 @@ private suspend fun runAllTests(
         PlaybackPrefs.clearPosition(context, id)
         val got = PlaybackPrefs.readPosition(context, id)
         if (got != null) throw IllegalStateException("still=$got")
-        "ok"
-    }
-    test("Playlist CRUD") {
-        val name = "selftest_${System.currentTimeMillis()}"
-        val id = PlaylistPrefs.create(context, name)
-        if (id <= 0) throw IllegalStateException("create id=$id")
-        val tId = 888_888L
-        val added = PlaylistPrefs.addTrack(context, id, tId)
-        val found = PlaylistPrefs.snapshot(context).find { it.id == id }
-        PlaylistPrefs.delete(context, id)
-        val gone = PlaylistPrefs.snapshot(context).none { it.id == id }
-        if (!added || found?.trackIds?.contains(tId) != true || !gone)
-            throw IllegalStateException("add=$added gone=$gone")
         "ok"
     }
     test("Lyrics cache") {
@@ -450,159 +427,6 @@ private suspend fun runAllTests(
         ContentTypePrefs.clear(context, id)
         if (map[id] != ContentType.PODCAST)
             throw IllegalStateException("map=$map")
-        "ok"
-    }
-    test("Tabs: defaults have 5") {
-        val tabs = LibraryTab.defaults()
-        if (tabs.size != 5) throw IllegalStateException("size=${tabs.size}")
-        if (tabs.map { it.kind }.toSet().size != 5)
-            throw IllegalStateException("kinds not unique")
-        "5"
-    }
-    test("Tabs: defaults all isDefault") {
-        if (LibraryTab.defaults().any { !it.isDefault })
-            throw IllegalStateException("some default not flagged")
-        "all default"
-    }
-    test("Tabs: add custom round-trip") {
-        val orig = LibraryTabPrefs.read(context)
-        val tab = LibraryTab(
-            id = "custom_test_" + System.currentTimeMillis(),
-            kind = LibraryTab.Kind.MUSIC,
-            label = "TestTab",
-            isDefault = false,
-        )
-        LibraryTabPrefs.add(context, tab)
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        if (got.none { it.id == tab.id }) throw IllegalStateException("not added")
-        if (got.firstOrNull { it.id == tab.id }?.label != "TestTab")
-            throw IllegalStateException("label mismatch")
-        "ok"
-    }
-    test("Tabs: remove custom works") {
-        val orig = LibraryTabPrefs.read(context)
-        val tab = LibraryTab(
-            id = "custom_del_" + System.currentTimeMillis(),
-            kind = LibraryTab.Kind.PODCAST,
-            label = "Del",
-            isDefault = false,
-        )
-        LibraryTabPrefs.add(context, tab)
-        LibraryTabPrefs.remove(context, tab.id)
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        if (got.any { it.id == tab.id }) throw IllegalStateException("still present")
-        "removed"
-    }
-    test("Tabs: default cannot be removed") {
-        val orig = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.remove(context, "all")
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        if (got.none { it.id == "all" }) throw IllegalStateException("all was removed")
-        "protected"
-    }
-    test("Tabs: rename round-trip") {
-        val orig = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.rename(context, "music", "Songs")
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        val music = got.firstOrNull { it.id == "music" }
-        if (music?.label != "Songs") throw IllegalStateException("label=${music?.label}")
-        "ok"
-    }
-    test("Tabs: empty prefs → defaults") {
-        val orig = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, emptyList())
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        if (got.size != 5) throw IllegalStateException("size=${got.size}")
-        "restored"
-    }
-    test("Tabs: filter predicate ALL kind") {
-        val all = LibraryTab.defaults().first { it.kind == LibraryTab.Kind.ALL }
-        val musicTrack = Track(id = 1L, title = "t", artist = null, album = null,
-            durationMs = 60_000L, contentUri = "u").copy(contentType = ir.mariaplayer.data.ContentType.MUSIC)
-        val podTrack = Track(id = 2L, title = "p", artist = null, album = null,
-            durationMs = 60_000L, contentUri = "v").copy(contentType = ir.mariaplayer.data.ContentType.PODCAST)
-        // ALL tab should accept both — verify by kind semantics
-        if (all.kind != LibraryTab.Kind.ALL) throw IllegalStateException("kind=${all.kind}")
-        if (musicTrack.contentType == podTrack.contentType) throw IllegalStateException("setup broken")
-        "all accepts both"
-    }
-    test("Tabs: add same id twice = no dup") {
-        val orig = LibraryTabPrefs.read(context)
-        val id = "custom_dup_" + System.currentTimeMillis()
-        val tab = LibraryTab(id, LibraryTab.Kind.MUSIC, "Dup", isDefault = false)
-        LibraryTabPrefs.add(context, tab)
-        LibraryTabPrefs.add(context, tab)
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        val count = got.count { it.id == id }
-        if (count != 1) throw IllegalStateException("count=$count")
-        "no dup"
-    }
-    test("Tabs: multiple customs preserved in order") {
-        val orig = LibraryTabPrefs.read(context)
-        val base = "custom_multi_" + System.currentTimeMillis()
-        val a = LibraryTab("${base}_a", LibraryTab.Kind.MUSIC, "A", isDefault = false)
-        val b = LibraryTab("${base}_b", LibraryTab.Kind.PODCAST, "B", isDefault = false)
-        val c = LibraryTab("${base}_c", LibraryTab.Kind.AUDIOBOOK, "C", isDefault = false)
-        LibraryTabPrefs.add(context, a)
-        LibraryTabPrefs.add(context, b)
-        LibraryTabPrefs.add(context, c)
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        val mine = got.filter { it.id.startsWith(base) }.map { it.label }
-        if (mine != listOf("A", "B", "C"))
-            throw IllegalStateException("order=$mine")
-        "A,B,C"
-    }
-    test("Tabs: remove middle keeps neighbors") {
-        val orig = LibraryTabPrefs.read(context)
-        val base = "custom_mid_" + System.currentTimeMillis()
-        val a = LibraryTab("${base}_1", LibraryTab.Kind.MUSIC, "L", isDefault = false)
-        val b = LibraryTab("${base}_2", LibraryTab.Kind.MUSIC, "M", isDefault = false)
-        val c = LibraryTab("${base}_3", LibraryTab.Kind.MUSIC, "R", isDefault = false)
-        LibraryTabPrefs.add(context, a)
-        LibraryTabPrefs.add(context, b)
-        LibraryTabPrefs.add(context, c)
-        LibraryTabPrefs.remove(context, b.id)
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        val ids = got.filter { it.id.startsWith(base) }.map { it.id.removePrefix("${base}_") }
-        if (ids != listOf("1", "3"))
-            throw IllegalStateException("after remove=$ids")
-        "1,3"
-    }
-    test("Tabs: rename does not touch siblings") {
-        val orig = LibraryTabPrefs.read(context)
-        val base = "custom_rn_" + System.currentTimeMillis()
-        val a = LibraryTab("${base}_x", LibraryTab.Kind.MUSIC, "X", isDefault = false)
-        val b = LibraryTab("${base}_y", LibraryTab.Kind.MUSIC, "Y", isDefault = false)
-        LibraryTabPrefs.add(context, a)
-        LibraryTabPrefs.add(context, b)
-        LibraryTabPrefs.rename(context, a.id, "X2")
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        val byId = got.associateBy { it.id }
-        if (byId[a.id]?.label != "X2") throw IllegalStateException("a=${byId[a.id]?.label}")
-        if (byId[b.id]?.label != "Y") throw IllegalStateException("b=${byId[b.id]?.label}")
-        "ok"
-    }
-    test("Tabs: default ids stable") {
-        val tabs = LibraryTab.defaults()
-        val ids = tabs.map { it.id }.toSet()
-        val want = setOf("all", "favorites", "music", "podcasts", "audiobooks")
-        if (ids != want) throw IllegalStateException("ids=$ids")
-        "stable"
-    }
-    test("Tabs: PLAYLIST kind semantics") {
-        val pl = LibraryTab("pl_x", LibraryTab.Kind.PLAYLIST, "Mix", playlistId = 42L, isDefault = false)
-        if (pl.kind != LibraryTab.Kind.PLAYLIST) throw IllegalStateException("kind=${pl.kind}")
-        if (pl.playlistId != 42L) throw IllegalStateException("pid=${pl.playlistId}")
-        if (pl.isDefault) throw IllegalStateException("should not be default")
         "ok"
     }
     test("Theme default style") {
@@ -860,78 +684,121 @@ private suspend fun runAllTests(
         "reset ok"
     }
 
-    test("Tabs: FAVORITES is default") {
-        val fav = LibraryTab.defaults().firstOrNull { it.kind == LibraryTab.Kind.FAVORITES }
-            ?: throw IllegalStateException("favorites missing")
-        if (fav.id != LibraryTab.FAVORITES_ID) throw IllegalStateException("id=${fav.id}")
-        if (!fav.isDefault) throw IllegalStateException("not default")
+
+
+    test("Collection: defaults after init") {
+        CollectionRepository.initializeIfNeeded(context)
+        val colls = CollectionRepository.snapshot(context)
+        if (colls.none { it.id == CollectionRepository.ALL_ID }) throw IllegalStateException("All")
+        if (colls.none { it.id == CollectionRepository.MUSIC_ID }) throw IllegalStateException("Music")
+        if (colls.none { it.id == CollectionRepository.PODCASTS_ID }) throw IllegalStateException("Podcasts")
+        if (colls.none { it.id == CollectionRepository.AUDIOBOOKS_ID }) throw IllegalStateException("Audiobooks")
+        "${colls.size} collections"
+    }
+    test("Collection: All is first") {
+        CollectionRepository.initializeIfNeeded(context)
+        val colls = CollectionRepository.snapshot(context)
+        if (colls.firstOrNull()?.id != CollectionRepository.ALL_ID)
+            throw IllegalStateException("first=${colls.firstOrNull()?.id}")
         "ok"
     }
-    test("Tabs: FAVORITES can be removed") {
-        val orig = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.remove(context, LibraryTab.FAVORITES_ID)
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        if (got.any { it.id == LibraryTab.FAVORITES_ID })
-            throw IllegalStateException("still present")
-        "removed"
+    test("Collection: All cannot be deleted") {
+        CollectionRepository.initializeIfNeeded(context)
+        CollectionRepository.delete(context, CollectionRepository.ALL_ID)
+        val colls = CollectionRepository.snapshot(context)
+        if (colls.none { it.id == CollectionRepository.ALL_ID })
+            throw IllegalStateException("All was deleted")
+        "protected"
     }
-    test("Tabs: SMART round-trip") {
-        val orig = LibraryTabPrefs.read(context)
-        val tab = LibraryTab(
-            id = "custom_smart_" + System.currentTimeMillis(),
-            kind = LibraryTab.Kind.SMART,
-            label = "Long",
-            isDefault = false,
-            minDurationMs = 10 * 60_000L,
-            maxDurationMs = null,
-        )
-        LibraryTabPrefs.add(context, tab)
-        val got = LibraryTabPrefs.read(context)
-        LibraryTabPrefs.save(context, orig)
-        val found = got.firstOrNull { it.id == tab.id }
-        if (found?.minDurationMs != 10 * 60_000L)
-            throw IllegalStateException("min=${found?.minDurationMs}")
-        if (found.maxDurationMs != null)
-            throw IllegalStateException("max=${found.maxDurationMs}")
+    test("Collection: Favorites round-trip") {
+        CollectionRepository.initializeIfNeeded(context)
+        val testId = 9_900_000_000L + Random.nextLong(100_000)
+        val before = testId in CollectionRepository.favoriteIds(context)
+        CollectionRepository.toggleFavorite(context, testId)
+        val added = testId in CollectionRepository.favoriteIds(context)
+        CollectionRepository.toggleFavorite(context, testId)
+        val removed = testId !in CollectionRepository.favoriteIds(context)
+        if (before || !added || !removed)
+            throw IllegalStateException("before=$before add=$added rm=$removed")
         "ok"
     }
-    test("Tab.matches: FAVORITES") {
-        val t = Track(id = 42L, title = "t", artist = null, album = null,
-            durationMs = 60_000L, contentUri = "u")
-        val fav = LibraryTab.favorites()
-        if (!fav.matches(t, setOf(42L))) throw IllegalStateException("miss")
-        if (fav.matches(t, emptySet())) throw IllegalStateException("hit")
+    test("Collection: Favorites auto-created on toggle") {
+        CollectionRepository.initializeIfNeeded(context)
+        CollectionRepository.delete(context, CollectionRepository.FAVORITES_ID)
+        val testId = 9_900_001_000L + Random.nextLong(100_000)
+        CollectionRepository.toggleFavorite(context, testId)
+        val created = CollectionRepository.snapshot(context)
+            .any { it.id == CollectionRepository.FAVORITES_ID }
+        CollectionRepository.toggleFavorite(context, testId)
+        CollectionRepository.delete(context, CollectionRepository.FAVORITES_ID)
+        if (!created) throw IllegalStateException("fav not created")
         "ok"
     }
-    test("Tab.matches: SMART <10m") {
-        val sm = LibraryTab.smart("s1", "U", maxDurationMs = 10 * 60_000L - 1)
-        val t1 = Track(id = 1L, title = "t", artist = null, album = null,
-            durationMs = 5 * 60_000L, contentUri = "u")
-        val t2 = Track(id = 2L, title = "t", artist = null, album = null,
-            durationMs = 15 * 60_000L, contentUri = "v")
-        if (!sm.matches(t1, emptySet())) throw IllegalStateException("t1 rejected")
-        if (sm.matches(t2, emptySet())) throw IllegalStateException("t2 accepted")
+    test("Collection: Manual CRUD") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "T_"+System.currentTimeMillis(),
+            CollectionRule.Manual(emptyList()))
+        CollectionRepository.addTrack(context, id, 42L)
+        CollectionRepository.addTrack(context, id, 43L)
+        val ids1 = (CollectionRepository.snapshot(context).firstOrNull { it.id == id }?.rule as? CollectionRule.Manual)?.trackIds
+        CollectionRepository.removeTrack(context, id, 42L)
+        val ids2 = (CollectionRepository.snapshot(context).firstOrNull { it.id == id }?.rule as? CollectionRule.Manual)?.trackIds
+        CollectionRepository.delete(context, id)
+        if (ids1 != listOf(42L, 43L)) throw IllegalStateException("ids1=$ids1")
+        if (ids2 != listOf(43L)) throw IllegalStateException("ids2=$ids2")
         "ok"
     }
-    test("Tab.matches: SMART >=10m") {
-        val sm = LibraryTab.smart("s2", "L", minDurationMs = 10 * 60_000L)
-        val t1 = Track(id = 1L, title = "t", artist = null, album = null,
-            durationMs = 5 * 60_000L, contentUri = "u")
-        val t2 = Track(id = 2L, title = "t", artist = null, album = null,
-            durationMs = 15 * 60_000L, contentUri = "v")
-        if (sm.matches(t1, emptySet())) throw IllegalStateException("t1 accepted")
-        if (!sm.matches(t2, emptySet())) throw IllegalStateException("t2 rejected")
+    test("Collection: Duration matches") {
+        val rule = CollectionRule.Duration(minMs = 10 * 60_000L, maxMs = 30 * 60_000L)
+        val t1 = Track(id=1L, title="t", artist=null, album=null, durationMs=5*60_000L, contentUri="u")
+        val t2 = Track(id=2L, title="t", artist=null, album=null, durationMs=15*60_000L, contentUri="u")
+        val t3 = Track(id=3L, title="t", artist=null, album=null, durationMs=45*60_000L, contentUri="u")
+        if (rule.matches(t1)) throw IllegalStateException("t1 hit")
+        if (!rule.matches(t2)) throw IllegalStateException("t2 miss")
+        if (rule.matches(t3)) throw IllegalStateException("t3 hit")
         "ok"
     }
-    test("Tab.matches: SMART >=2h") {
-        val sm = LibraryTab.smart("s3", "XL", minDurationMs = 2 * 60 * 60_000L)
-        val t1 = Track(id = 1L, title = "t", artist = null, album = null,
-            durationMs = 30 * 60_000L, contentUri = "u")
-        val t2 = Track(id = 2L, title = "t", artist = null, album = null,
-            durationMs = 3 * 60 * 60_000L, contentUri = "v")
-        if (sm.matches(t1, emptySet())) throw IllegalStateException("t1 accepted")
-        if (!sm.matches(t2, emptySet())) throw IllegalStateException("t2 rejected")
+    test("Collection: Pattern matches") {
+        val rule = CollectionRule.Pattern("podcast", setOf(CollectionRule.Pattern.Field.Folder))
+        val t1 = Track(id=1L, title="t", artist=null, album=null, durationMs=60_000L, contentUri="u", folder="MyPodcasts", filename="x.mp3")
+        val t2 = Track(id=2L, title="t", artist=null, album=null, durationMs=60_000L, contentUri="u", folder="Music", filename="y.mp3")
+        if (!rule.matches(t1)) throw IllegalStateException("miss")
+        if (rule.matches(t2)) throw IllegalStateException("hit")
+        "ok"
+    }
+    test("Collection: rename") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "Orig", CollectionRule.Manual(emptyList()))
+        CollectionRepository.rename(context, id, "Renamed")
+        val found = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        if (found?.label != "Renamed") throw IllegalStateException("label=${found?.label}")
+        "ok"
+    }
+    test("Collection: resolveTracks All") {
+        val t1 = Track(id=1L, title="t", artist=null, album=null, durationMs=60_000L, contentUri="u")
+        val t2 = Track(id=2L, title="t", artist=null, album=null, durationMs=120_000L, contentUri="v")
+        val all = Collection("all", "All", CollectionRule.All, isSystem = true)
+        if (CollectionRepository.resolveTracks(listOf(t1, t2), all).size != 2)
+            throw IllegalStateException("size")
+        "ok"
+    }
+    test("Collection: resolveTracks Manual") {
+        val t1 = Track(id=1L, title="t", artist=null, album=null, durationMs=60_000L, contentUri="u")
+        val t2 = Track(id=2L, title="t", artist=null, album=null, durationMs=120_000L, contentUri="v")
+        val c = Collection("x", "X", CollectionRule.Manual(listOf(2L)))
+        val resolved = CollectionRepository.resolveTracks(listOf(t1, t2), c)
+        if (resolved.size != 1 || resolved[0].id != 2L) throw IllegalStateException("resolved=$resolved")
+        "ok"
+    }
+    test("Collection: persistence round-trip") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "Persist", CollectionRule.Duration(minMs=5*60_000L))
+        val found = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        val rule = found?.rule as? CollectionRule.Duration
+            ?: throw IllegalStateException("rule=${found?.rule}")
+        if (rule.minMs != 5*60_000L) throw IllegalStateException("min=${rule.minMs}")
         "ok"
     }
 
