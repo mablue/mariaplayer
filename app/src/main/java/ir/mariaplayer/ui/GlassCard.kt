@@ -96,6 +96,8 @@ fun GlassTrackRow(
     isActive: Boolean = false,
     isSelected: Boolean = false,
     track: Track? = null,
+    restoreMode: Boolean = false,
+    onRestoreClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val art by produceState<Bitmap?>(
@@ -172,21 +174,32 @@ fun GlassTrackRow(
                     )
                 }
             }
-            IconButton(onClick = onFavClick, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    painter = painterResource(
-                        if (isFavorite) R.drawable.ic_favorite_filled
-                        else R.drawable.ic_favorite_border
-                    ),
-                    contentDescription =
-                        if (isFavorite) "Remove from favorites" else "Add to favorites",
-                    tint = if (isFavorite) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.size(20.dp),
-                )
+            if (restoreMode && onRestoreClick != null) {
+                IconButton(onClick = onRestoreClick, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_restore),
+                        contentDescription = "Restore from trash",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            } else {
+                IconButton(onClick = onFavClick, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        painter = painterResource(
+                            if (isFavorite) R.drawable.ic_favorite_filled
+                            else R.drawable.ic_favorite_border
+                        ),
+                        contentDescription =
+                            if (isFavorite) "Remove from favorites" else "Add to favorites",
+                        tint = if (isFavorite) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
             if (onDeleteClick != null) {
                 IconButton(onClick = onDeleteClick, modifier = Modifier.size(36.dp)) {

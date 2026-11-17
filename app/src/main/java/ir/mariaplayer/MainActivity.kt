@@ -416,6 +416,12 @@ private fun AppRoot() {
                 Toast.makeText(context, "Moved to Trash", Toast.LENGTH_SHORT).show()
             }
         },
+        onRestoreRequest = { t ->
+            scope.launch {
+                CollectionRepository.restore(context, t.id)
+                Toast.makeText(context, "Restored", Toast.LENGTH_SHORT).show()
+            }
+        },
     )
     }
     }
@@ -479,6 +485,7 @@ private fun LibraryScreen(
     onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
     onDeleteRequest: (Track) -> Unit,
+    onRestoreRequest: (Track) -> Unit,
     onTrackLongClick: (Track) -> Unit,
     onLyricsClick: () -> Unit,
     onSelfTestClick: () -> Unit,
@@ -813,6 +820,8 @@ private fun LibraryScreen(
                                     isFavorite = t.id in favorites,
                                     onFavClick = { onToggleFavorite(t.id) },
                                     onDeleteClick = { onDeleteRequest(t) },
+                                    restoreMode = selectedCollectionId == CollectionRepository.TRASH_ID,
+                                    onRestoreClick = { onRestoreRequest(t) },
                                     onClick = {
                                         if (selectionMode) {
                                             val next = if (t.id in selectedIds) selectedIds - t.id else selectedIds + t.id
