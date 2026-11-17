@@ -23,6 +23,9 @@ object CollectionRepository {
     const val MUSIC_ID      = "music"
     const val PODCASTS_ID   = "podcasts"
     const val AUDIOBOOKS_ID = "audiobooks"
+    const val TRASH_ID      = "trash"
+
+    private val TRASH_KEY = stringSetPreferencesKey("trash_ids")
 
     fun observe(context: Context): Flow<List<Collection>> =
         context.collectionStore.data.map { p ->
@@ -84,8 +87,21 @@ object CollectionRepository {
         out += Collection(AUDIOBOOKS_ID, "Audiobooks",
             CollectionRule.Duration(minMs = 2L * 60 * 60_000L),
             isSystem = true, sortOrder = 12)
+        out += Collection(TRASH_ID, "Trash", CollectionRule.All,
+            isSystem = true, sortOrder = 999)
         migrated.filter { !it.isSystem && it.id != FAVORITES_ID }.forEach { out += it }
         return out
+    }
+
+    suspend fun ensureTrash(context: Context) {
+        val raw = context.collectionStore.data.first()[KEY] ?: return
+        val list = decode(raw)
+        if (list.none { it.id == TRASH_ID }) {
+            context.collectionStore.edit { p ->
+                p[KEY] = encode(list + Collection(TRASH_ID, "Trash", CollectionRule.All,
+                    isSystem = true, sortOrder = 999))
+            }
+        }
     }
 
     suspend fun favoriteIds(context: Context): Set<Long> {
@@ -129,7 +145,7 @@ object CollectionRepository {
     }
 
     suspend fun delete(context: Context, id: String) {
-        if (id == ALL_ID) return
+        if (id == ALL_ID || id == TRASH_ID) return
         context.collectionStore.edit { p ->
             p[KEY] = encode(decode(p[KEY].orEmpty()).filterNot { it.id == id })
         }
@@ -191,8 +207,44 @@ object CollectionRepository {
         }
     }
 
-    fun resolveTracks(allTracks: List<Track>, collection: Collection): List<Track> =
-        when (val r = collection.rule) {
+    fun observeTrashIds(context: Context): Flow<Set<Long>> =
+        context.collectionStore.data.map { p ->
+            p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+        }
+
+    suspend fun trashIds(context: Context): Set<Long> = observeTrashIds(context).first()
+
+    suspend fun trash(context: Context, trackId: Long) {
+        context.collectionStore.edit { p ->
+            val current = p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+            p[TRASH_KEY] = (current + trackId).map { it.toString() }.toSet()
+            val list = decode(p[KEY].orEmpty()).map { c ->
+                val r = c.rule
+                if (r is CollectionRule.Manual && trackId in r.trackIds) {
+                    c.copy(
+                        rule = CollectionRule.Manual(r.trackIds.filterNot { it == trackId }),
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                } else c
+            }
+            p[KEY] = encode(list)
+        }
+    }
+
+    suspend fun restore(context: Context, trackId: Long) {
+        context.collectionStore.edit { p ->
+            val current = p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+            p[TRASH_KEY] = (current - trackId).map { it.toString() }.toSet()
+        }
+    }
+
+    fun resolveTracks(
+        allTracks: List<Track>,
+        collection: Collection,
+        trashedIds: Set<Long> = emptySet(),
+    ): List<Track> {
+        if (collection.id == TRASH_ID) return allTracks.filter { it.id in trashedIds }
+        val base = when (val r = collection.rule) {
             is CollectionRule.All -> allTracks
             is CollectionRule.Manual -> {
                 val byId = allTracks.associateBy { it.id }
@@ -200,6 +252,8 @@ object CollectionRepository {
             }
             else -> allTracks.filter { r.matches(it) }
         }
+        return base.filter { it.id !in trashedIds }
+    }
 
     private fun encode(list: List<Collection>): String {
         val arr = JSONArray()

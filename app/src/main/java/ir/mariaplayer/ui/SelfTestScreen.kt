@@ -802,6 +802,67 @@ private suspend fun runAllTests(
         "ok"
     }
 
+    test("Collection: Trash in defaults") {
+        CollectionRepository.initializeIfNeeded(context)
+        CollectionRepository.ensureTrash(context)
+        val colls = CollectionRepository.snapshot(context)
+        if (colls.none { it.id == CollectionRepository.TRASH_ID })
+            throw IllegalStateException("Trash missing")
+        "ok"
+    }
+    test("Collection: Trash cannot be deleted") {
+        CollectionRepository.initializeIfNeeded(context)
+        CollectionRepository.ensureTrash(context)
+        CollectionRepository.delete(context, CollectionRepository.TRASH_ID)
+        val colls = CollectionRepository.snapshot(context)
+        if (colls.none { it.id == CollectionRepository.TRASH_ID })
+            throw IllegalStateException("Trash was deleted")
+        "protected"
+    }
+    test("Collection: trash round-trip") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = 9_900_002_000L + Random.nextLong(100_000)
+        CollectionRepository.trash(context, id)
+        val trashed = id in CollectionRepository.trashIds(context)
+        CollectionRepository.restore(context, id)
+        val restored = id !in CollectionRepository.trashIds(context)
+        if (!trashed || !restored)
+            throw IllegalStateException("trashed=$trashed restored=$restored")
+        "ok"
+    }
+    test("Collection: trash removes from Manual") {
+        CollectionRepository.initializeIfNeeded(context)
+        val cid = CollectionRepository.create(context, "T_"+System.currentTimeMillis(),
+            CollectionRule.Manual(emptyList()))
+        val tid = 9_900_003_000L + Random.nextLong(100_000)
+        CollectionRepository.addTrack(context, cid, tid)
+        CollectionRepository.trash(context, tid)
+        val found = CollectionRepository.snapshot(context).firstOrNull { it.id == cid }
+        val still = (found?.rule as? CollectionRule.Manual)?.trackIds?.contains(tid) ?: false
+        CollectionRepository.delete(context, cid)
+        CollectionRepository.restore(context, tid)
+        if (still) throw IllegalStateException("track stayed in Manual")
+        "ok"
+    }
+    test("Collection: trash hides from All") {
+        val t1 = Track(id=900_001L, title="t", artist=null, album=null, durationMs=60_000L, contentUri="u")
+        val all = Collection("all", "All", CollectionRule.All, isSystem = true)
+        val hidden = CollectionRepository.resolveTracks(listOf(t1), all, setOf(900_001L))
+        val shown = CollectionRepository.resolveTracks(listOf(t1), all, emptySet())
+        if (hidden.isNotEmpty()) throw IllegalStateException("not hidden")
+        if (shown.size != 1) throw IllegalStateException("over-filtered")
+        "ok"
+    }
+    test("Collection: trash collection resolves") {
+        val t1 = Track(id=900_002L, title="t", artist=null, album=null, durationMs=60_000L, contentUri="u")
+        val t2 = Track(id=900_003L, title="u", artist=null, album=null, durationMs=60_000L, contentUri="v")
+        val trash = Collection(CollectionRepository.TRASH_ID, "Trash", CollectionRule.All, isSystem = true)
+        val resolved = CollectionRepository.resolveTracks(listOf(t1, t2), trash, setOf(900_002L))
+        if (resolved.size != 1 || resolved[0].id != 900_002L)
+            throw IllegalStateException("resolved=$resolved")
+        "ok"
+    }
+
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
     val sb = StringBuilder()

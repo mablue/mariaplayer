@@ -229,12 +229,17 @@ private fun AppRoot() {
     }
 
     var collections by remember { mutableStateOf<List<Collection>>(emptyList()) }
+    var trashedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var selectedCollectionId by rememberSaveable { mutableStateOf(CollectionRepository.ALL_ID) }
     var showNewCollectionDialog by remember { mutableStateOf(false) }
     var collectionToEdit by remember { mutableStateOf<Collection?>(null) }
     LaunchedEffect(Unit) {
         CollectionRepository.initializeIfNeeded(context)
+        CollectionRepository.ensureTrash(context)
         CollectionRepository.observe(context).collectLatest { collections = it }
+    }
+    LaunchedEffect(Unit) {
+        CollectionRepository.observeTrashIds(context).collectLatest { trashedIds = it }
     }
     val selectedCollection = remember(collections, selectedCollectionId) {
         collections.firstOrNull { it.id == selectedCollectionId } ?: collections.firstOrNull()
@@ -247,9 +252,10 @@ private fun AppRoot() {
     var query by rememberSaveable { mutableStateOf("") }
     var folderFilter by rememberSaveable { mutableStateOf("") }
 
-    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, selectedCollection) {
+    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, selectedCollection, trashedIds) {
         val base = tracks ?: return@remember null
-        val inCollection = selectedCollection?.let { CollectionRepository.resolveTracks(base, it) } ?: base
+        val inCollection = selectedCollection?.let { CollectionRepository.resolveTracks(base, it, trashedIds) }
+            ?: base.filter { it.id !in trashedIds }
         val q = query.trim().lowercase()
         inCollection.asSequence()
             .filter { t ->
@@ -405,42 +411,9 @@ private fun AppRoot() {
         onAddCollection = { showNewCollectionDialog = true },
         onEditCollection = { collectionToEdit = it },
         onDeleteRequest = { t ->
-            val uri = Uri.parse(t.contentUri)
-            if (Build.VERSION.SDK_INT >= 30) {
-                try {
-                    val pi = MediaStore.createDeleteRequest(context.contentResolver, listOf(uri))
-                    pendingDeleteUri = uri
-                    pendingDeleteTitle = t.title
-                    deleteLauncher.launch(IntentSenderRequest.Builder(pi.intentSender).build())
-                } catch (_: Exception) {
-                    try {
-                        val rows = context.contentResolver.delete(uri, null, null)
-                        if (rows > 0) {
-                            Toast.makeText(context, "Deleted: " + t.title, Toast.LENGTH_SHORT).show()
-                            context.sendBroadcast(
-                                Intent(ACTION_TRACK_DELETED)
-                                    .setPackage(context.packageName)
-                                    .putExtra(EXTRA_DELETED_URI, t.contentUri)
-                            )
-                        }
-                    } catch (e2: Exception) {
-                        Toast.makeText(context, "Delete failed: " + e2.message, Toast.LENGTH_LONG).show()
-                    }
-                }
-            } else {
-                try {
-                    val rows = context.contentResolver.delete(uri, null, null)
-                    if (rows > 0) {
-                        Toast.makeText(context, "Deleted: " + t.title, Toast.LENGTH_SHORT).show()
-                        context.sendBroadcast(
-                            Intent(ACTION_TRACK_DELETED)
-                                .setPackage(context.packageName)
-                                .putExtra(EXTRA_DELETED_URI, t.contentUri)
-                        )
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Delete failed: " + e.message, Toast.LENGTH_LONG).show()
-                }
+            scope.launch {
+                CollectionRepository.trash(context, t.id)
+                Toast.makeText(context, "Moved to Trash", Toast.LENGTH_SHORT).show()
             }
         },
     )
@@ -551,46 +524,22 @@ private fun LibraryScreen(
     if (showBulkDeleteDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showBulkDeleteDialog = false },
-            title = { androidx.compose.material3.Text("Delete ${selectedIds.size} tracks?") },
-            text = { androidx.compose.material3.Text("This cannot be undone.") },
+            title = { androidx.compose.material3.Text("Move ${selectedIds.size} to Trash?") },
+            text = { androidx.compose.material3.Text("You can restore any track from the Trash tab.") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     val selected = visible?.filter { it.id in selectedIds } ?: emptyList()
-                    val uris = selected.map { android.net.Uri.parse(it.contentUri) }
-                    if (uris.isNotEmpty() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                        try {
-                            val pi = android.provider.MediaStore.createDeleteRequest(
-                                context.contentResolver, uris
-                            )
-                            bulkDeleteLauncher.launch(
-                                androidx.activity.result.IntentSenderRequest.Builder(pi.intentSender).build()
-                            )
-                        } catch (_: Exception) {}
-                    } else if (uris.isNotEmpty()) {
-                        scope.launch {
-                            var deleted = 0
-                            for (u in uris) {
-                                try {
-                                    if (context.contentResolver.delete(u, null, null) > 0) deleted++
-                                } catch (_: Exception) {}
-                            }
-                            for (t in selected) {
-                                context.sendBroadcast(
-                                    android.content.Intent(ir.mariaplayer.playback.ACTION_TRACK_DELETED)
-                                        .setPackage(context.packageName)
-                                        .putExtra(ir.mariaplayer.playback.EXTRA_DELETED_URI, t.contentUri)
-                                )
-                            }
-                            android.widget.Toast.makeText(
-                                context, "Deleted $deleted/${uris.size}",
-                                android.widget.Toast.LENGTH_SHORT
-                            ).show()
-                            selectionMode = false
-                            selectedIds = emptySet()
-                        }
+                    scope.launch {
+                        for (t in selected) CollectionRepository.trash(context, t.id)
+                        Toast.makeText(
+                            context, "Moved ${selected.size} to Trash",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
+                    selectionMode = false
+                    selectedIds = emptySet()
                     showBulkDeleteDialog = false
-                }) { androidx.compose.material3.Text("Delete") }
+                }) { androidx.compose.material3.Text("Trash") }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showBulkDeleteDialog = false }) {

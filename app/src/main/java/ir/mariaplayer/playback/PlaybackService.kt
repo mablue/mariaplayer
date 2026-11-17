@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
-import androidx.core.app.NotificationCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -26,7 +25,6 @@ import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import ir.mariaplayer.DeleteActivity
 import ir.mariaplayer.MainActivity
 import ir.mariaplayer.R
 import ir.mariaplayer.data.CollectionRepository
@@ -219,10 +217,15 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
                 return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
             }
             CMD_DELETE -> {
-                val item = session.player.currentMediaItem
-                val uri = item?.localConfiguration?.uri
-                val title = item?.mediaMetadata?.title?.toString().orEmpty()
-                if (uri != null) requestDelete(uri, title)
+                val id = session.player.currentMediaItem?.mediaId?.toLongOrNull()
+                if (id != null) {
+                    scope.launch {
+                        CollectionRepository.trash(this@PlaybackService, id)
+                        val player = session.player
+                        if (player.hasNextMediaItem()) player.seekToNextMediaItem()
+                        else player.pause()
+                    }
+                }
                 return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
             }
         }
@@ -236,69 +239,6 @@ class PlaybackService : MediaSessionService(), MediaSession.Callback {
      * notification whose action is a getActivity PendingIntent — a
      * notification-initiated PendingIntent is granted BAL.
      */
-    private fun requestDelete(uri: Uri, title: String) {
-        // Android 10+ silently drops startActivity() from a background service
-        // (no exception thrown), so the try/catch fallback never fires. Check
-        // foreground state explicitly and post a notification instead — tapping
-        // it opens DeleteActivity with BAL, which then shows the Allow/Deny dialog.
-        if (!isAppInForeground()) {
-            postDeleteConfirmNotification(uri, title)
-            return
-        }
-        val intent = Intent(this, DeleteActivity::class.java).apply {
-            putExtra(DeleteActivity.EXTRA_URI, uri.toString())
-            putExtra(DeleteActivity.EXTRA_TITLE, title)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        }
-        try {
-            startActivity(intent)
-        } catch (_: Exception) {
-            postDeleteConfirmNotification(uri, title)
-        }
-    }
-
-    private fun isAppInForeground(): Boolean {
-        val am = getSystemService(ActivityManager::class.java) ?: return false
-        val procs = am.runningAppProcesses ?: return false
-        val myPid = Process.myPid()
-        for (p in procs) {
-            if (p.pid == myPid) {
-                return p.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            }
-        }
-        return false
-    }
-
-    private fun postDeleteConfirmNotification(uri: Uri, title: String) {
-        val nm = getSystemService(NotificationManager::class.java)
-        val channelId = CHANNEL_DELETE
-        if (Build.VERSION.SDK_INT >= 26) {
-            nm.createNotificationChannel(
-                NotificationChannel(
-                    channelId, "Delete confirmation", NotificationManager.IMPORTANCE_HIGH
-                )
-            )
-        }
-        val pi = PendingIntent.getActivity(
-            this, uri.hashCode(),
-            Intent(this, DeleteActivity::class.java).apply {
-                putExtra(DeleteActivity.EXTRA_URI, uri.toString())
-                putExtra(DeleteActivity.EXTRA_TITLE, title)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val n = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_delete)
-            .setContentTitle("Delete \"$title\"?")
-            .setContentText("Tap Delete to confirm. This cannot be undone.")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .addAction(R.drawable.ic_delete, "Delete", pi)
-            .build()
-        nm.notify(NOTIF_DELETE_ID, n)
-    }
-
     override fun onGetSession(
         controllerInfo: MediaSession.ControllerInfo,
     ): MediaSession? = mediaSession
