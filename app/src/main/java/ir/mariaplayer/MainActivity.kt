@@ -369,13 +369,15 @@ private fun AppRoot() {
                 androidx.compose.material3.TextButton(
                     enabled = newName.isNotBlank(),
                     onClick = {
-                        val (minMs, maxMs): Pair<Long?, Long?> = when {
+                        val msPair: Pair<Long?, Long?> = when {
                             newKind != ir.mariaplayer.data.LibraryTab.Kind.SMART -> null to null
                             smartPreset == "under10" -> null to 10 * 60_000L
                             smartPreset == "long10"  -> 10 * 60_000L to null
                             smartPreset == "books2h" -> 2L * 60 * 60_000L to null
                             else -> null to null
                         }
+                        val minMs = msPair.first
+                        val maxMs = msPair.second
                         val tab = ir.mariaplayer.data.LibraryTab(
                             id = "custom_" + System.currentTimeMillis(),
                             kind = newKind,
