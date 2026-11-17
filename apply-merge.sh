@@ -5,7 +5,7 @@ BASE="$(pwd)"; cd "$BASE"
 ORIG_SHA=$(git rev-parse HEAD)
 log()  { printf '\n[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 fail() { log "❌ $*"; exit 1; }
-trap 'log "⚠️  rollback → $ORIG_SHA"; git reset --hard "$ORIG_SHA" >/dev/null 2>&1 || true' ERR
+trap 'rc=$?; if [ $rc -ne 0 ]; then log "⚠️  rollback → $ORIG_SHA"; git reset --hard "$ORIG_SHA" >/dev/null 2>&1 || true; fi' EXIT
 
 [[ -d .git ]] || fail "no .git"
 git diff --quiet && git diff --cached --quiet || fail "dirty tree — commit/stash first"
