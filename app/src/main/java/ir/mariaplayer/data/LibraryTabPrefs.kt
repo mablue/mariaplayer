@@ -43,7 +43,7 @@ object LibraryTabPrefs {
     suspend fun remove(context: Context, id: String) {
         val current = read(context)
         val target = current.firstOrNull { it.id == id } ?: return
-        if (target.isDefault) return
+        if (target.isDefault && target.kind != LibraryTab.Kind.FAVORITES) return
         save(context, current.filterNot { it.id == id })
     }
 
@@ -56,6 +56,8 @@ object LibraryTabPrefs {
             o.put("label", t.label)
             if (t.playlistId != null) o.put("playlistId", t.playlistId) else o.put("playlistId", JSONObject.NULL)
             o.put("isDefault", t.isDefault)
+            if (t.minDurationMs != null) o.put("minDurationMs", t.minDurationMs) else o.put("minDurationMs", JSONObject.NULL)
+            if (t.maxDurationMs != null) o.put("maxDurationMs", t.maxDurationMs) else o.put("maxDurationMs", JSONObject.NULL)
             arr.put(o)
         }
         return arr.toString()
@@ -76,6 +78,8 @@ object LibraryTabPrefs {
                         label = o.getString("label"),
                         playlistId = if (o.isNull("playlistId")) null else o.getLong("playlistId"),
                         isDefault = o.optBoolean("isDefault", false),
+                        minDurationMs = if (o.isNull("minDurationMs")) null else o.getLong("minDurationMs"),
+                        maxDurationMs = if (o.isNull("maxDurationMs")) null else o.getLong("maxDurationMs"),
                     )
                 )
             }

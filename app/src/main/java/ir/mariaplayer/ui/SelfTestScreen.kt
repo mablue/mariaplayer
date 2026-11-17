@@ -452,12 +452,12 @@ private suspend fun runAllTests(
             throw IllegalStateException("map=$map")
         "ok"
     }
-    test("Tabs: defaults have 4") {
+    test("Tabs: defaults have 5") {
         val tabs = LibraryTab.defaults()
-        if (tabs.size != 4) throw IllegalStateException("size=${tabs.size}")
-        if (tabs.map { it.kind }.toSet().size != 4)
+        if (tabs.size != 5) throw IllegalStateException("size=${tabs.size}")
+        if (tabs.map { it.kind }.toSet().size != 5)
             throw IllegalStateException("kinds not unique")
-        "4"
+        "5"
     }
     test("Tabs: defaults all isDefault") {
         if (LibraryTab.defaults().any { !it.isDefault })
@@ -517,7 +517,7 @@ private suspend fun runAllTests(
         LibraryTabPrefs.save(context, emptyList())
         val got = LibraryTabPrefs.read(context)
         LibraryTabPrefs.save(context, orig)
-        if (got.size != 4) throw IllegalStateException("size=${got.size}")
+        if (got.size != 5) throw IllegalStateException("size=${got.size}")
         "restored"
     }
     test("Tabs: filter predicate ALL kind") {
@@ -594,7 +594,7 @@ private suspend fun runAllTests(
     test("Tabs: default ids stable") {
         val tabs = LibraryTab.defaults()
         val ids = tabs.map { it.id }.toSet()
-        val want = setOf("all", "music", "podcasts", "audiobooks")
+        val want = setOf("all", "favorites", "music", "podcasts", "audiobooks")
         if (ids != want) throw IllegalStateException("ids=$ids")
         "stable"
     }
@@ -858,6 +858,81 @@ private suspend fun runAllTests(
         if (!snap.contains("reg=0") || !snap.contains("save=0"))
             throw IllegalStateException(snap)
         "reset ok"
+    }
+
+    test("Tabs: FAVORITES is default") {
+        val fav = LibraryTab.defaults().firstOrNull { it.kind == LibraryTab.Kind.FAVORITES }
+            ?: throw IllegalStateException("favorites missing")
+        if (fav.id != LibraryTab.FAVORITES_ID) throw IllegalStateException("id=${fav.id}")
+        if (!fav.isDefault) throw IllegalStateException("not default")
+        "ok"
+    }
+    test("Tabs: FAVORITES can be removed") {
+        val orig = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.remove(context, LibraryTab.FAVORITES_ID)
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        if (got.any { it.id == LibraryTab.FAVORITES_ID })
+            throw IllegalStateException("still present")
+        "removed"
+    }
+    test("Tabs: SMART round-trip") {
+        val orig = LibraryTabPrefs.read(context)
+        val tab = LibraryTab(
+            id = "custom_smart_" + System.currentTimeMillis(),
+            kind = LibraryTab.Kind.SMART,
+            label = "Long",
+            isDefault = false,
+            minDurationMs = 10 * 60_000L,
+            maxDurationMs = null,
+        )
+        LibraryTabPrefs.add(context, tab)
+        val got = LibraryTabPrefs.read(context)
+        LibraryTabPrefs.save(context, orig)
+        val found = got.firstOrNull { it.id == tab.id }
+        if (found?.minDurationMs != 10 * 60_000L)
+            throw IllegalStateException("min=${found?.minDurationMs}")
+        if (found.maxDurationMs != null)
+            throw IllegalStateException("max=${found.maxDurationMs}")
+        "ok"
+    }
+    test("Tab.matches: FAVORITES") {
+        val t = Track(id = 42L, title = "t", artist = null, album = null,
+            durationMs = 60_000L, contentUri = "u")
+        val fav = LibraryTab.favorites()
+        if (!fav.matches(t, setOf(42L))) throw IllegalStateException("miss")
+        if (fav.matches(t, emptySet())) throw IllegalStateException("hit")
+        "ok"
+    }
+    test("Tab.matches: SMART <10m") {
+        val sm = LibraryTab.smart("s1", "U", maxDurationMs = 10 * 60_000L - 1)
+        val t1 = Track(id = 1L, title = "t", artist = null, album = null,
+            durationMs = 5 * 60_000L, contentUri = "u")
+        val t2 = Track(id = 2L, title = "t", artist = null, album = null,
+            durationMs = 15 * 60_000L, contentUri = "v")
+        if (!sm.matches(t1, emptySet())) throw IllegalStateException("t1 rejected")
+        if (sm.matches(t2, emptySet())) throw IllegalStateException("t2 accepted")
+        "ok"
+    }
+    test("Tab.matches: SMART >=10m") {
+        val sm = LibraryTab.smart("s2", "L", minDurationMs = 10 * 60_000L)
+        val t1 = Track(id = 1L, title = "t", artist = null, album = null,
+            durationMs = 5 * 60_000L, contentUri = "u")
+        val t2 = Track(id = 2L, title = "t", artist = null, album = null,
+            durationMs = 15 * 60_000L, contentUri = "v")
+        if (sm.matches(t1, emptySet())) throw IllegalStateException("t1 accepted")
+        if (!sm.matches(t2, emptySet())) throw IllegalStateException("t2 rejected")
+        "ok"
+    }
+    test("Tab.matches: SMART >=2h") {
+        val sm = LibraryTab.smart("s3", "XL", minDurationMs = 2 * 60 * 60_000L)
+        val t1 = Track(id = 1L, title = "t", artist = null, album = null,
+            durationMs = 30 * 60_000L, contentUri = "u")
+        val t2 = Track(id = 2L, title = "t", artist = null, album = null,
+            durationMs = 3 * 60 * 60_000L, contentUri = "v")
+        if (sm.matches(t1, emptySet())) throw IllegalStateException("t1 accepted")
+        if (!sm.matches(t2, emptySet())) throw IllegalStateException("t2 rejected")
+        "ok"
     }
 
     val pass = results.count { it.passed }

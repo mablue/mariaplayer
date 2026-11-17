@@ -23,7 +23,7 @@ package ir.mariaplayer.data
  */
 object MediaClassifier {
     /** Threshold between music and long-form content. Tunable. */
-    const val LONG_THRESHOLD_MS = 8 * 60_000L
+    const val LONG_THRESHOLD_MS = 10 * 60_000L
 
     fun classify(
         title: String,

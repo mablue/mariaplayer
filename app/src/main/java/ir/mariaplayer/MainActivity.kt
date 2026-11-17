@@ -254,7 +254,7 @@ private fun AppRoot() {
             .filter { t ->
                 (folderFilter.isEmpty() || t.folder == folderFilter) &&
                 (!favOnly || t.id in favorites) &&
-                tabMatches(selectedTab, t) &&
+                tabMatches(selectedTab, t, favorites) &&
                 (q.isEmpty() ||
                     t.title.lowercase().contains(q) ||
                     t.artist?.lowercase()?.contains(q) == true ||
@@ -307,6 +307,7 @@ private fun AppRoot() {
     if (showNewTabDialog) {
         var newName by remember { mutableStateOf("") }
         var newKind by remember { mutableStateOf(ir.mariaplayer.data.LibraryTab.Kind.MUSIC) }
+        var smartPreset by remember { mutableStateOf("under10") }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showNewTabDialog = false },
             title = { androidx.compose.material3.Text("New tab") },
@@ -330,6 +331,7 @@ private fun AppRoot() {
                             ir.mariaplayer.data.LibraryTab.Kind.MUSIC to "Music",
                             ir.mariaplayer.data.LibraryTab.Kind.PODCAST to "Podcasts",
                             ir.mariaplayer.data.LibraryTab.Kind.AUDIOBOOK to "Audiobooks",
+                            ir.mariaplayer.data.LibraryTab.Kind.SMART to "Smart",
                         ).forEach { (kind, label) ->
                             androidx.compose.material3.FilterChip(
                                 selected = newKind == kind,
@@ -339,17 +341,48 @@ private fun AppRoot() {
                             )
                         }
                     }
+                    if (newKind == ir.mariaplayer.data.LibraryTab.Kind.SMART) {
+                        androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(6.dp))
+                        androidx.compose.material3.Text(
+                            "Rule:",
+                            style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                        )
+                        androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(6.dp))
+                        androidx.compose.foundation.layout.Row {
+                            listOf(
+                                "under10" to "<10m",
+                                "long10" to "10m+",
+                                "books2h" to "2h+",
+                            ).forEach { (preset, label) ->
+                                androidx.compose.material3.FilterChip(
+                                    selected = smartPreset == preset,
+                                    onClick = { smartPreset = preset },
+                                    label = { androidx.compose.material3.Text(label) },
+                                    modifier = androidx.compose.ui.Modifier.padding(end = 6.dp),
+                                )
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
                 androidx.compose.material3.TextButton(
                     enabled = newName.isNotBlank(),
                     onClick = {
+                        val (minMs, maxMs): Pair<Long?, Long?> = when {
+                            newKind != ir.mariaplayer.data.LibraryTab.Kind.SMART -> null to null
+                            smartPreset == "under10" -> null to 10 * 60_000L
+                            smartPreset == "long10"  -> 10 * 60_000L to null
+                            smartPreset == "books2h" -> 2L * 60 * 60_000L to null
+                            else -> null to null
+                        }
                         val tab = ir.mariaplayer.data.LibraryTab(
                             id = "custom_" + System.currentTimeMillis(),
                             kind = newKind,
                             label = newName.trim(),
                             isDefault = false,
+                            minDurationMs = minMs,
+                            maxDurationMs = maxMs,
                         )
                         scope.launch {
                             ir.mariaplayer.data.LibraryTabPrefs.add(context, tab)
@@ -394,9 +427,13 @@ private fun AppRoot() {
             },
             dismissButton = {
                 androidx.compose.foundation.layout.Row {
-                    if (!tab.isDefault) {
+                    if (!tab.isDefault || tab.kind == ir.mariaplayer.data.LibraryTab.Kind.FAVORITES) {
                         androidx.compose.material3.TextButton(onClick = {
                             scope.launch {
+                                if (tab.kind == ir.mariaplayer.data.LibraryTab.Kind.FAVORITES) {
+                                    val favs = ir.mariaplayer.data.FavoritesPrefs.snapshot(context)
+                                    for (id in favs) ir.mariaplayer.data.FavoritesPrefs.set(context, id, false)
+                                }
                                 ir.mariaplayer.data.LibraryTabPrefs.remove(context, tab.id)
                                 tabs = ir.mariaplayer.data.LibraryTabPrefs.read(context)
                                 if (selectedTabId == tab.id) selectedTabId = "all"
@@ -479,7 +516,20 @@ private fun AppRoot() {
         favOnly = favOnly,
         onFavOnlyChange = { favOnly = it },
         favorites = favorites,
-        onToggleFavorite = { id -> scope.launch { FavoritesPrefs.toggle(context, id) } },
+        onToggleFavorite = { id -> scope.launch {
+            val wasFav = id in favorites
+            FavoritesPrefs.toggle(context, id)
+            if (!wasFav) {
+                val current = ir.mariaplayer.data.LibraryTabPrefs.read(context)
+                if (current.none { it.kind == ir.mariaplayer.data.LibraryTab.Kind.FAVORITES }) {
+                    ir.mariaplayer.data.LibraryTabPrefs.save(
+                        context,
+                        current + ir.mariaplayer.data.LibraryTab.favorites(),
+                    )
+                    tabs = ir.mariaplayer.data.LibraryTabPrefs.read(context)
+                }
+            }
+        }},
         onShuffleClick = {
             val c = controller ?: return@LibraryScreen
             val list = visible ?: return@LibraryScreen
@@ -564,14 +614,11 @@ private fun AppRoot() {
     }
 }
 
-private fun tabMatches(tab: ir.mariaplayer.data.LibraryTab, t: Track): Boolean =
-    when (tab.kind) {
-        ir.mariaplayer.data.LibraryTab.Kind.ALL -> true
-        ir.mariaplayer.data.LibraryTab.Kind.MUSIC -> t.contentType == ir.mariaplayer.data.ContentType.MUSIC
-        ir.mariaplayer.data.LibraryTab.Kind.PODCAST -> t.contentType == ir.mariaplayer.data.ContentType.PODCAST
-        ir.mariaplayer.data.LibraryTab.Kind.AUDIOBOOK -> t.contentType == ir.mariaplayer.data.ContentType.AUDIOBOOK
-        ir.mariaplayer.data.LibraryTab.Kind.PLAYLIST -> true
-    }
+private fun tabMatches(
+    tab: ir.mariaplayer.data.LibraryTab,
+    t: Track,
+    favorites: Set<Long>,
+): Boolean = tab.matches(t, favorites)
 
 private fun playQueue(
     c: MediaController?,
@@ -902,16 +949,6 @@ private fun LibraryScreen(
                             }
                         }
                     }
-                    IconButton(onClick = { onFavOnlyChange(!favOnly) }, modifier = sz) {
-                        Icon(painter = painterResource(
-                                if (favOnly) R.drawable.ic_favorite_filled
-                                else R.drawable.ic_favorite_border),
-                            contentDescription = if (favOnly) "Favorites filter on"
-                                else "Favorites filter off",
-                            tint = if (favOnly) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = isz)
-                    }
                     IconButton(onClick = { onShuffleClick() }, modifier = sz) {
                         Icon(painter = painterResource(R.drawable.ic_shuffle),
                             contentDescription = if (shuffleOn) "Shuffle on" else "Shuffle off",
@@ -939,10 +976,13 @@ private fun LibraryScreen(
                 when {
                     scanning -> CenterText("Scanning library...")
                     visible.isNullOrEmpty() -> {
+                        val isFavTab = tabs.firstOrNull { it.id == selectedTabId }?.kind ==
+                            ir.mariaplayer.data.LibraryTab.Kind.FAVORITES
                         val msg = when {
                             allTracks.isNullOrEmpty() ->
                                 "No audio files found.\nAdd music to /sdcard/Music, then reopen the app."
                             query.isNotBlank() -> "No results for \"$query\""
+                            isFavTab -> "No favorites yet.\nTap the heart next to a track to add."
                             favOnly -> "No favorites yet.\nTap the heart next to a track to add."
                             folderFilter.isNotEmpty() -> "No tracks in \"$folderFilter\""
                             else -> "No tracks match the current filters."
