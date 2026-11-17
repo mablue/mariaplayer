@@ -1008,7 +1008,7 @@ private fun AlphabetIndex(
 }
 
 
-@androidx.compose.material3.ExperimentalMaterial3Api
+@kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @androidx.compose.runtime.Composable
 private fun NewCollectionDialog(
     onDismiss: () -> Unit,
@@ -1078,7 +1078,7 @@ private fun NewCollectionDialog(
     )
 }
 
-@androidx.compose.material3.ExperimentalMaterial3Api
+@kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @androidx.compose.runtime.Composable
 private fun EditCollectionDialog(
     collection: Collection,
