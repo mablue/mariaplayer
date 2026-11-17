@@ -26,6 +26,7 @@ object CollectionRepository {
     const val TRASH_ID      = "trash"
 
     private val TRASH_KEY = stringSetPreferencesKey("trash_ids")
+    private val BLACKLIST_KEY = stringSetPreferencesKey("blacklist_ids")
 
     fun observe(context: Context): Flow<List<Collection>> =
         context.collectionStore.data.map { p ->
@@ -212,6 +213,11 @@ object CollectionRepository {
             p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
         }
 
+    fun observeBlacklistedIds(context: Context): Flow<Set<Long>> =
+        context.collectionStore.data.map { p ->
+            p[BLACKLIST_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+        }
+
     suspend fun trashIds(context: Context): Set<Long> = observeTrashIds(context).first()
 
     suspend fun trash(context: Context, trackId: Long) {
@@ -238,10 +244,34 @@ object CollectionRepository {
         }
     }
 
+    suspend fun restoreAll(context: Context) {
+        context.collectionStore.edit { p -> p[TRASH_KEY] = emptySet() }
+    }
+
+    suspend fun emptyTrash(context: Context) {
+        context.collectionStore.edit { p ->
+            val trashed = p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+            if (trashed.isEmpty()) return@edit
+            p[TRASH_KEY] = emptySet()
+            val currentBlacklist = p[BLACKLIST_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+            p[BLACKLIST_KEY] = (currentBlacklist + trashed).map { it.toString() }.toSet()
+            p[KEY] = encode(decode(p[KEY].orEmpty()).map { c ->
+                val r = c.rule
+                if (r is CollectionRule.Manual) {
+                    c.copy(
+                        rule = CollectionRule.Manual(r.trackIds.filterNot { it in trashed }),
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                } else c
+            })
+        }
+    }
+
     fun resolveTracks(
         allTracks: List<Track>,
         collection: Collection,
         trashedIds: Set<Long> = emptySet(),
+        blacklistedIds: Set<Long> = emptySet(),
     ): List<Track> {
         if (collection.id == TRASH_ID) return allTracks.filter { it.id in trashedIds }
         val base = when (val r = collection.rule) {
@@ -252,7 +282,7 @@ object CollectionRepository {
             }
             else -> allTracks.filter { r.matches(it) }
         }
-        return base.filter { it.id !in trashedIds }
+        return base.filter { it.id !in trashedIds && it.id !in blacklistedIds }
     }
 
     private fun encode(list: List<Collection>): String {

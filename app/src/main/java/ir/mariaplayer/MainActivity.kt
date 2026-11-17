@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,6 +51,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -230,6 +232,7 @@ private fun AppRoot() {
 
     var collections by remember { mutableStateOf<List<Collection>>(emptyList()) }
     var trashedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var blacklistedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var selectedCollectionId by rememberSaveable { mutableStateOf(CollectionRepository.ALL_ID) }
     var showNewCollectionDialog by remember { mutableStateOf(false) }
     var collectionToEdit by remember { mutableStateOf<Collection?>(null) }
@@ -240,6 +243,9 @@ private fun AppRoot() {
     }
     LaunchedEffect(Unit) {
         CollectionRepository.observeTrashIds(context).collectLatest { trashedIds = it }
+    }
+    LaunchedEffect(Unit) {
+        CollectionRepository.observeBlacklistedIds(context).collectLatest { blacklistedIds = it }
     }
     val selectedCollection = remember(collections, selectedCollectionId) {
         collections.firstOrNull { it.id == selectedCollectionId } ?: collections.firstOrNull()
@@ -252,10 +258,10 @@ private fun AppRoot() {
     var query by rememberSaveable { mutableStateOf("") }
     var folderFilter by rememberSaveable { mutableStateOf("") }
 
-    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, selectedCollection, trashedIds) {
+    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, selectedCollection, trashedIds, blacklistedIds) {
         val base = tracks ?: return@remember null
-        val inCollection = selectedCollection?.let { CollectionRepository.resolveTracks(base, it, trashedIds) }
-            ?: base.filter { it.id !in trashedIds }
+        val inCollection = selectedCollection?.let { CollectionRepository.resolveTracks(base, it, trashedIds, blacklistedIds) }
+            ?: base.filter { it.id !in trashedIds && it.id !in blacklistedIds }
         val q = query.trim().lowercase()
         inCollection.asSequence()
             .filter { t ->
@@ -422,6 +428,18 @@ private fun AppRoot() {
                 Toast.makeText(context, "Restored", Toast.LENGTH_SHORT).show()
             }
         },
+        onRestoreAll = {
+            scope.launch {
+                CollectionRepository.restoreAll(context)
+                Toast.makeText(context, "All restored", Toast.LENGTH_SHORT).show()
+            }
+        },
+        onEmptyTrash = {
+            scope.launch {
+                CollectionRepository.emptyTrash(context)
+                Toast.makeText(context, "Trash emptied", Toast.LENGTH_SHORT).show()
+            }
+        },
     )
     }
     }
@@ -486,6 +504,8 @@ private fun LibraryScreen(
     onTrackClick: (Track) -> Unit,
     onDeleteRequest: (Track) -> Unit,
     onRestoreRequest: (Track) -> Unit,
+    onRestoreAll: () -> Unit,
+    onEmptyTrash: () -> Unit,
     onTrackLongClick: (Track) -> Unit,
     onLyricsClick: () -> Unit,
     onSelfTestClick: () -> Unit,
@@ -501,6 +521,25 @@ private fun LibraryScreen(
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
+    var showEmptyTrashDialog by remember { mutableStateOf(false) }
+    val isTrashTab = selectedCollectionId == CollectionRepository.TRASH_ID
+
+    if (showEmptyTrashDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmptyTrashDialog = false },
+            title = { Text("Empty Trash?") },
+            text = { Text("This cannot be undone. Permanently removes ${visible?.size ?: 0} track(s) from the library.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showEmptyTrashDialog = false
+                    onEmptyTrash()
+                }) { Text("Empty", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEmptyTrashDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
     var showBulkAddDialog by remember { mutableStateOf(false) }
     var showTrackTypeSheet by remember { mutableStateOf(false) }
     var searchActive by remember { mutableStateOf(false) }
@@ -688,6 +727,20 @@ private fun LibraryScreen(
                         Modifier.horizontalScroll(rememberScrollState()),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                    if (isTrashTab && !visible.isNullOrEmpty()) {
+                        IconButton(onClick = onRestoreAll, modifier = sz) {
+                            Icon(painter = painterResource(R.drawable.ic_restore),
+                                contentDescription = "Restore all",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = isz)
+                        }
+                        IconButton(onClick = { showEmptyTrashDialog = true }, modifier = sz) {
+                            Icon(painter = painterResource(R.drawable.ic_delete),
+                                contentDescription = "Empty trash",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = isz)
+                        }
+                    }
                     IconButton(onClick = { searchActive = true }, modifier = sz) {
                         Icon(painter = painterResource(R.drawable.ic_search),
                             contentDescription = "Search", modifier = isz)
@@ -765,6 +818,7 @@ private fun LibraryScreen(
                                 "No audio files found.\nAdd music to /sdcard/Music, then reopen the app."
                             query.isNotBlank() -> "No results for \"$query\""
                             isFavTab -> "No favorites yet.\nTap the heart next to a track to add."
+                            isTrashTab -> "Trash is empty."
                             folderFilter.isNotEmpty() -> "No tracks in \"$folderFilter\""
                             else -> "No tracks match the current filters."
                         }
