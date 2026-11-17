@@ -11,3 +11,6 @@ keystore.properties
 .bak/
 app/src/main/assets/models.json
 *.bak.*
+apply-*.sh
+patch-*.sh
+fix-*.sh
