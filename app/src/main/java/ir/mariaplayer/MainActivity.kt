@@ -643,6 +643,7 @@ private fun LibraryScreen(
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
     var showBulkAddDialog by remember { mutableStateOf(false) }
     var showTrackTypeSheet by remember { mutableStateOf(false) }
+    var searchActive by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
@@ -807,15 +808,43 @@ private fun LibraryScreen(
             } else {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = { showAbout = true }) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_launcher_foreground),
-                            contentDescription = "About",
-                            modifier = Modifier.size(36.dp),
+                    if (searchActive) {
+                        IconButton(onClick = {
+                            searchActive = false
+                            onQueryChange("")
+                        }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_close),
+                                contentDescription = "Close search",
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = { showAbout = true }) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_launcher_foreground),
+                                contentDescription = "About",
+                                modifier = Modifier.size(36.dp),
+                            )
+                        }
+                    }
+                },
+                title = {
+                    if (searchActive) {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = onQueryChange,
+                            singleLine = true,
+                            placeholder = {
+                                Text("Search title, artist, album",
+                                    style = MaterialTheme.typography.bodyMedium)
+                            },
+                            shape = RoundedCornerShape(24.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 4.dp),
                         )
                     }
                 },
-                title = {},
                 actions = {
                     val sz = Modifier.size(36.dp)
                     val isz = Modifier.size(22.dp)
@@ -823,6 +852,10 @@ private fun LibraryScreen(
                         Modifier.horizontalScroll(rememberScrollState()),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                    IconButton(onClick = { searchActive = true }, modifier = sz) {
+                        Icon(painter = painterResource(R.drawable.ic_search),
+                            contentDescription = "Search", modifier = isz)
+                    }
                     IconButton(onClick = { onSelfTestClick() }, modifier = sz) {
                         Icon(painter = painterResource(R.drawable.ic_self_test),
                             contentDescription = "Self-test", modifier = isz)
@@ -892,24 +925,6 @@ private fun LibraryScreen(
         bottomBar = { NowPlayingBar(controller, onLyricsClick, onExpand = onNowPlayingExpand) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                placeholder = { Text("Search title, artist, album") },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_close),
-                                contentDescription = "Clear search",
-                            )
-                        }
-                    }
-                },
-            )
-
             ir.mariaplayer.ui.LibraryTabBar(
                 tabs = tabs,
                 selectedId = selectedTabId,
