@@ -688,6 +688,7 @@ private suspend fun runAllTests(
 
     test("Collection: defaults after init") {
         CollectionRepository.initializeIfNeeded(context)
+        CollectionRepository.ensureSystemDefaults(context)
         val colls = CollectionRepository.snapshot(context)
         if (colls.none { it.id == CollectionRepository.ALL_ID }) throw IllegalStateException("All")
         if (colls.none { it.id == CollectionRepository.MUSIC_ID }) throw IllegalStateException("Music")

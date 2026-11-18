@@ -106,6 +106,39 @@ object CollectionRepository {
         }
     }
 
+    /**
+     * System collections (Music/Podcasts/Audiobooks) باید همیشه وجود داشته باشند.
+     * initializeIfNeeded فقط روی داده‌ی خالی اجرا می‌شه؛ اگر کاربر (نسخه‌ی قدیمی)
+     * یکی را حذف کرده باشد، اینجا بازسازی می‌شود — با rule پیش‌فرض (نه دستکاری‌شده).
+     * اگر کاربر rule را دستی عوض کرده باشد، همان باقی می‌ماند چون فقط MISSING را می‌سازد.
+     */
+    suspend fun ensureSystemDefaults(context: Context) {
+        val raw = context.collectionStore.data.first()[KEY] ?: return
+        val list = decode(raw)
+        val ids = list.map { it.id }.toSet()
+        val additions = mutableListOf<Collection>()
+        if (MUSIC_ID !in ids) {
+            additions += Collection(MUSIC_ID, "Music",
+                CollectionRule.Duration(maxMs = 10 * 60_000L),
+                isSystem = true, sortOrder = 10)
+        }
+        if (PODCASTS_ID !in ids) {
+            additions += Collection(PODCASTS_ID, "Podcasts",
+                CollectionRule.Duration(minMs = 10 * 60_000L, maxMs = 2 * 60 * 60_000L),
+                isSystem = true, sortOrder = 11)
+        }
+        if (AUDIOBOOKS_ID !in ids) {
+            additions += Collection(AUDIOBOOKS_ID, "Audiobooks",
+                CollectionRule.Duration(minMs = 2L * 60 * 60_000L),
+                isSystem = true, sortOrder = 12)
+        }
+        if (additions.isNotEmpty()) {
+            context.collectionStore.edit { p ->
+                p[KEY] = encode(decode(p[KEY].orEmpty()) + additions)
+            }
+        }
+    }
+
     suspend fun favoriteIds(context: Context): Set<Long> {
         val fav = snapshot(context).firstOrNull { it.id == FAVORITES_ID } ?: return emptySet()
         return (fav.rule as? CollectionRule.Manual)?.trackIds?.toSet() ?: emptySet()

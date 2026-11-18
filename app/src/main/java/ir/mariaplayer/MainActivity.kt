@@ -244,6 +244,7 @@ private fun AppRoot() {
     LaunchedEffect(Unit) {
         CollectionRepository.initializeIfNeeded(context)
         CollectionRepository.ensureTrash(context)
+        CollectionRepository.ensureSystemDefaults(context)
         CollectionRepository.observe(context).collectLatest { collections = it }
     }
     LaunchedEffect(Unit) {
