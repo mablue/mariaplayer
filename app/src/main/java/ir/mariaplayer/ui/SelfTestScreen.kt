@@ -47,7 +47,6 @@ import ir.mariaplayer.R
 import ir.mariaplayer.data.Collection
 import ir.mariaplayer.data.CollectionRepository
 import ir.mariaplayer.data.CollectionRule
-import ir.mariaplayer.data.MediaClassifier
 import ir.mariaplayer.data.LibraryPrefs
 import ir.mariaplayer.data.LibraryScanner
 import ir.mariaplayer.data.PlaybackPrefs
