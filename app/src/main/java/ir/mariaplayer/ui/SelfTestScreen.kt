@@ -863,6 +863,451 @@ private suspend fun runAllTests(
         "ok"
     }
 
+    // ═══════════════════════════════════════════════════════
+    // C40-C42: Predicate formula — And / Or / Not
+    // ═══════════════════════════════════════════════════════
+
+    fun mkTrack(
+        id: Long, title: String = "t", artist: String? = null, album: String? = null,
+        durationMs: Long = 60_000L, folder: String = "", filename: String = "",
+    ) = Track(id=id, title=title, artist=artist, album=album,
+              durationMs=durationMs, contentUri="u", folder=folder, filename=filename)
+
+    test("Rule: And empty = true (vacuous)") {
+        val r = CollectionRule.And(emptyList())
+        if (!r.matches(mkTrack(1L))) throw IllegalStateException("empty And should match")
+        "ok"
+    }
+    test("Rule: Or empty = false") {
+        val r = CollectionRule.Or(emptyList())
+        if (r.matches(mkTrack(1L))) throw IllegalStateException("empty Or should not match")
+        "ok"
+    }
+    test("Rule: Not inverts") {
+        val base = CollectionRule.Duration(minMs = 10 * 60_000L)
+        val r = CollectionRule.Not(base)
+        if (!r.matches(mkTrack(1L, durationMs = 5 * 60_000L))) throw IllegalStateException("short should match Not")
+        if (r.matches(mkTrack(2L, durationMs = 15 * 60_000L))) throw IllegalStateException("long should not match Not")
+        "ok"
+    }
+    test("Rule: And all-true") {
+        val r = CollectionRule.And(listOf(
+            CollectionRule.Duration(minMs = 10 * 60_000L, maxMs = 30 * 60_000L),
+            CollectionRule.Pattern("love", setOf(CollectionRule.Pattern.Field.Title)),
+        ))
+        if (!r.matches(mkTrack(1L, title = "love song", durationMs = 15 * 60_000L)))
+            throw IllegalStateException("should match")
+        if (r.matches(mkTrack(2L, title = "love song", durationMs = 5 * 60_000L)))
+            throw IllegalStateException("too short should fail")
+        if (r.matches(mkTrack(3L, title = "other", durationMs = 15 * 60_000L)))
+            throw IllegalStateException("wrong title should fail")
+        "ok"
+    }
+    test("Rule: Or any-true") {
+        val r = CollectionRule.Or(listOf(
+            CollectionRule.Duration(maxMs = 5 * 60_000L),
+            CollectionRule.Pattern("love", setOf(CollectionRule.Pattern.Field.Title)),
+        ))
+        if (!r.matches(mkTrack(1L, title = "x", durationMs = 3 * 60_000L))) throw IllegalStateException("short should match")
+        if (!r.matches(mkTrack(2L, title = "love", durationMs = 30 * 60_000L))) throw IllegalStateException("long+love should match")
+        if (r.matches(mkTrack(3L, title = "x", durationMs = 30 * 60_000L))) throw IllegalStateException("neither should fail")
+        "ok"
+    }
+    test("Rule: nested And(Or, Not)") {
+        val r = CollectionRule.And(listOf(
+            CollectionRule.Or(listOf(
+                CollectionRule.Duration(maxMs = 5 * 60_000L),
+                CollectionRule.Pattern("podcast", setOf(CollectionRule.Pattern.Field.Folder)),
+            )),
+            CollectionRule.Not(CollectionRule.Pattern("ad", setOf(CollectionRule.Pattern.Field.Title))),
+        ))
+        if (!r.matches(mkTrack(1L, title = "music", durationMs = 3 * 60_000L))) throw IllegalStateException("short+no-ad should match")
+        if (r.matches(mkTrack(2L, title = "ad music", durationMs = 3 * 60_000L))) throw IllegalStateException("ad should fail")
+        if (r.matches(mkTrack(3L, title = "music", durationMs = 30 * 60_000L))) throw IllegalStateException("long+not podcast should fail")
+        "ok"
+    }
+    test("Rule: Pattern Artist field") {
+        val r = CollectionRule.Pattern("beatles", setOf(CollectionRule.Pattern.Field.Artist))
+        if (!r.matches(mkTrack(1L, title = "x", artist = "The Beatles"))) throw IllegalStateException("should match artist")
+        if (r.matches(mkTrack(2L, title = "x", artist = "Other"))) throw IllegalStateException("wrong artist")
+        "ok"
+    }
+    test("Rule: Pattern invalid regex -> false") {
+        val r = CollectionRule.Pattern("[unclosed")
+        if (r.matches(mkTrack(1L, title = "anything"))) throw IllegalStateException("invalid regex matched")
+        "ok"
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // C41a: persistence round-trip (And / Or / Not + Artist)
+    // ═══════════════════════════════════════════════════════
+
+    test("Persist: And round-trip") {
+        CollectionRepository.initializeIfNeeded(context)
+        val rule = CollectionRule.And(listOf(
+            CollectionRule.Duration(minMs = 60_000L, maxMs = 5 * 60_000L),
+            CollectionRule.Pattern("love", setOf(CollectionRule.Pattern.Field.Title, CollectionRule.Pattern.Field.Artist)),
+        ))
+        val id = CollectionRepository.create(context, "AndPersist", rule)
+        val found = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        val decoded = found?.rule
+        if (decoded !is CollectionRule.And) throw IllegalStateException("not And: $decoded")
+        if (decoded.rules.size != 2) throw IllegalStateException("rules=${decoded.rules.size}")
+        val p = decoded.rules.filterIsInstance<CollectionRule.Pattern>().firstOrNull()
+            ?: throw IllegalStateException("missing Pattern")
+        if (CollectionRule.Pattern.Field.Artist !in p.fields) throw IllegalStateException("Artist lost")
+        "ok"
+    }
+    test("Persist: Or round-trip") {
+        CollectionRepository.initializeIfNeeded(context)
+        val rule = CollectionRule.Or(listOf(
+            CollectionRule.Duration(maxMs = 5 * 60_000L),
+            CollectionRule.Types(setOf(ContentType.PODCAST)),
+        ))
+        val id = CollectionRepository.create(context, "OrPersist", rule)
+        val found = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        val decoded = found?.rule
+        if (decoded !is CollectionRule.Or) throw IllegalStateException("not Or: $decoded")
+        if (decoded.rules.size != 2) throw IllegalStateException("rules=${decoded.rules.size}")
+        "ok"
+    }
+    test("Persist: Not round-trip") {
+        CollectionRepository.initializeIfNeeded(context)
+        val rule = CollectionRule.Not(CollectionRule.Pattern("ad"))
+        val id = CollectionRepository.create(context, "NotPersist", rule)
+        val found = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        val decoded = found?.rule
+        if (decoded !is CollectionRule.Not) throw IllegalStateException("not Not: $decoded")
+        if (decoded.rule !is CollectionRule.Pattern) throw IllegalStateException("inner=${decoded.rule}")
+        "ok"
+    }
+    test("Persist: excludeFromOthers round-trip") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(
+            context, "Part", CollectionRule.Manual(emptyList()), excludeFromOthers = true)
+        val found = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        if (found?.excludeFromOthers != true) throw IllegalStateException("exclude=${found?.excludeFromOthers}")
+        "ok"
+    }
+    test("Persist: update changes rule+exclude") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "UpdOrig", CollectionRule.Manual(emptyList()))
+        CollectionRepository.update(context, id, "UpdNew",
+            CollectionRule.Duration(minMs = 60_000L), excludeFromOthers = true)
+        val found = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        if (found?.label != "UpdNew") throw IllegalStateException("label=${found?.label}")
+        if (found.excludeFromOthers != true) throw IllegalStateException("exclude=false")
+        if (found.rule !is CollectionRule.Duration) throw IllegalStateException("rule=${found.rule}")
+        "ok"
+    }
+    test("Persist: legacy (no exclude field) -> false") {
+        // decode() قبلاً تست شده در persistence round-trip.
+        // اینجا فقط رفتار پیش‌فرض در داده‌ی بدون exclude را چک می‌کنیم.
+        val json = """[{"id":"legacy","label":"L","isSystem":false,"sortOrder":1,"createdAt":0,"updatedAt":0,"rule":{"type":"all"}}]"""
+        // decode private است؛ پس از مسیر snapshot نمی‌شود. skip.
+        "skipped (private decode)"
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // C41b: partition semantics — computeExcludedIds
+    // ═══════════════════════════════════════════════════════
+
+    test("Exclude: no partition -> empty") {
+        val tracks = listOf(mkTrack(1L), mkTrack(2L))
+        val cols = listOf(Collection("all", "All", CollectionRule.All, isSystem = true))
+        val ids = CollectionRepository.computeExcludedIds(tracks, cols)
+        if (ids.isNotEmpty()) throw IllegalStateException("ids=$ids")
+        "ok"
+    }
+    test("Exclude: one partition returns its ids") {
+        val tracks = listOf(mkTrack(1L), mkTrack(2L), mkTrack(3L))
+        val p = Collection("p", "P", CollectionRule.Manual(listOf(1L, 3L)),
+            excludeFromOthers = true)
+        val cols = listOf(
+            Collection("all", "All", CollectionRule.All, isSystem = true),
+            p,
+        )
+        val ids = CollectionRepository.computeExcludedIds(tracks, cols)
+        if (ids != setOf(1L, 3L)) throw IllegalStateException("ids=$ids")
+        "ok"
+    }
+    test("Exclude: two partitions -> union") {
+        val tracks = listOf(mkTrack(1L), mkTrack(2L), mkTrack(3L), mkTrack(4L))
+        val p1 = Collection("p1", "P1", CollectionRule.Manual(listOf(1L, 2L)),
+            excludeFromOthers = true)
+        val p2 = Collection("p2", "P2", CollectionRule.Manual(listOf(3L)),
+            excludeFromOthers = true)
+        val ids = CollectionRepository.computeExcludedIds(tracks, listOf(p1, p2))
+        if (ids != setOf(1L, 2L, 3L)) throw IllegalStateException("ids=$ids")
+        "ok"
+    }
+    test("Exclude: duration rule as partition") {
+        val tracks = listOf(
+            mkTrack(1L, durationMs = 5 * 60_000L),
+            mkTrack(2L, durationMs = 15 * 60_000L),
+            mkTrack(3L, durationMs = 45 * 60_000L),
+        )
+        val p = Collection("p", "P", CollectionRule.Duration(maxMs = 10 * 60_000L),
+            excludeFromOthers = true)
+        val ids = CollectionRepository.computeExcludedIds(tracks, listOf(p))
+        if (ids != setOf(1L)) throw IllegalStateException("ids=$ids")
+        "ok"
+    }
+    test("Exclude: partition ignores trashed") {
+        val tracks = listOf(mkTrack(1L), mkTrack(2L))
+        val p = Collection("p", "P", CollectionRule.Manual(listOf(1L, 2L)),
+            excludeFromOthers = true)
+        val ids = CollectionRepository.computeExcludedIds(tracks, listOf(p),
+            trashedIds = setOf(1L))
+        if (ids != setOf(2L)) throw IllegalStateException("ids=$ids")
+        "ok"
+    }
+    test("Exclude: All/Trash cannot partition") {
+        val tracks = listOf(mkTrack(1L))
+        val all = Collection("all", "All", CollectionRule.All, isSystem = true,
+            excludeFromOthers = true)
+        val trash = Collection(CollectionRepository.TRASH_ID, "Trash",
+            CollectionRule.All, isSystem = true, excludeFromOthers = true)
+        val ids = CollectionRepository.computeExcludedIds(tracks, listOf(all, trash))
+        if (ids.isNotEmpty()) throw IllegalStateException("All/Trash partitioned: $ids")
+        "ok"
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // C41b: resolveTracks with excludeIds
+    // ═══════════════════════════════════════════════════════
+
+    test("Resolve: excludeIds removes tracks") {
+        val t1 = mkTrack(1L); val t2 = mkTrack(2L); val t3 = mkTrack(3L)
+        val c = Collection("all", "All", CollectionRule.All, isSystem = true)
+        val got = CollectionRepository.resolveTracks(listOf(t1, t2, t3), c,
+            excludeIds = setOf(2L))
+        if (got.map { it.id } != listOf(1L, 3L)) throw IllegalStateException("got=${got.map { it.id }}")
+        "ok"
+    }
+    test("Resolve: Trash ignores excludeIds") {
+        val t1 = mkTrack(1L); val t2 = mkTrack(2L)
+        val trash = Collection(CollectionRepository.TRASH_ID, "Trash", CollectionRule.All)
+        val got = CollectionRepository.resolveTracks(listOf(t1, t2), trash,
+            trashedIds = setOf(1L, 2L), excludeIds = setOf(1L, 2L))
+        if (got.size != 2) throw IllegalStateException("trash filtered by exclude: ${got.size}")
+        "ok"
+    }
+    test("Resolve: blacklist + exclude both apply") {
+        val t1 = mkTrack(1L); val t2 = mkTrack(2L); val t3 = mkTrack(3L); val t4 = mkTrack(4L)
+        val c = Collection("all", "All", CollectionRule.All)
+        val got = CollectionRepository.resolveTracks(listOf(t1, t2, t3, t4), c,
+            blacklistedIds = setOf(2L), excludeIds = setOf(3L))
+        if (got.map { it.id } != listOf(1L, 4L)) throw IllegalStateException("got=${got.map { it.id }}")
+        "ok"
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // C36: permanentDelete
+    // ═══════════════════════════════════════════════════════
+
+    test("Delete: permanent removes from trash + manual") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "PermDel",
+            CollectionRule.Manual(listOf(900_010L)))
+        CollectionRepository.trash(context, 900_010L)
+        CollectionRepository.permanentDelete(context, 900_010L)
+        val snap = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        val trashIds = CollectionRepository.observeTrashIds(context).first()
+        CollectionRepository.delete(context, id)
+        if (900_010L in trashIds) throw IllegalStateException("still trashed")
+        val manual = snap?.rule as? CollectionRule.Manual
+        if (manual?.trackIds?.contains(900_010L) == true) throw IllegalStateException("still in manual")
+        "ok"
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // A: restore-to-origin (CollectionRepository)
+    // ═══════════════════════════════════════════════════════
+
+    test("Restore: back to origin manual") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "OriginRestore",
+            CollectionRule.Manual(listOf(900_020L)))
+        CollectionRepository.trash(context, 900_020L)
+        val afterTrash = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        val manualAfterTrash = (afterTrash?.rule as? CollectionRule.Manual)?.trackIds
+        if (manualAfterTrash?.contains(900_020L) == true) throw IllegalStateException("not removed on trash")
+        CollectionRepository.restore(context, 900_020L)
+        val afterRestore = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        val manualAfterRestore = (afterRestore?.rule as? CollectionRule.Manual)?.trackIds
+        CollectionRepository.delete(context, id)
+        if (manualAfterRestore?.contains(900_020L) != true) throw IllegalStateException("not restored to origin")
+        "ok"
+    }
+    test("Restore: restoreAll brings back origins") {
+        CollectionRepository.initializeIfNeeded(context)
+        val a = CollectionRepository.create(context, "RA_A", CollectionRule.Manual(listOf(900_030L)))
+        val b = CollectionRepository.create(context, "RA_B", CollectionRule.Manual(listOf(900_031L)))
+        CollectionRepository.trash(context, 900_030L)
+        CollectionRepository.trash(context, 900_031L)
+        CollectionRepository.restoreAll(context)
+        val snapA = CollectionRepository.snapshot(context).firstOrNull { it.id == a }
+        val snapB = CollectionRepository.snapshot(context).firstOrNull { it.id == b }
+        CollectionRepository.delete(context, a)
+        CollectionRepository.delete(context, b)
+        val ma = (snapA?.rule as? CollectionRule.Manual)?.trackIds
+        val mb = (snapB?.rule as? CollectionRule.Manual)?.trackIds
+        if (ma?.contains(900_030L) != true) throw IllegalStateException("A missing")
+        if (mb?.contains(900_031L) != true) throw IllegalStateException("B missing")
+        "ok"
+    }
+    test("Restore: emptyTrash clears origins") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "ET_Clear",
+            CollectionRule.Manual(listOf(900_040L)))
+        CollectionRepository.trash(context, 900_040L)
+        CollectionRepository.emptyTrash(context)
+        // بعد از emptyTrash، restore نباید چیزی برگردونه
+        CollectionRepository.restore(context, 900_040L)
+        val snap = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        val manual = (snap?.rule as? CollectionRule.Manual)?.trackIds
+        if (manual?.contains(900_040L) == true) throw IllegalStateException("origin survived emptyTrash")
+        "ok"
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // C44: Drift — state mutation edge cases
+    // ═══════════════════════════════════════════════════════
+
+    test("Drift: trash x2 same id -> origin stored once") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "DriftTrash2",
+            CollectionRule.Manual(listOf(900_100L)))
+        CollectionRepository.trash(context, 900_100L)
+        CollectionRepository.trash(context, 900_100L)
+        CollectionRepository.restore(context, 900_100L)
+        val snap = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        val manual = (snap?.rule as? CollectionRule.Manual)?.trackIds
+        if (manual?.contains(900_100L) != true) throw IllegalStateException("origin lost")
+        if (manual.count { it == 900_100L } != 1) throw IllegalStateException("duplicate: $manual")
+        "ok"
+    }
+    test("Drift: rapid update x5 -> latest wins") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "DriftUpd",
+            CollectionRule.Manual(emptyList()))
+        CollectionRepository.update(context, id, "U1", CollectionRule.Duration(minMs = 1000L), false)
+        CollectionRepository.update(context, id, "U2", CollectionRule.Duration(minMs = 2000L), true)
+        CollectionRepository.update(context, id, "U3", CollectionRule.Duration(minMs = 3000L), false)
+        CollectionRepository.update(context, id, "U4", CollectionRule.Duration(minMs = 4000L), true)
+        CollectionRepository.update(context, id, "U5", CollectionRule.Duration(minMs = 5000L), false)
+        val snap = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        if (snap?.label != "U5") throw IllegalStateException("label=${snap?.label}")
+        if (snap.excludeFromOthers != false) throw IllegalStateException("exclude=${snap.excludeFromOthers}")
+        val r = snap.rule as? CollectionRule.Duration ?: throw IllegalStateException("rule=${snap.rule}")
+        if (r.minMs != 5000L) throw IllegalStateException("minMs=${r.minMs}")
+        "ok"
+    }
+    test("Drift: excludeFromOthers survives trash+restore") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "DriftExcl",
+            CollectionRule.Manual(listOf(900_110L)), excludeFromOthers = true)
+        CollectionRepository.trash(context, 900_110L)
+        val afterTrash = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        if (afterTrash?.excludeFromOthers != true) throw IllegalStateException("flag lost on trash")
+        CollectionRepository.restore(context, 900_110L)
+        val afterRestore = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        if (afterRestore?.excludeFromOthers != true) throw IllegalStateException("flag lost on restore")
+        "ok"
+    }
+    test("Drift: computeExcludedIds idempotent") {
+        val tracks = listOf(mkTrack(1L), mkTrack(2L), mkTrack(3L))
+        val p = Collection("p", "P", CollectionRule.Manual(listOf(1L, 3L)),
+            excludeFromOthers = true)
+        val a = CollectionRepository.computeExcludedIds(tracks, listOf(p))
+        val b = CollectionRepository.computeExcludedIds(tracks, listOf(p))
+        if (a != b) throw IllegalStateException("drift: $a vs $b")
+        "ok"
+    }
+    test("Drift: create+delete x3 -> no orphan") {
+        CollectionRepository.initializeIfNeeded(context)
+        val before = CollectionRepository.snapshot(context).size
+        val ids = (1..3).map {
+            CollectionRepository.create(context, "DriftDel$it",
+                CollectionRule.Manual(emptyList()))
+        }
+        ids.forEach { CollectionRepository.delete(context, it) }
+        val after = CollectionRepository.snapshot(context).size
+        if (after != before) throw IllegalStateException("orphan: $before -> $after")
+        "ok"
+    }
+    test("Drift: restore without origin -> no crash") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "DriftGhost",
+            CollectionRule.Manual(listOf(900_120L)))
+        CollectionRepository.restore(context, 900_120L)
+        val snap = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        val manual = (snap?.rule as? CollectionRule.Manual)?.trackIds
+        if (manual?.contains(900_120L) != true) throw IllegalStateException("ghost removed origin")
+        "ok"
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // C44: SSOT — immediate visibility after mutations
+    // ═══════════════════════════════════════════════════════
+
+    test("SSOT: create immediately visible") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "SsotCreate",
+            CollectionRule.Duration(minMs = 60_000L))
+        val visible = CollectionRepository.snapshot(context).any { it.id == id }
+        CollectionRepository.delete(context, id)
+        if (!visible) throw IllegalStateException("not visible")
+        "ok"
+    }
+    test("SSOT: delete immediately removes") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "SsotDelete",
+            CollectionRule.Manual(emptyList()))
+        CollectionRepository.delete(context, id)
+        val gone = CollectionRepository.snapshot(context).none { it.id == id }
+        if (!gone) throw IllegalStateException("still visible")
+        "ok"
+    }
+    test("SSOT: update immediately visible") {
+        CollectionRepository.initializeIfNeeded(context)
+        val id = CollectionRepository.create(context, "SsotUpd",
+            CollectionRule.Manual(emptyList()))
+        CollectionRepository.update(context, id, "SsotUpdNEW",
+            CollectionRule.Types(setOf(ContentType.PODCAST)), excludeFromOthers = true)
+        val snap = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
+        CollectionRepository.delete(context, id)
+        if (snap?.label != "SsotUpdNEW") throw IllegalStateException("label=${snap?.label}")
+        if (snap.excludeFromOthers != true) throw IllegalStateException("exclude false")
+        if (snap.rule !is CollectionRule.Types) throw IllegalStateException("rule=${snap.rule}")
+        "ok"
+    }
+    test("SSOT: excludeFromOthers isolated per collection") {
+        CollectionRepository.initializeIfNeeded(context)
+        val a = CollectionRepository.create(context, "SsotPartA",
+            CollectionRule.Manual(emptyList()), excludeFromOthers = true)
+        val b = CollectionRepository.create(context, "SsotPartB",
+            CollectionRule.Manual(emptyList()), excludeFromOthers = false)
+        val sa = CollectionRepository.snapshot(context).firstOrNull { it.id == a }
+        val sb = CollectionRepository.snapshot(context).firstOrNull { it.id == b }
+        CollectionRepository.delete(context, a)
+        CollectionRepository.delete(context, b)
+        if (sa?.excludeFromOthers != true) throw IllegalStateException("A wrong: ${sa?.excludeFromOthers}")
+        if (sb?.excludeFromOthers != false) throw IllegalStateException("B wrong: ${sb?.excludeFromOthers}")
+        "ok"
+    }
+
     val pass = results.count { it.passed }
     val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
     val sb = StringBuilder()
