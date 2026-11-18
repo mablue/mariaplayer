@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,12 +61,15 @@ fun NowPlayingBar(
     val state by repository.state.collectAsState()
     if (state.title.isEmpty()) return
 
+    // FIX (C52): produceState keeps old value when key changes because
+    // initialValue is only read on first composition. Explicitly reset.
     val art by produceState<android.graphics.Bitmap?>(
-        initialValue = state.trackId?.let { AlbumArtCache.peek(it) },
+        initialValue = null,
         key1 = state.trackId,
     ) {
-        val id = state.trackId
-        if (id != null && value == null) value = AlbumArtCache.peek(id)
+        value = null
+        val id = state.trackId ?: return@produceState
+        value = AlbumArtCache.peek(id)
     }
 
     var dragging by remember { mutableStateOf(false) }
@@ -82,10 +86,11 @@ fun NowPlayingBar(
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars),
         ) {
+            // ═══ Row 1: art + title + lyrics + expand ═══
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 8.dp, end = 4.dp, top = 4.dp),
+                    .padding(start = 8.dp, end = 4.dp, top = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
@@ -138,30 +143,70 @@ fun NowPlayingBar(
                     }
                 }
 
-                IconButton(onClick = onLyricsClick, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onLyricsClick, modifier = Modifier.size(40.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_lyrics),
                         contentDescription = "Lyrics",
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(24.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
+                if (onExpand != null) {
+                    IconButton(onClick = onExpand, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_up),
+                            contentDescription = "Open player",
+                            modifier = Modifier.size(26.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+
+            // ═══ Row 2: prev + 15 + play + 30 + next (centered) ═══
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
                 IconButton(
                     onClick = { controller.seekToPreviousMediaItem() },
                     enabled = state.hasPrev,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(44.dp),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_skip_previous),
                         contentDescription = "Previous track",
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(26.dp),
                     )
                 }
-
+                IconButton(
+                    onClick = {
+                        val newPos = (state.positionMs - 15_000L).coerceAtLeast(0L)
+                        controller.seekTo(newPos)
+                    },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_replay),
+                            contentDescription = "Rewind 15 seconds",
+                            modifier = Modifier.size(30.dp),
+                        )
+                        Text(
+                            "15",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
                 IconButton(
                     onClick = { if (state.isPlaying) controller.pause() else controller.play() },
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(56.dp),
                 ) {
                     Icon(
                         painter = painterResource(
@@ -169,38 +214,49 @@ fun NowPlayingBar(
                             else R.drawable.ic_play_arrow
                         ),
                         contentDescription = if (state.isPlaying) "Pause" else "Play",
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(36.dp),
                     )
                 }
-
+                IconButton(
+                    onClick = {
+                        val raw = state.positionMs + 30_000L
+                        val newPos = if (state.durationMs > 0) raw.coerceAtMost(state.durationMs) else raw
+                        controller.seekTo(newPos)
+                    },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_forward),
+                            contentDescription = "Forward 30 seconds",
+                            modifier = Modifier.size(30.dp),
+                        )
+                        Text(
+                            "30",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
                 IconButton(
                     onClick = { controller.seekToNextMediaItem() },
                     enabled = state.hasNext,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(44.dp),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_skip_next),
                         contentDescription = "Next track",
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(26.dp),
                     )
-                }
-
-                if (onExpand != null) {
-                    IconButton(onClick = onExpand, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrow_up),
-                            contentDescription = "Open player",
-                            modifier = Modifier.size(22.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
                 }
             }
 
+            // ═══ Row 3: time + seek pill + time ═══
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 10.dp, end = 10.dp, bottom = 4.dp),
+                    .padding(start = 10.dp, end = 10.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(

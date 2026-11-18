@@ -381,6 +381,18 @@ private fun AppRoot() {
                 showNowPlaying = false
                 screen = "lyrics_display"
             },
+            allTracks = tracks,
+            favorites = favorites,
+            onToggleFavorite = { id ->
+                scope.launch { CollectionRepository.toggleFavorite(context, id) }
+            },
+            onDeleteRequest = { t ->
+                scope.launch {
+                    CollectionRepository.trash(context, t.id)
+                    Toast.makeText(context, "Moved to Trash", Toast.LENGTH_SHORT).show()
+                }
+                showNowPlaying = false
+            },
         )
     } else {
     when {

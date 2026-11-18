@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.media3.session.MediaController
 import ir.mariaplayer.R
 import ir.mariaplayer.art.AlbumArtCache
+import ir.mariaplayer.data.Track
 import java.util.Locale
 
 @Composable
@@ -52,18 +53,30 @@ fun NowPlayingScreen(
     controller: MediaController?,
     onClose: () -> Unit,
     onLyricsClick: () -> Unit,
+    allTracks: List<Track>? = null,
+    favorites: Set<Long> = emptySet(),
+    onToggleFavorite: (Long) -> Unit = {},
+    onDeleteRequest: (Track) -> Unit = {},
 ) {
     if (controller == null) { onClose(); return }
     val repo = LocalPlaybackRepository.current ?: run { onClose(); return }
     val state by repo.state.collectAsState()
     val context = LocalContext.current
+    val currentTrack: Track? = state.trackId?.let { id -> allTracks?.firstOrNull { it.id == id } }
+    val isFav: Boolean = currentTrack?.id?.let { it in favorites } == true
 
+    // Fix: produceState keeps previous value when key changes because
+    // initialValue is read only once. Explicitly clear then re-fetch.
     val art by produceState<Bitmap?>(
-        initialValue = state.trackId?.let { AlbumArtCache.peek(it) },
+        initialValue = null,
         key1 = state.trackId,
     ) {
-        val id = state.trackId
-        if (id != null && value == null) {
+        value = null
+        val id = state.trackId ?: return@produceState
+        val peeked = AlbumArtCache.peek(id)
+        if (peeked != null) {
+            value = peeked
+        } else {
             val uri = controller.currentMediaItem?.localConfiguration?.uri?.toString()
             if (uri != null) value = AlbumArtCache.get(context, id, uri)
         }
@@ -271,7 +284,39 @@ fun NowPlayingScreen(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
+
+                if (currentTrack != null) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = { onToggleFavorite(currentTrack.id) }) {
+                            Icon(
+                                painterResource(
+                                    if (isFav) R.drawable.ic_favorite_filled
+                                    else R.drawable.ic_favorite_border
+                                ),
+                                contentDescription =
+                                    if (isFav) "Remove from favorites" else "Add to favorites",
+                                tint = if (isFav) MaterialTheme.colorScheme.primary
+                                       else Color.White.copy(alpha = 0.75f),
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(24.dp))
+                        IconButton(onClick = { onDeleteRequest(currentTrack) }) {
+                            Icon(
+                                painterResource(R.drawable.ic_delete),
+                                contentDescription = "Delete track",
+                                tint = Color.White.copy(alpha = 0.75f),
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
 
                 OutlinedButton(
                     onClick = onLyricsClick,
