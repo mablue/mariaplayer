@@ -27,6 +27,7 @@ object CollectionRepository {
 
     private val TRASH_KEY = stringSetPreferencesKey("trash_ids")
     private val BLACKLIST_KEY = stringSetPreferencesKey("blacklist_ids")
+    private val TRASH_ORIGIN_KEY = stringPreferencesKey("trash_origin_json")
 
     fun observe(context: Context): Flow<List<Collection>> =
         context.collectionStore.data.map { p ->
@@ -218,13 +219,45 @@ object CollectionRepository {
             p[BLACKLIST_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
         }
 
+    private fun decodeTrashOrigin(raw: String?): Map<Long, Set<String>> {
+        if (raw.isNullOrEmpty()) return emptyMap()
+        return try {
+            val obj = JSONObject(raw)
+            obj.keys().asSequence().associate { k ->
+                val arr = obj.getJSONArray(k)
+                val set = (0 until arr.length()).map { arr.getString(it) }.toSet()
+                k.toLong() to set
+            }
+        } catch (_: Exception) { emptyMap() }
+    }
+
+    private fun encodeTrashOrigin(map: Map<Long, Set<String>>): String {
+        val obj = JSONObject()
+        map.forEach { (tid, colls) ->
+            if (colls.isNotEmpty()) {
+                val arr = JSONArray()
+                colls.forEach { arr.put(it) }
+                obj.put(tid.toString(), arr)
+            }
+        }
+        return obj.toString()
+    }
+
     suspend fun trashIds(context: Context): Set<Long> = observeTrashIds(context).first()
 
     suspend fun trash(context: Context, trackId: Long) {
         context.collectionStore.edit { p ->
             val current = p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
             p[TRASH_KEY] = (current + trackId).map { it.toString() }.toSet()
-            val list = decode(p[KEY].orEmpty()).map { c ->
+            val decoded = decode(p[KEY].orEmpty())
+            val origin = decoded.filter { c ->
+                c.id != TRASH_ID &&
+                    (c.rule as? CollectionRule.Manual)?.trackIds?.contains(trackId) == true
+            }.map { it.id }.toSet()
+            val originMap = decodeTrashOrigin(p[TRASH_ORIGIN_KEY]).toMutableMap()
+            if (origin.isNotEmpty()) originMap[trackId] = origin
+            p[TRASH_ORIGIN_KEY] = encodeTrashOrigin(originMap)
+            p[KEY] = encode(decoded.map { c ->
                 val r = c.rule
                 if (r is CollectionRule.Manual && trackId in r.trackIds) {
                     c.copy(
@@ -232,8 +265,7 @@ object CollectionRepository {
                         updatedAt = System.currentTimeMillis(),
                     )
                 } else c
-            }
-            p[KEY] = encode(list)
+            })
         }
     }
 
@@ -241,11 +273,44 @@ object CollectionRepository {
         context.collectionStore.edit { p ->
             val current = p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
             p[TRASH_KEY] = (current - trackId).map { it.toString() }.toSet()
+            val originMap = decodeTrashOrigin(p[TRASH_ORIGIN_KEY]).toMutableMap()
+            val targets = originMap.remove(trackId) ?: emptySet()
+            p[TRASH_ORIGIN_KEY] = encodeTrashOrigin(originMap)
+            if (targets.isNotEmpty()) {
+                p[KEY] = encode(decode(p[KEY].orEmpty()).map { c ->
+                    val r = c.rule
+                    if (r is CollectionRule.Manual && c.id in targets && trackId !in r.trackIds) {
+                        c.copy(
+                            rule = CollectionRule.Manual(r.trackIds + trackId),
+                            updatedAt = System.currentTimeMillis(),
+                        )
+                    } else c
+                })
+            }
         }
     }
 
     suspend fun restoreAll(context: Context) {
-        context.collectionStore.edit { p -> p[TRASH_KEY] = emptySet() }
+        context.collectionStore.edit { p ->
+            p[TRASH_KEY] = emptySet()
+            val originMap = decodeTrashOrigin(p[TRASH_ORIGIN_KEY])
+            p[TRASH_ORIGIN_KEY] = ""
+            if (originMap.isNotEmpty()) {
+                p[KEY] = encode(decode(p[KEY].orEmpty()).map { c ->
+                    val r = c.rule
+                    if (r is CollectionRule.Manual) {
+                        val toAdd = originMap.filter { (_, colls) -> c.id in colls }
+                            .keys.filterNot { it in r.trackIds }.toSet()
+                        if (toAdd.isNotEmpty()) {
+                            c.copy(
+                                rule = CollectionRule.Manual(r.trackIds + toAdd),
+                                updatedAt = System.currentTimeMillis(),
+                            )
+                        } else c
+                    } else c
+                })
+            }
+        }
     }
 
     suspend fun emptyTrash(context: Context) {
@@ -253,6 +318,7 @@ object CollectionRepository {
             val trashed = p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
             if (trashed.isEmpty()) return@edit
             p[TRASH_KEY] = emptySet()
+            p[TRASH_ORIGIN_KEY] = ""
             val currentBlacklist = p[BLACKLIST_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
             p[BLACKLIST_KEY] = (currentBlacklist + trashed).map { it.toString() }.toSet()
             p[KEY] = encode(decode(p[KEY].orEmpty()).map { c ->
@@ -272,6 +338,10 @@ object CollectionRepository {
             val trashed = p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
             if (trackId in trashed) {
                 p[TRASH_KEY] = (trashed - trackId).map { it.toString() }.toSet()
+            }
+            val originMap = decodeTrashOrigin(p[TRASH_ORIGIN_KEY]).toMutableMap()
+            if (originMap.remove(trackId) != null) {
+                p[TRASH_ORIGIN_KEY] = encodeTrashOrigin(originMap)
             }
             p[KEY] = encode(decode(p[KEY].orEmpty()).map { c ->
                 val r = c.rule

@@ -49,6 +49,10 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TextButton
@@ -129,6 +133,7 @@ class MainActivity : ComponentActivity() {
 private fun AppRoot() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
 
     if (Build.VERSION.SDK_INT >= 33) {
         val launcher = rememberLauncherForActivityResult(
@@ -419,9 +424,17 @@ private fun AppRoot() {
         onDeleteRequest = { t ->
             scope.launch {
                 CollectionRepository.trash(context, t.id)
-                Toast.makeText(context, "Moved to Trash", Toast.LENGTH_SHORT).show()
+                val result = snackbarHostState.showSnackbar(
+                    message = "Moved to Trash: ${t.title}",
+                    actionLabel = "Undo",
+                    duration = SnackbarDuration.Short,
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    CollectionRepository.restore(context, t.id)
+                }
             }
         },
+        snackbarHostState = snackbarHostState,
         onPermanentDeleteRequest = { t ->
             scope.launch { CollectionRepository.permanentDelete(context, t.id) }
             context.startActivity(Intent(context, DeleteActivity::class.java).apply {
@@ -512,6 +525,7 @@ private fun LibraryScreen(
     onDeleteRequest: (Track) -> Unit,
     onPermanentDeleteRequest: (Track) -> Unit,
     onRestoreRequest: (Track) -> Unit,
+    snackbarHostState: SnackbarHostState,
     onRestoreAll: () -> Unit,
     onEmptyTrash: () -> Unit,
     onTrackLongClick: (Track) -> Unit,
@@ -805,6 +819,7 @@ private fun LibraryScreen(
             )
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = { NowPlayingBar(controller, onLyricsClick, onExpand = onNowPlayingExpand) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
