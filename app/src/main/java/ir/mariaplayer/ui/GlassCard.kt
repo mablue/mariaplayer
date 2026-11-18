@@ -98,6 +98,7 @@ fun GlassTrackRow(
     track: Track? = null,
     restoreMode: Boolean = false,
     onRestoreClick: (() -> Unit)? = null,
+    deleteIsPermanent: Boolean = false,
 ) {
     val context = LocalContext.current
     val art by produceState<Bitmap?>(
@@ -205,8 +206,9 @@ fun GlassTrackRow(
                 IconButton(onClick = onDeleteClick, modifier = Modifier.size(36.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_delete),
-                        contentDescription = "Delete track",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        contentDescription = if (deleteIsPermanent) "Delete permanently" else "Delete track",
+                        tint = if (deleteIsPermanent) MaterialTheme.colorScheme.error
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
                 }

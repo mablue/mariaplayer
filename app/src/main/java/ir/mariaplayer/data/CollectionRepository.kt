@@ -267,6 +267,24 @@ object CollectionRepository {
         }
     }
 
+    suspend fun permanentDelete(context: Context, trackId: Long) {
+        context.collectionStore.edit { p ->
+            val trashed = p[TRASH_KEY]?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+            if (trackId in trashed) {
+                p[TRASH_KEY] = (trashed - trackId).map { it.toString() }.toSet()
+            }
+            p[KEY] = encode(decode(p[KEY].orEmpty()).map { c ->
+                val r = c.rule
+                if (r is CollectionRule.Manual && trackId in r.trackIds) {
+                    c.copy(
+                        rule = CollectionRule.Manual(r.trackIds.filterNot { it == trackId }),
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                } else c
+            })
+        }
+    }
+
     fun resolveTracks(
         allTracks: List<Track>,
         collection: Collection,

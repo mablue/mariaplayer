@@ -422,6 +422,13 @@ private fun AppRoot() {
                 Toast.makeText(context, "Moved to Trash", Toast.LENGTH_SHORT).show()
             }
         },
+        onPermanentDeleteRequest = { t ->
+            scope.launch { CollectionRepository.permanentDelete(context, t.id) }
+            context.startActivity(Intent(context, DeleteActivity::class.java).apply {
+                putExtra(DeleteActivity.EXTRA_URI, t.contentUri)
+                putExtra(DeleteActivity.EXTRA_TITLE, t.title)
+            })
+        },
         onRestoreRequest = { t ->
             scope.launch {
                 CollectionRepository.restore(context, t.id)
@@ -503,6 +510,7 @@ private fun LibraryScreen(
     onShuffleClick: () -> Unit,
     onTrackClick: (Track) -> Unit,
     onDeleteRequest: (Track) -> Unit,
+    onPermanentDeleteRequest: (Track) -> Unit,
     onRestoreRequest: (Track) -> Unit,
     onRestoreAll: () -> Unit,
     onEmptyTrash: () -> Unit,
@@ -873,7 +881,10 @@ private fun LibraryScreen(
                                     ).joinToString(" · "),
                                     isFavorite = t.id in favorites,
                                     onFavClick = { onToggleFavorite(t.id) },
-                                    onDeleteClick = { onDeleteRequest(t) },
+                                    onDeleteClick = {
+                                        if (isTrashTab) onPermanentDeleteRequest(t) else onDeleteRequest(t)
+                                    },
+                                    deleteIsPermanent = isTrashTab,
                                     restoreMode = selectedCollectionId == CollectionRepository.TRASH_ID,
                                     onRestoreClick = { onRestoreRequest(t) },
                                     onClick = {
