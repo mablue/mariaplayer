@@ -38,7 +38,6 @@ android {
         val vc = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionCode = vc
         versionName = "$vMajor.$vMinor.$vc"
-        ndk { abiFilters += "arm64-v8a" }
     }
     buildTypes {
         getByName("release") {
@@ -49,6 +48,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            isUniversalApk = false
         }
     }
     compileOptions {
