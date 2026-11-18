@@ -4,12 +4,17 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 // Semantic version — see /version.properties at repo root
-val versionProps = java.util.Properties().apply {
+fun readVersionProp(key: String, fallback: String): String {
     val f = rootProject.file("version.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
+    if (!f.exists()) return fallback
+    return f.readLines()
+        .map { it.trim() }
+        .firstOrNull { it.startsWith("$key=") }
+        ?.substringAfter("=")?.trim()
+        ?: fallback
 }
-val vMajor = versionProps.getProperty("major", "1")
-val vMinor = versionProps.getProperty("minor", "0")
+val vMajor = readVersionProp("major", "1")
+val vMinor = readVersionProp("minor", "0")
 
 android {
     signingConfigs {
