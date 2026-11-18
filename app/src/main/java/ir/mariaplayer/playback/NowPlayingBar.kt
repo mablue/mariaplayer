@@ -1,13 +1,18 @@
 package ir.mariaplayer.playback
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -16,8 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +33,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,13 +65,16 @@ fun NowPlayingBar(
         key1 = state.trackId,
     ) {
         val id = state.trackId
-        if (id != null && value == null) {
-            value = AlbumArtCache.peek(id)
-        }
+        if (id != null && value == null) value = AlbumArtCache.peek(id)
     }
 
     var dragging by remember { mutableStateOf(false) }
-    var dragValue by remember { mutableStateOf(0f) }
+    var dragFraction by remember { mutableStateOf(0f) }
+
+    val shownPositionMs: Long =
+        if (dragging && state.durationMs > 0)
+            (dragFraction * state.durationMs).toLong()
+        else state.positionMs
 
     Surface(tonalElevation = 3.dp) {
         Column(
@@ -75,7 +85,7 @@ fun NowPlayingBar(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 0.dp),
+                    .padding(start = 8.dp, end = 4.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
@@ -194,27 +204,28 @@ fun NowPlayingBar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    formatTime(if (dragging) dragValue.toLong() else state.positionMs),
+                    formatTime(shownPositionMs),
                     style = MaterialTheme.typography.labelSmall,
                     fontSize = 10.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Slider(
-                    value = if (dragging) dragValue else state.positionMs.toFloat(),
-                    onValueChange = { v -> dragging = true; dragValue = v },
-                    onValueChangeFinished = {
-                        controller.seekTo(dragValue.toLong())
+                SeekPill(
+                    positionMs = state.positionMs,
+                    durationMs = state.durationMs,
+                    dragging = dragging,
+                    dragFraction = dragFraction,
+                    onDragStart = { f -> dragging = true; dragFraction = f },
+                    onDrag = { f -> dragFraction = f },
+                    onDragEnd = {
+                        if (state.durationMs > 0) {
+                            controller.seekTo((dragFraction * state.durationMs).toLong())
+                        }
                         dragging = false
                     },
-                    valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f),
-                    ),
+                    onTap = { ms -> if (state.durationMs > 0) controller.seekTo(ms) },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 4.dp),
+                        .padding(horizontal = 6.dp),
                 )
                 Text(
                     formatTime(state.durationMs),
@@ -223,6 +234,81 @@ fun NowPlayingBar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SeekPill(
+    positionMs: Long,
+    durationMs: Long,
+    dragging: Boolean,
+    dragFraction: Float,
+    onDragStart: (Float) -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onTap: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    val inactive = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.22f)
+
+    Box(
+        modifier
+            .height(28.dp)
+            .pointerInput(durationMs) {
+                detectTapGestures { offset ->
+                    if (durationMs > 0) {
+                        val f = (offset.x / size.width).coerceIn(0f, 1f)
+                        onTap((f * durationMs).toLong())
+                    }
+                }
+            }
+            .pointerInput(durationMs) {
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        if (durationMs > 0) {
+                            onDragStart((offset.x / size.width).coerceIn(0f, 1f))
+                        }
+                    },
+                    onDragEnd = { onDragEnd() },
+                    onDragCancel = { onDragEnd() },
+                    onHorizontalDrag = { change, _ ->
+                        change.consume()
+                        if (durationMs > 0) {
+                            onDrag((change.position.x / size.width).coerceIn(0f, 1f))
+                        }
+                    },
+                )
+            },
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            val trackH = 3.dp.toPx()
+            val thumbR = if (dragging) 9.dp.toPx() else 6.dp.toPx()
+            val cy = size.height / 2f
+            val fraction = when {
+                durationMs <= 0 -> 0f
+                dragging -> dragFraction.coerceIn(0f, 1f)
+                else -> (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
+            }
+            val activeEnd = size.width * fraction
+            val thumbX = activeEnd.coerceIn(thumbR, size.width - thumbR)
+
+            drawRoundRect(
+                color = inactive,
+                topLeft = Offset(0f, cy - trackH / 2f),
+                size = Size(size.width, trackH),
+                cornerRadius = CornerRadius(trackH / 2f, trackH / 2f),
+            )
+            if (activeEnd > 0f) {
+                drawRoundRect(
+                    color = primary,
+                    topLeft = Offset(0f, cy - trackH / 2f),
+                    size = Size(activeEnd.coerceAtLeast(trackH / 2f), trackH),
+                    cornerRadius = CornerRadius(trackH / 2f, trackH / 2f),
+                )
+            }
+            drawCircle(color = primary, radius = thumbR, center = Offset(thumbX, cy))
         }
     }
 }
