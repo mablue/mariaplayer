@@ -104,6 +104,7 @@ import ir.mariaplayer.data.SortMode
 import ir.mariaplayer.data.Track
 import ir.mariaplayer.playback.ACTION_TRACK_DELETED
 import ir.mariaplayer.playback.EXTRA_DELETED_URI
+import ir.mariaplayer.playback.EXTRA_DELETED_TRACK_ID
 import ir.mariaplayer.playback.NowPlayingBar
 import ir.mariaplayer.playback.NowPlayingScreen
 import ir.mariaplayer.playback.rememberPlayerController
@@ -182,6 +183,10 @@ private fun AppRoot() {
                     val deletedUri = i.getStringExtra(EXTRA_DELETED_URI)
                     if (deletedUri != null) {
                         rawTracks = rawTracks?.filterNot { it.contentUri == deletedUri }
+                    }
+                    val tid = i.getLongExtra(EXTRA_DELETED_TRACK_ID, -1L)
+                    if (tid > 0L) {
+                        scope.launch { CollectionRepository.permanentDelete(context, tid) }
                     }
                 }
             }
@@ -451,10 +456,13 @@ private fun AppRoot() {
         },
         snackbarHostState = snackbarHostState,
         onPermanentDeleteRequest = { t ->
-            scope.launch { CollectionRepository.permanentDelete(context, t.id) }
+            // permanentDelete moved to broadcast receiver — only fires AFTER
+            // the system delete dialog succeeds. If user taps Deny, the track
+            // stays in Trash untouched.
             context.startActivity(Intent(context, DeleteActivity::class.java).apply {
                 putExtra(DeleteActivity.EXTRA_URI, t.contentUri)
                 putExtra(DeleteActivity.EXTRA_TITLE, t.title)
+                putExtra(EXTRA_DELETED_TRACK_ID, t.id)
             })
         },
         onRestoreRequest = { t ->

@@ -12,11 +12,13 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import ir.mariaplayer.playback.ACTION_TRACK_DELETED
 import ir.mariaplayer.playback.EXTRA_DELETED_URI
+import ir.mariaplayer.playback.EXTRA_DELETED_TRACK_ID
 
 class DeleteActivity : ComponentActivity() {
 
     private var pendingUri: Uri? = null
     private var pendingTitle: String = ""
+    private var pendingTrackId: Long? = null
 
     private val deleteLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -35,11 +37,13 @@ class DeleteActivity : ComponentActivity() {
 
         val uriStr = intent.getStringExtra(EXTRA_URI)
         val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
+        val tid = intent.getLongExtra(EXTRA_DELETED_TRACK_ID, -1L)
         if (uriStr == null) { finish(); return }
 
         val uri = Uri.parse(uriStr)
         pendingUri = uri
         pendingTitle = title
+        pendingTrackId = if (tid > 0L) tid else null
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
@@ -86,11 +90,11 @@ class DeleteActivity : ComponentActivity() {
     }
 
     private fun notifyDeleted(uri: Uri) {
-        sendBroadcast(
-            Intent(ACTION_TRACK_DELETED)
-                .setPackage(packageName)
-                .putExtra(EXTRA_DELETED_URI, uri.toString())
-        )
+        val intent = Intent(ACTION_TRACK_DELETED)
+            .setPackage(packageName)
+            .putExtra(EXTRA_DELETED_URI, uri.toString())
+        pendingTrackId?.let { intent.putExtra(EXTRA_DELETED_TRACK_ID, it) }
+        sendBroadcast(intent)
     }
 
     companion object {
