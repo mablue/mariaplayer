@@ -332,11 +332,17 @@ private fun AppRoot() {
     }
 
     if (showNewCollectionDialog) {
-        NewCollectionDialog(
+        ir.mariaplayer.ui.CollectionRuleEditor(
+            title = "New collection",
+            initialLabel = "",
+            initialRule = CollectionRule.Manual(emptyList()),
+            initialExclude = false,
+            allTracks = tracks,
+            confirmLabel = "Create",
             onDismiss = { showNewCollectionDialog = false },
-            onCreate = { name, rule ->
+            onSave = { label, rule, exclude ->
                 scope.launch {
-                    val id = CollectionRepository.create(context, name, rule)
+                    val id = CollectionRepository.create(context, label, rule, exclude)
                     selectedCollectionId = id
                 }
                 showNewCollectionDialog = false
@@ -344,11 +350,16 @@ private fun AppRoot() {
         )
     }
     collectionToEdit?.let { coll ->
-        EditCollectionDialog(
-            collection = coll,
+        ir.mariaplayer.ui.CollectionRuleEditor(
+            title = "Edit collection",
+            initialLabel = coll.label,
+            initialRule = coll.rule,
+            initialExclude = coll.excludeFromOthers,
+            allTracks = tracks,
+            confirmLabel = "Save",
             onDismiss = { collectionToEdit = null },
-            onSave = { newName ->
-                scope.launch { CollectionRepository.rename(context, coll.id, newName) }
+            onSave = { label, rule, exclude ->
+                scope.launch { CollectionRepository.update(context, coll.id, label, rule, exclude) }
                 collectionToEdit = null
             },
             onDelete = {

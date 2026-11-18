@@ -134,16 +134,51 @@ object CollectionRepository {
         }
     }
 
-    suspend fun create(context: Context, label: String, rule: CollectionRule): String {
+    suspend fun create(
+        context: Context,
+        label: String,
+        rule: CollectionRule,
+        excludeFromOthers: Boolean = false,
+    ): String {
         val id = "user_${System.currentTimeMillis()}"
         val now = System.currentTimeMillis()
         context.collectionStore.edit { p ->
             val list = decode(p[KEY].orEmpty())
             val order = (list.maxOfOrNull { it.sortOrder } ?: 12) + 1
-            p[KEY] = encode(list + Collection(id, label.trim().ifBlank { "Untitled" },
-                rule, sortOrder = order, createdAt = now, updatedAt = now))
+            p[KEY] = encode(list + Collection(
+                id = id,
+                label = label.trim().ifBlank { "Untitled" },
+                rule = rule,
+                sortOrder = order,
+                createdAt = now,
+                updatedAt = now,
+                excludeFromOthers = excludeFromOthers,
+            ))
         }
         return id
+    }
+
+    suspend fun update(
+        context: Context,
+        id: String,
+        label: String,
+        rule: CollectionRule,
+        excludeFromOthers: Boolean,
+    ) {
+        val trimmed = label.trim()
+        if (trimmed.isBlank()) return
+        context.collectionStore.edit { p ->
+            p[KEY] = encode(decode(p[KEY].orEmpty()).map { c ->
+                if (c.id == id) {
+                    c.copy(
+                        label = trimmed,
+                        rule = rule,
+                        excludeFromOthers = excludeFromOthers,
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                } else c
+            })
+        }
     }
 
     suspend fun delete(context: Context, id: String) {
