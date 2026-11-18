@@ -51,7 +51,7 @@ object CollectionRepository {
             val ids = p[stringSetPreferencesKey("ids")]
                 ?.mapNotNull { it.toLongOrNull() }?.toList() ?: emptyList()
             if (ids.isNotEmpty()) {
-                out += Collection(FAVORITES_ID, "Favorites",
+                out += Collection(FAVORITES_ID, "❤️",
                     CollectionRule.Manual(ids), sortOrder = 1)
             }
         } catch (_: Exception) {}
@@ -81,15 +81,15 @@ object CollectionRepository {
         val out = mutableListOf<Collection>()
         out += Collection(ALL_ID, "All", CollectionRule.All, isSystem = true, sortOrder = 0)
         migrated.firstOrNull { it.id == FAVORITES_ID }?.let { out += it }
-        out += Collection(MUSIC_ID, "Music", CollectionRule.Duration(maxMs = 10 * 60_000L),
+        out += Collection(MUSIC_ID, "🎵", CollectionRule.Duration(maxMs = 10 * 60_000L),
             isSystem = true, sortOrder = 10)
-        out += Collection(PODCASTS_ID, "Podcasts",
+        out += Collection(PODCASTS_ID, "🎙️",
             CollectionRule.Duration(minMs = 10 * 60_000L, maxMs = 2 * 60 * 60_000L),
             isSystem = true, sortOrder = 11)
-        out += Collection(AUDIOBOOKS_ID, "Audiobooks",
+        out += Collection(AUDIOBOOKS_ID, "📚",
             CollectionRule.Duration(minMs = 2L * 60 * 60_000L),
             isSystem = true, sortOrder = 12)
-        out += Collection(TRASH_ID, "Trash", CollectionRule.All,
+        out += Collection(TRASH_ID, "🗑️", CollectionRule.All,
             isSystem = true, sortOrder = 999)
         migrated.filter { !it.isSystem && it.id != FAVORITES_ID }.forEach { out += it }
         return out
@@ -100,7 +100,7 @@ object CollectionRepository {
         val list = decode(raw)
         if (list.none { it.id == TRASH_ID }) {
             context.collectionStore.edit { p ->
-                p[KEY] = encode(list + Collection(TRASH_ID, "Trash", CollectionRule.All,
+                p[KEY] = encode(list + Collection(TRASH_ID, "🗑️", CollectionRule.All,
                     isSystem = true, sortOrder = 999))
             }
         }
@@ -118,17 +118,17 @@ object CollectionRepository {
         val ids = list.map { it.id }.toSet()
         val additions = mutableListOf<Collection>()
         if (MUSIC_ID !in ids) {
-            additions += Collection(MUSIC_ID, "Music",
+            additions += Collection(MUSIC_ID, "🎵",
                 CollectionRule.Duration(maxMs = 10 * 60_000L),
                 isSystem = true, sortOrder = 10)
         }
         if (PODCASTS_ID !in ids) {
-            additions += Collection(PODCASTS_ID, "Podcasts",
+            additions += Collection(PODCASTS_ID, "🎙️",
                 CollectionRule.Duration(minMs = 10 * 60_000L, maxMs = 2 * 60 * 60_000L),
                 isSystem = true, sortOrder = 11)
         }
         if (AUDIOBOOKS_ID !in ids) {
-            additions += Collection(AUDIOBOOKS_ID, "Audiobooks",
+            additions += Collection(AUDIOBOOKS_ID, "📚",
                 CollectionRule.Duration(minMs = 2L * 60 * 60_000L),
                 isSystem = true, sortOrder = 12)
         }
@@ -136,6 +136,28 @@ object CollectionRepository {
             context.collectionStore.edit { p ->
                 p[KEY] = encode(decode(p[KEY].orEmpty()) + additions)
             }
+        }
+    }
+
+    suspend fun migrateDefaultLabelsToEmoji(context: Context) {
+        val oldToNew = mapOf(
+            FAVORITES_ID to ("Favorites" to "❤️"),
+            MUSIC_ID to ("Music" to "🎵"),
+            PODCASTS_ID to ("Podcasts" to "🎙️"),
+            AUDIOBOOKS_ID to ("Audiobooks" to "📚"),
+            TRASH_ID to ("Trash" to "🗑️"),
+        )
+        val raw = context.collectionStore.data.first()[KEY] ?: return
+        var changed = false
+        val next = decode(raw).map { c ->
+            val pair = oldToNew[c.id] ?: return@map c
+            if (c.label == pair.first) {
+                changed = true
+                c.copy(label = pair.second, updatedAt = System.currentTimeMillis())
+            } else c
+        }
+        if (changed) {
+            context.collectionStore.edit { p -> p[KEY] = encode(next) }
         }
     }
 
@@ -149,7 +171,7 @@ object CollectionRepository {
             var list = decode(p[KEY].orEmpty())
             val existing = list.firstOrNull { it.id == FAVORITES_ID }
             if (existing == null) {
-                list = list + Collection(FAVORITES_ID, "Favorites",
+                list = list + Collection(FAVORITES_ID, "❤️",
                     CollectionRule.Manual(listOf(trackId)), sortOrder = 1,
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis())

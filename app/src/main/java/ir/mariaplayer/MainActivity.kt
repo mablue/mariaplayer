@@ -237,6 +237,7 @@ private fun AppRoot() {
         CollectionRepository.initializeIfNeeded(context)
         CollectionRepository.ensureTrash(context)
         CollectionRepository.ensureSystemDefaults(context)
+        CollectionRepository.migrateDefaultLabelsToEmoji(context)
         CollectionRepository.observe(context).collectLatest { collections = it }
     }
     LaunchedEffect(Unit) {
