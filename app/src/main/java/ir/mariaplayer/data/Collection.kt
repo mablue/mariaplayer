@@ -40,11 +40,6 @@ sealed interface CollectionRule {
             (maxMs == null || track.durationMs <= maxMs)
     }
 
-    /** نوع محتوا. */
-    data class Types(val types: Set<ContentType>) : CollectionRule {
-        override fun matches(track: Track) = track.contentType in types
-    }
-
     /** regex روی فیلدهای متنی. */
     data class Pattern(
         val pattern: String,

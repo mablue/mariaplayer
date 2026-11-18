@@ -39,7 +39,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import ir.mariaplayer.R
 import ir.mariaplayer.data.CollectionRule
-import ir.mariaplayer.data.ContentType
 import ir.mariaplayer.data.Track
 
 /**
@@ -190,7 +189,6 @@ private fun ConditionRow(
             val typeLabel = when (rule) {
                 is CollectionRule.Duration -> "Duration"
                 is CollectionRule.Pattern -> "Regex"
-                is CollectionRule.Types -> "Types"
                 is CollectionRule.Manual -> "Manual (empty)"
                 else -> "Other"
             }
@@ -210,7 +208,6 @@ private fun ConditionRow(
         when (rule) {
             is CollectionRule.Duration -> DurationFields(rule, onChange)
             is CollectionRule.Pattern -> PatternFields(rule, onChange)
-            is CollectionRule.Types -> TypesFields(rule, onChange)
             is CollectionRule.Manual -> Text(
                 "Starts empty; add tracks later from any list.",
                 style = MaterialTheme.typography.bodySmall,
@@ -301,28 +298,6 @@ private fun PatternFields(
 }
 
 @Composable
-private fun TypesFields(
-    rule: CollectionRule.Types,
-    onChange: (CollectionRule) -> Unit,
-) {
-    Row(Modifier.horizontalScroll(rememberScrollState())) {
-        ContentType.entries.forEach { type ->
-            FilterChip(
-                selected = type in rule.types,
-                onClick = {
-                    val newTypes = if (type in rule.types)
-                        rule.types - type
-                    else rule.types + type
-                    onChange(CollectionRule.Types(newTypes))
-                },
-                label = { Text(type.name) },
-                modifier = Modifier.padding(end = 6.dp),
-            )
-        }
-    }
-}
-
-@Composable
 private fun AddConditionButton(onAdd: (CollectionRule) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
@@ -344,13 +319,6 @@ private fun AddConditionButton(onAdd: (CollectionRule) -> Unit) {
                 text = { Text("Regex (pattern)") },
                 onClick = {
                     onAdd(CollectionRule.Pattern(""))
-                    expanded = false
-                },
-            )
-            DropdownMenuItem(
-                text = { Text("Content type") },
-                onClick = {
-                    onAdd(CollectionRule.Types(emptySet()))
                     expanded = false
                 },
             )

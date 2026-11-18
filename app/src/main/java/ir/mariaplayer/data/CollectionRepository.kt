@@ -504,10 +504,6 @@ object CollectionRepository {
                 if (rule.minMs == null) put("minMs", JSONObject.NULL) else put("minMs", rule.minMs)
                 if (rule.maxMs == null) put("maxMs", JSONObject.NULL) else put("maxMs", rule.maxMs)
             }
-            is CollectionRule.Types -> {
-                put("type", "types")
-                put("types", JSONArray(rule.types.map { it.name }))
-            }
             is CollectionRule.Pattern -> {
                 put("type", "pattern")
                 put("pattern", rule.pattern)
@@ -562,12 +558,10 @@ object CollectionRepository {
             minMs = if (o.isNull("minMs")) null else o.getLong("minMs"),
             maxMs = if (o.isNull("maxMs")) null else o.getLong("maxMs"))
         "types" -> {
-            val arr = o.optJSONArray("types") ?: JSONArray()
-            val set = mutableSetOf<ContentType>()
-            for (i in 0 until arr.length()) {
-                try { set += ContentType.valueOf(arr.getString(i)) } catch (_: Exception) {}
-            }
-            CollectionRule.Types(set)
+            // backward-compat: old data had CollectionRule.Types. Since C46b
+            // removed the concept, degrade to an empty Manual collection so
+            // nothing silently becomes "All" or "nothing matches".
+            CollectionRule.Manual(emptyList())
         }
         "pattern" -> {
             val arr = o.optJSONArray("fields") ?: JSONArray()

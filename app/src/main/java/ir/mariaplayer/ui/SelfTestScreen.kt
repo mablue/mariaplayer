@@ -964,7 +964,7 @@ private suspend fun runAllTests(
         CollectionRepository.initializeIfNeeded(context)
         val rule = CollectionRule.Or(listOf(
             CollectionRule.Duration(maxMs = 5 * 60_000L),
-            CollectionRule.Types(setOf(ContentType.PODCAST)),
+            CollectionRule.Pattern("podcast", setOf(CollectionRule.Pattern.Field.Folder)),
         ))
         val id = CollectionRepository.create(context, "OrPersist", rule)
         val found = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
@@ -1286,12 +1286,12 @@ private suspend fun runAllTests(
         val id = CollectionRepository.create(context, "SsotUpd",
             CollectionRule.Manual(emptyList()))
         CollectionRepository.update(context, id, "SsotUpdNEW",
-            CollectionRule.Types(setOf(ContentType.PODCAST)), excludeFromOthers = true)
+            CollectionRule.Duration(minMs = 60_000L), excludeFromOthers = true)
         val snap = CollectionRepository.snapshot(context).firstOrNull { it.id == id }
         CollectionRepository.delete(context, id)
         if (snap?.label != "SsotUpdNEW") throw IllegalStateException("label=${snap?.label}")
         if (snap.excludeFromOthers != true) throw IllegalStateException("exclude false")
-        if (snap.rule !is CollectionRule.Types) throw IllegalStateException("rule=${snap.rule}")
+        if (snap.rule !is CollectionRule.Duration) throw IllegalStateException("rule=${snap.rule}")
         "ok"
     }
     test("SSOT: excludeFromOthers isolated per collection") {
