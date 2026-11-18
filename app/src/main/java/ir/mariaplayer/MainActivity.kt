@@ -1185,4 +1185,9 @@ private fun describeCollectionRule(rule: CollectionRule): String = when (rule) {
     }
     is CollectionRule.Types -> "Types: ${rule.types.joinToString { it.name }}"
     is CollectionRule.Pattern -> "Regex: ${rule.pattern}"
+    is CollectionRule.And -> "AND (${rule.rules.size}): " +
+        rule.rules.joinToString(" ∧ ") { describeCollectionRule(it) }
+    is CollectionRule.Or -> "OR (${rule.rules.size}): " +
+        rule.rules.joinToString(" ∨ ") { describeCollectionRule(it) }
+    is CollectionRule.Not -> "NOT (${describeCollectionRule(rule.rule)})"
 }
