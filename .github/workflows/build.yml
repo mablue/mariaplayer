@@ -67,9 +67,11 @@ jobs:
         id: meta
         run: |
           set -euo pipefail
-          VER="0.1.${VERSION_CODE:-1}"
+          MAJOR=$(grep '^major=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+          MINOR=$(grep '^minor=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+          VER="${MAJOR}.${MINOR}.${{ github.run_number }}"
           SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          TAG="v${VER}-build.${{ github.run_number }}-${SHA}"
+          TAG="v${VER}-${SHA}"
           APK="mariaplayer-${VER}-${SHA}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$APK"
           SHA256=$(sha256sum "$APK" | awk '{print $1}')
@@ -88,7 +90,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
-          name: "MariaPlayer ${{ steps.meta.outputs.tag }}"
+          name: "MariaPlayer v${{ steps.meta.outputs.ver }}"
           files: ${{ steps.meta.outputs.apk }}
           body: |
             Automated build from commit ${{ github.sha }}.

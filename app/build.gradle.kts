@@ -3,6 +3,14 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+// Semantic version — see /version.properties at repo root
+val versionProps = java.util.Properties().apply {
+    val f = rootProject.file("version.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val vMajor = versionProps.getProperty("major", "1")
+val vMinor = versionProps.getProperty("minor", "0")
+
 android {
     signingConfigs {
         create("release") {
@@ -24,7 +32,7 @@ android {
         targetSdk = 36
         val vc = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionCode = vc
-        versionName = "0.1.$vc"
+        versionName = "$vMajor.$vMinor.$vc"
         ndk { abiFilters += "arm64-v8a" }
     }
     buildTypes {
