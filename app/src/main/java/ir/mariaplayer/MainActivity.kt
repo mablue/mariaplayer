@@ -431,9 +431,8 @@ private fun AppRoot() {
         onTrackClick = { t ->
             val c = controller ?: return@LibraryScreen
             val list = visible ?: return@LibraryScreen
-            val sameType = list.filter { it.contentType == t.contentType }
-            val idx = sameType.indexOfFirst { it.id == t.id }
-            if (idx >= 0) playQueue(c, sameType, idx, 0L, autoPlay = true)
+            val idx = list.indexOfFirst { it.id == t.id }
+            if (idx >= 0) playQueue(c, list, idx, 0L, autoPlay = true)
         },
         onTrackLongClick = { t -> pendingTrackForPlaylist = t },
         onLyricsClick = { screen = "lyrics_display" },
@@ -586,7 +585,6 @@ private fun LibraryScreen(
         )
     }
     var showBulkAddDialog by remember { mutableStateOf(false) }
-    var showTrackTypeSheet by remember { mutableStateOf(false) }
     var searchActive by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -639,17 +637,6 @@ private fun LibraryScreen(
             },
         )
     }
-    if (showTrackTypeSheet) {
-        ir.mariaplayer.ui.TrackTypeSheet(
-            trackIds = selectedIds.toList(),
-            onDismiss = {
-                showTrackTypeSheet = false
-                selectionMode = false
-                selectedIds = emptySet()
-            },
-        )
-    }
-
     if (showBulkAddDialog) {
         val selectedTracks = visible?.filter { it.id in selectedIds } ?: emptyList()
         if (selectedTracks.isNotEmpty()) {
@@ -718,10 +705,6 @@ private fun LibraryScreen(
                         }) {
                             Icon(painter = painterResource(R.drawable.ic_share),
                                 contentDescription = "Share selected")
-                        }
-                        IconButton(onClick = { showTrackTypeSheet = true }) {
-                            Icon(painter = painterResource(R.drawable.ic_settings),
-                                contentDescription = "Change type")
                         }
                     }
                 )
