@@ -263,10 +263,21 @@ private fun AppRoot() {
     var query by rememberSaveable { mutableStateOf("") }
     var folderFilter by rememberSaveable { mutableStateOf("") }
 
-    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, selectedCollection, trashedIds, blacklistedIds) {
+    val excludedIds: Set<Long> = remember(tracks, collections, trashedIds, blacklistedIds) {
+        val base = tracks ?: return@remember emptySet()
+        CollectionRepository.computeExcludedIds(base, collections, trashedIds, blacklistedIds)
+    }
+
+    val visible: List<Track>? = remember(tracks, query, sortMode, folderFilter, selectedCollection, trashedIds, blacklistedIds, excludedIds) {
         val base = tracks ?: return@remember null
-        val inCollection = selectedCollection?.let { CollectionRepository.resolveTracks(base, it, trashedIds, blacklistedIds) }
-            ?: base.filter { it.id !in trashedIds && it.id !in blacklistedIds }
+        val ownExcluded: Set<Long> = if (selectedCollection?.excludeFromOthers == true) {
+            // collection خودِ partition — نباید خودش را حذف کند
+            val ownIds = CollectionRepository.resolveTracks(base, selectedCollection, trashedIds, blacklistedIds)
+                .map { it.id }.toSet()
+            excludedIds - ownIds
+        } else excludedIds
+        val inCollection = selectedCollection?.let { CollectionRepository.resolveTracks(base, it, trashedIds, blacklistedIds, ownExcluded) }
+            ?: base.filter { it.id !in trashedIds && it.id !in blacklistedIds && it.id !in ownExcluded }
         val q = query.trim().lowercase()
         inCollection.asSequence()
             .filter { t ->

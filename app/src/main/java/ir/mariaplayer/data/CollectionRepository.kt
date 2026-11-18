@@ -360,8 +360,12 @@ object CollectionRepository {
         collection: Collection,
         trashedIds: Set<Long> = emptySet(),
         blacklistedIds: Set<Long> = emptySet(),
+        excludeIds: Set<Long> = emptySet(),
     ): List<Track> {
-        if (collection.id == TRASH_ID) return allTracks.filter { it.id in trashedIds }
+        // Trash همیشه نمای Trash است — نه فیلتر جهانی.
+        if (collection.id == TRASH_ID) {
+            return allTracks.filter { it.id in trashedIds && it.id !in blacklistedIds }
+        }
         val base = when (val r = collection.rule) {
             is CollectionRule.All -> allTracks
             is CollectionRule.Manual -> {
@@ -370,7 +374,45 @@ object CollectionRepository {
             }
             else -> allTracks.filter { r.matches(it) }
         }
-        return base.filter { it.id !in trashedIds && it.id !in blacklistedIds }
+        // excludeIds = ترک‌هایی که در collection دیگری با excludeFromOthers=true هستند.
+        // خود collectionِ partition از exclusion معاف است (collection.id نباید در excludeIds باشد).
+        return base.filter {
+            it.id !in trashedIds &&
+            it.id !in blacklistedIds &&
+            it.id !in excludeIds
+        }
+    }
+
+    /**
+     * ترک‌هایی که باید از هر collection دیگری مخفی شوند — یعنی اجتماعِ
+     * collectionهایی که excludeFromOthers = true دارند.
+     * (trash و blacklist همیشه مستقل‌اند.)
+     */
+    fun computeExcludedIds(
+        allTracks: List<Track>,
+        collections: List<Collection>,
+        trashedIds: Set<Long> = emptySet(),
+        blacklistedIds: Set<Long> = emptySet(),
+    ): Set<Long> {
+        val partitions = collections.filter {
+            it.excludeFromOthers && it.id != TRASH_ID && it.id != ALL_ID
+        }
+        if (partitions.isEmpty()) return emptySet()
+        val out = HashSet<Long>()
+        for (c in partitions) {
+            val base = when (val r = c.rule) {
+                is CollectionRule.All -> allTracks
+                is CollectionRule.Manual -> {
+                    val byId = allTracks.associateBy { it.id }
+                    r.trackIds.mapNotNull { byId[it] }
+                }
+                else -> allTracks.filter { r.matches(it) }
+            }
+            for (t in base) {
+                if (t.id !in trashedIds && t.id !in blacklistedIds) out += t.id
+            }
+        }
+        return out
     }
 
     private fun encode(list: List<Collection>): String {
@@ -379,6 +421,7 @@ object CollectionRepository {
             put("id", c.id); put("label", c.label)
             put("isSystem", c.isSystem); put("sortOrder", c.sortOrder)
             put("createdAt", c.createdAt); put("updatedAt", c.updatedAt)
+            put("excludeFromOthers", c.excludeFromOthers)
             put("rule", encodeRule(c.rule))
         })
         return arr.toString()
@@ -402,6 +445,18 @@ object CollectionRepository {
                 put("pattern", rule.pattern)
                 put("fields", JSONArray(rule.fields.map { it.name }))
             }
+            is CollectionRule.And -> {
+                put("type", "and")
+                put("rules", JSONArray(rule.rules.map { encodeRule(it) }))
+            }
+            is CollectionRule.Or -> {
+                put("type", "or")
+                put("rules", JSONArray(rule.rules.map { encodeRule(it) }))
+            }
+            is CollectionRule.Not -> {
+                put("type", "not")
+                put("rule", encodeRule(rule.rule))
+            }
         }
     }
 
@@ -419,6 +474,7 @@ object CollectionRepository {
                     sortOrder = o.optInt("sortOrder", 0),
                     createdAt = o.optLong("createdAt", 0L),
                     updatedAt = o.optLong("updatedAt", 0L),
+                    excludeFromOthers = o.optBoolean("excludeFromOthers", false),
                     rule = decodeRule(o.getJSONObject("rule")),
                 )
             }
@@ -454,6 +510,26 @@ object CollectionRepository {
             CollectionRule.Pattern(
                 pattern = o.optString("pattern", ""),
                 fields = if (set.isEmpty()) CollectionRule.Pattern.Field.entries.toSet() else set)
+        }
+        "and" -> {
+            val arr = o.optJSONArray("rules") ?: JSONArray()
+            val list = ArrayList<CollectionRule>(arr.length())
+            for (i in 0 until arr.length()) {
+                try { list += decodeRule(arr.getJSONObject(i)) } catch (_: Exception) {}
+            }
+            CollectionRule.And(list)
+        }
+        "or" -> {
+            val arr = o.optJSONArray("rules") ?: JSONArray()
+            val list = ArrayList<CollectionRule>(arr.length())
+            for (i in 0 until arr.length()) {
+                try { list += decodeRule(arr.getJSONObject(i)) } catch (_: Exception) {}
+            }
+            CollectionRule.Or(list)
+        }
+        "not" -> {
+            val inner = o.optJSONObject("rule")
+            if (inner == null) CollectionRule.All else CollectionRule.Not(decodeRule(inner))
         }
         else -> CollectionRule.All
     }
