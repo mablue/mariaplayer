@@ -156,15 +156,7 @@ private fun AppRoot() {
         if (hasAudio) rawTracks = LibraryScanner.scan(context)
     }
 
-    val contentTypeOverrides by remember {
-        ir.mariaplayer.data.ContentTypePrefs.observeAll(context)
-    }.collectAsState(initial = emptyMap())
-
-    val tracks: List<Track>? = remember(rawTracks, contentTypeOverrides) {
-        rawTracks?.let {
-            ir.mariaplayer.data.ContentTypeLogic.applyAll(it, contentTypeOverrides)
-        }
-    }
+    val tracks: List<Track>? = rawTracks
 
 
     val deleteLauncher = rememberLauncherForActivityResult(

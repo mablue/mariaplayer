@@ -9,5 +9,4 @@ data class Track(
     val contentUri: String,
     val folder: String = "",
     val filename: String = "",
-    val contentType: ContentType = ContentType.MUSIC,
 )
