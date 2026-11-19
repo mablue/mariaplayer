@@ -68,6 +68,27 @@ android {
         buildConfig = true
     }
 }
+
+// C54: unique versionCode per ABI so Cafe Bazaar accepts all 4 split APKs.
+// base * 10 + abi_offset  ->  1 = arm64-v8a, 2 = armeabi-v7a, 3 = x86, 4 = x86_64
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.forEach { output ->
+            val abi = output.filters
+                .find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }
+                ?.identifier
+            val offset = when (abi) {
+                "arm64-v8a"   -> 1
+                "armeabi-v7a" -> 2
+                "x86"         -> 3
+                "x86_64"      -> 4
+                else          -> 0
+            }
+            val base = output.versionCode.orNull ?: return@forEach
+            output.versionCode.set(base * 10 + offset)
+        }
+    }
+}
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.10.01"))
     implementation("androidx.compose.material3:material3")
