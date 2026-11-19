@@ -78,15 +78,12 @@ androidComponents {
                 .find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }
                 ?.identifier
             // Cafe Bazaar / Play Store ABI rule:
-            //   universal(ALL) < armeabi-v7a(ARM32) < arm64-v8a(ARM64)
-            // x86/x86_64 do not participate in the ARM rule; slot them after.
-            // Cafe Bazaar / Play Store ABI rule:
-            //   universal(ALL) < armeabi-v7a(ARM32) < arm64-v8a(ARM64)
-            // AAB has no ABI filter (Google Play splits it) — give it its own slot
-            // so it doesn't collide with universal.apk.
+            //   AAB < universal(ALL) < armeabi-v7a(ARM32) < arm64-v8a(ARM64)
+            // x86/x86_64 slot after ARM. AAB has no ABI filter (the store
+            // splits it) — its own offset keeps it distinct from universal.apk.
+            val isAab = output.outputFileName.orNull?.endsWith(".aab") == true
             val offset = when {
-                output is com.android.build.api.variant.impl.VariantOutputImpl &&
-                    output.outputFileName.endsWith(".aab") -> 0
+                isAab                -> 0  // AAB (Play/Bazaar splits it) — lowest
                 abi == null          -> 1  // universal APK (ALL)
                 abi == "armeabi-v7a" -> 2  // ARM32
                 abi == "arm64-v8a"   -> 3  // ARM64 — highest among ARM
